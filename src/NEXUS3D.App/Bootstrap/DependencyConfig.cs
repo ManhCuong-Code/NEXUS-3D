@@ -12,6 +12,7 @@ using NEXUS3D.Engine.Services;
 using NEXUS3D.Formats.Abstractions;
 using NEXUS3D.Formats.BedrockGeometry;
 using NEXUS3D.Formats.Obj;
+using NEXUS3D.Formats.Obj.Services;
 using NEXUS3D.Formats.Schematic;
 using NEXUS3D.Formats.Schematic.Services;
 using NEXUS3D.Formats.VoxelJson;
@@ -92,6 +93,7 @@ public static class DependencyConfig
         services.AddSingleton<IFormatDescriptor, SchematicFormatDescriptor>();
         services.AddSchematicFormatServices();
         services.AddSingleton<IFormatDescriptor, ObjFormatDescriptor>();
+        services.AddObjFormatServices();
         services.AddSingleton<IFormatDescriptor, VoxelJsonFormatDescriptor>();
         services.AddSingleton<IFormatDescriptor, BedrockGeometryFormatDescriptor>();
         services.AddSingleton<IFormatRegistry, FormatRegistry>();

@@ -54,6 +54,15 @@ public sealed class Vertex : IDeepCloneable<Vertex>
 }
 
 /// <summary>
+/// Represents an independent index tuple (<c>PositionIndex</c>, <c>TexCoordIndex</c>, <c>NormalIndex</c>)
+/// for a single corner of a polygon <see cref="Face"/> when preserved from formats with decoupled attribute indexing (such as Wavefront OBJ).
+/// </summary>
+public readonly record struct FaceCorner(
+    int PositionIndex,
+    int? TexCoordIndex = null,
+    int? NormalIndex = null);
+
+/// <summary>
 /// Represents a polygon or triangle face indexing into <see cref="MeshData.Vertices"/>.
 /// Does not force triangulation in the Domain model.
 /// </summary>
@@ -62,6 +71,8 @@ public sealed class Face : IDeepCloneable<Face>
     public IReadOnlyList<int> VertexIndices { get; set; } = [];
     public Guid? MaterialId { get; set; }
     public int? SmoothingGroup { get; set; }
+    public IReadOnlyList<FaceCorner>? Corners { get; set; }
+    public IReadOnlyList<string> GroupNames { get; set; } = [];
 
     public bool IsTriangle => VertexIndices.Count == 3;
     public bool IsQuad => VertexIndices.Count == 4;
@@ -100,7 +111,11 @@ public sealed class Face : IDeepCloneable<Face>
         return false;
     }
 
-    public Face DeepClone() => new(VertexIndices.ToArray(), MaterialId, SmoothingGroup);
+    public Face DeepClone() => new(VertexIndices.ToArray(), MaterialId, SmoothingGroup)
+    {
+        Corners = Corners?.ToArray(),
+        GroupNames = GroupNames.Count > 0 ? GroupNames.ToArray() : []
+    };
 }
 
 /// <summary>
