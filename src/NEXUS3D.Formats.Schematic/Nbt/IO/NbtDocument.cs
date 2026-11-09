@@ -27,3 +27,4 @@ public sealed class NbtDocument
     public NbtDocument DeepClone() =>
         new(RootTag.CloneCompound(), Compression, Endianness);
 }
+

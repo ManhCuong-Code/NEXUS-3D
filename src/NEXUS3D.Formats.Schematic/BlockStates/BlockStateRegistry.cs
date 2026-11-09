@@ -13,3 +13,4 @@ public sealed class BlockStateRegistry
     public static bool IsAirState(BlockState? state) =>
         state is null || state.IsAir;
 }
+

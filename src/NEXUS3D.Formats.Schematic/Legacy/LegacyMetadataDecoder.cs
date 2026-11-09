@@ -60,3 +60,4 @@ public sealed class LegacyMetadataDecoder
         return metadata;
     }
 }
+

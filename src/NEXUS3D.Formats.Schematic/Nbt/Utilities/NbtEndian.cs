@@ -95,3 +95,4 @@ public static class NbtEndian
             BinaryPrimitives.WriteDoubleLittleEndian(buffer, value);
     }
 }
+

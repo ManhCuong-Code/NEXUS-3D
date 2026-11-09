@@ -10,3 +10,4 @@ public sealed record BlockStateMapping(
     int LegacyMetadata,
     BlockState ModernBlockState,
     bool IsExactMatch = true);
+

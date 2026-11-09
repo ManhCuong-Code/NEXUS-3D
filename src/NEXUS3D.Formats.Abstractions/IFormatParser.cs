@@ -15,3 +15,4 @@ public interface IFormatParser
         ParseOptions? options = null,
         CancellationToken cancellationToken = default);
 }
+

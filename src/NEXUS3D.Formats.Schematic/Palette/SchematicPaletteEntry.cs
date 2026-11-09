@@ -11,3 +11,4 @@ public sealed record SchematicPaletteEntry(
     BlockState BlockState,
     int? LegacyBlockId = null,
     int? LegacyMetadata = null);
+

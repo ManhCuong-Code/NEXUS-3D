@@ -104,3 +104,4 @@ public sealed class PaletteDecoder
         return indices;
     }
 }
+

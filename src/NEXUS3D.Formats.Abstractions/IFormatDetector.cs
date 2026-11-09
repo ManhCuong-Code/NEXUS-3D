@@ -22,3 +22,4 @@ public interface IFormatDetector
         string? fileExtensionHint = null,
         CancellationToken cancellationToken = default);
 }
+

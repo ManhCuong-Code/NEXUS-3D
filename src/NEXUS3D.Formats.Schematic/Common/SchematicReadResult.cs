@@ -45,3 +45,4 @@ public sealed record SchematicReadResult
             Warnings = warnings ?? []
         };
 }
+

@@ -18,3 +18,4 @@ public sealed class SchematicConversionReport
     public IReadOnlyList<WarningRecord> Warnings { get; init; } = [];
     public LossReport LossReport { get; init; } = new();
 }
+

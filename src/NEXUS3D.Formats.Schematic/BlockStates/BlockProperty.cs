@@ -7,3 +7,4 @@ public readonly record struct BlockProperty(string Key, string Value)
 {
     public override string ToString() => $"{Key}={Value}";
 }
+

@@ -32,3 +32,4 @@ public sealed class NbtByteTag : NbtTag
     public override bool ValueEquals(NbtTag? other) =>
         other is NbtByteTag b && b.Value == Value;
 }
+

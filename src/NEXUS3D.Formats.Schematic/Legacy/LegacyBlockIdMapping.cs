@@ -352,3 +352,4 @@ public sealed class LegacyBlockIdMapping : ILegacyBlockIdMapping
         Register(216, 0, "minecraft:bone_block[axis=y]", true);
     }
 }
+

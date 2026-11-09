@@ -40,3 +40,4 @@ public abstract class NbtTag : IDeepCloneable<NbtTag>
 
     public abstract bool ValueEquals(NbtTag? other);
 }
+

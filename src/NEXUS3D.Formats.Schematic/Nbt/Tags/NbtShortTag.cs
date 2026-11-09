@@ -20,3 +20,4 @@ public sealed class NbtShortTag : NbtTag
     public override bool ValueEquals(NbtTag? other) =>
         other is NbtShortTag s && s.Value == Value;
 }
+

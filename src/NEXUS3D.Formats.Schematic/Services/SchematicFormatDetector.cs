@@ -139,3 +139,4 @@ public sealed class SchematicFormatDetector : ISchematicFormatDetector
         return SchematicFormatId.Unknown;
     }
 }
+

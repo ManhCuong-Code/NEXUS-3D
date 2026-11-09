@@ -18,3 +18,4 @@ public sealed class SpongeBlockDataDecoder
     public int[] Decode(ReadOnlySpan<byte> blockData, SchematicDimensions dimensions, SchematicPalette palette) =>
         _paletteDecoder.DecodeBlockData(blockData, dimensions, palette);
 }
+

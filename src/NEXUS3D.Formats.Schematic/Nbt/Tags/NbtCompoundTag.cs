@@ -115,3 +115,4 @@ public sealed class NbtCompoundTag : NbtTag
         return true;
     }
 }
+

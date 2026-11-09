@@ -67,3 +67,4 @@ public sealed class SchematicPalette
         return clone;
     }
 }
+

@@ -67,3 +67,4 @@ public static class NbtTagWriterExtensions
         return compound;
     }
 }
+

@@ -24,3 +24,4 @@ public sealed class SchematicBlockEntity
         RawOriginalTag = RawOriginalTag?.CloneCompound()
     };
 }
+

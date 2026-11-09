@@ -120,3 +120,4 @@ public sealed class SpongeMetadataParser
         return compound.Count > 0 ? compound : null;
     }
 }
+

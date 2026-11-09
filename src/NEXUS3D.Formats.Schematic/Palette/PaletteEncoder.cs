@@ -60,3 +60,4 @@ public sealed class PaletteEncoder
         return memory.ToArray();
     }
 }
+

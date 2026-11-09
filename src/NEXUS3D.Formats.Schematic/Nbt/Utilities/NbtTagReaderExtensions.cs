@@ -116,3 +116,4 @@ public static class NbtTagReaderExtensions
         return value is not null;
     }
 }
+

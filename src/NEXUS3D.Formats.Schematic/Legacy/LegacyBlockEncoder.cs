@@ -45,3 +45,4 @@ public sealed class LegacyBlockEncoder
         return (blocks, addBlocks);
     }
 }
+

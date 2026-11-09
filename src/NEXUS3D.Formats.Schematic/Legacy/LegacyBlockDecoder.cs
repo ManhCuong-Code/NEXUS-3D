@@ -55,3 +55,4 @@ public sealed class LegacyBlockDecoder
         return result;
     }
 }
+

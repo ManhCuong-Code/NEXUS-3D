@@ -45,3 +45,4 @@ public sealed class NbtWriter : INbtWriter
             cancellationToken).ConfigureAwait(false);
     }
 }
+

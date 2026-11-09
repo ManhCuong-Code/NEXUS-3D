@@ -124,3 +124,4 @@ public sealed class ResourceLocation : IEquatable<ResourceLocation>
 
     public override string ToString() => FullId;
 }
+

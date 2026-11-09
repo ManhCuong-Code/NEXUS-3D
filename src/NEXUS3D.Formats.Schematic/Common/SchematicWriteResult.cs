@@ -35,3 +35,4 @@ public sealed record SchematicWriteResult
             Warnings = warnings ?? []
         };
 }
+

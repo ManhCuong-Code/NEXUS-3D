@@ -31,3 +31,4 @@ public sealed class NbtException : Exception
         ErrorCode = string.IsNullOrWhiteSpace(errorCode) ? NbtErrorCodes.InvalidNbt : errorCode;
     }
 }
+

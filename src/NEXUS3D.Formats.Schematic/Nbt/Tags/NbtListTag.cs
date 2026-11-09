@@ -90,3 +90,4 @@ public sealed class NbtListTag : NbtTag
         return true;
     }
 }
+

@@ -43,3 +43,4 @@ public sealed class PaletteMappingService
         return (schematicPalette, indexMap);
     }
 }
+

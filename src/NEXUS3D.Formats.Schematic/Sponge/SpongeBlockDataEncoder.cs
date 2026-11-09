@@ -17,3 +17,4 @@ public sealed class SpongeBlockDataEncoder
     public byte[] Encode(ReadOnlySpan<int> blockIndices, SchematicPalette palette) =>
         _paletteEncoder.EncodeBlockData(blockIndices, palette);
 }
+

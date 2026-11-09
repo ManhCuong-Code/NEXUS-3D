@@ -10,3 +10,4 @@ public enum SchematicFormatId
     SpongeV3 = 2,
     LegacyMcEdit = 3
 }
+

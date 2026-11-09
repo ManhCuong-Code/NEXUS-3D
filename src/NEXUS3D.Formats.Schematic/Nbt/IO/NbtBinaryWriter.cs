@@ -192,3 +192,4 @@ public sealed class NbtBinaryWriter
         WriteByte((byte)NbtTagType.End);
     }
 }
+

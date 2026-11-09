@@ -33,3 +33,4 @@ public readonly record struct SchematicOffset(int X, int Y, int Z)
         return new SchematicOffset(values[0], values[1], values[2]);
     }
 }
+

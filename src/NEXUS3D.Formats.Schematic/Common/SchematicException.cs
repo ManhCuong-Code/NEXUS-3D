@@ -42,3 +42,4 @@ public sealed class SchematicException : Exception
         ErrorCode = string.IsNullOrWhiteSpace(errorCode) ? SchematicErrorCodes.UnrecognizedSchematic : errorCode;
     }
 }
+

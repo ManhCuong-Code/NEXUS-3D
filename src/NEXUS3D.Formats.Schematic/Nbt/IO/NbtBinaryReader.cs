@@ -298,3 +298,4 @@ public sealed class NbtBinaryReader
         }
     }
 }
+

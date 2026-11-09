@@ -18,3 +18,4 @@ public sealed class NbtEndTag : NbtTag
 
     public override bool ValueEquals(NbtTag? other) => other is NbtEndTag;
 }
+

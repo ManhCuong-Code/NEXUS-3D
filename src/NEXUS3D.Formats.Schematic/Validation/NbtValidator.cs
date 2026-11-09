@@ -82,3 +82,4 @@ public sealed class NbtValidator : IValidator<NbtDocument>
         return result;
     }
 }
+

@@ -17,3 +17,4 @@ public sealed record SchematicMappingOptions
     public string? SourceFileName { get; init; }
     public long SourceFileSizeBytes { get; init; }
 }
+

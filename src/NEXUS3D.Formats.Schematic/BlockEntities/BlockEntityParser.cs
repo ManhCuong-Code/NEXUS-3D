@@ -191,3 +191,4 @@ public sealed class BlockEntityParser
     private static bool IsIdOrPosKey(string key) =>
         key is "Id" or "id" or "Pos" or "x" or "y" or "z";
 }
+

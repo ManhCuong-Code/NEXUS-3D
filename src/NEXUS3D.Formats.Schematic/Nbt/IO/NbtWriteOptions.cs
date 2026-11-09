@@ -14,3 +14,4 @@ public sealed record NbtWriteOptions
     public NbtEndianness Endianness { get; init; } = NbtEndianness.BigEndian;
     public int MaxNestingDepth { get; init; } = 128;
 }
+

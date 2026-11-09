@@ -39,3 +39,4 @@ public readonly record struct SchematicDimensions(int Width, int Height, int Len
     public bool Contains(VoxelPosition pos) =>
         Contains(pos.X, pos.Y, pos.Z);
 }
+

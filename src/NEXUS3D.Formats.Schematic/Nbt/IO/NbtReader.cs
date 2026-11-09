@@ -41,3 +41,4 @@ public sealed class NbtReader : INbtReader
         return new NbtDocument(rootTag, detectedCompression, effectiveOptions.Endianness);
     }
 }
+

@@ -37,3 +37,4 @@ public sealed class SchematicMetadata
         return clone;
     }
 }
+

@@ -20,3 +20,4 @@ public sealed class NbtDoubleTag : NbtTag
     public override bool ValueEquals(NbtTag? other) =>
         other is NbtDoubleTag d && BitConverter.DoubleToInt64Bits(d.Value) == BitConverter.DoubleToInt64Bits(Value);
 }
+

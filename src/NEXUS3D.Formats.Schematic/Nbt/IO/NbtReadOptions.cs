@@ -22,3 +22,4 @@ public sealed record NbtReadOptions
     public int MaxListLength { get; init; } = 1_048_576;                     // 1M list items
     public int MaxTagCount { get; init; } = 2_097_152;                       // 2M total tags
 }
+

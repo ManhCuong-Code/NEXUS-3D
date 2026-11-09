@@ -18,3 +18,4 @@ public sealed record SchematicWriteOptions
     public bool AllowOverwrite { get; init; } = true;
     public bool VerifyTemporaryOutputBeforeCommit { get; init; } = true;
 }
+

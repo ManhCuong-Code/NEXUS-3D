@@ -10,3 +10,4 @@ public enum NbtCompressionType
     GZip = 2,
     ZLib = 3
 }
+

@@ -71,3 +71,4 @@ public static class SchematicIndexing
         return new VoxelPosition(x, y, z);
     }
 }
+

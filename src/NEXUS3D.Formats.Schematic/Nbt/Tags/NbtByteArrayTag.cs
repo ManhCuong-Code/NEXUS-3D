@@ -26,3 +26,4 @@ public sealed class NbtByteArrayTag : NbtTag
     public override bool ValueEquals(NbtTag? other) =>
         other is NbtByteArrayTag ba && Value.AsSpan().SequenceEqual(ba.Value);
 }
+

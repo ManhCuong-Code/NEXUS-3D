@@ -20,3 +20,4 @@ public sealed class NbtStringTag : NbtTag
     public override bool ValueEquals(NbtTag? other) =>
         other is NbtStringTag s && string.Equals(Value, s.Value, StringComparison.Ordinal);
 }
+

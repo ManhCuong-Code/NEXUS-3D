@@ -20,3 +20,4 @@ public sealed class NbtFloatTag : NbtTag
     public override bool ValueEquals(NbtTag? other) =>
         other is NbtFloatTag f && BitConverter.SingleToInt32Bits(f.Value) == BitConverter.SingleToInt32Bits(Value);
 }
+

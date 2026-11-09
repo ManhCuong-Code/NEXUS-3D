@@ -37,3 +37,4 @@ public static class NbtCompressionDetector
             $"Unrecognized NBT header bytes (0x{headerBytes[0]:X2} 0x{headerBytes[1]:X2}). Expected GZip (1F 8B), ZLib (78 xx), or TAG_Compound (0A).");
     }
 }
+
