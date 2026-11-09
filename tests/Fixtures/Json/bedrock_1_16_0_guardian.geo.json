@@ -1,0 +1,101 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.nexus_guardian",
+        "texture_width": 64,
+        "texture_height": 64,
+        "visible_bounds_width": 2.5,
+        "visible_bounds_height": 3.0,
+        "visible_bounds_offset": [0.0, 1.5, 0.0],
+        "custom_desc_tag": "guardian_v2"
+      },
+      "cape": "cape_guardian",
+      "bones": [
+        {
+          "name": "right_hand_weapon",
+          "parent": "right_arm",
+          "pivot": [-6.0, 14.0, 0.0],
+          "rotation": [15.0, 0.0, 0.0],
+          "binding": "q.item_slot_to_bone_name(c.item_slot)",
+          "locators": {
+            "weapon_tip": [0.0, 16.0, -4.0],
+            "spell_emitter": {
+              "offset": [-6.0, 18.0, -2.0],
+              "rotation": [0.0, 90.0, 0.0],
+              "ignore_inherited_scale": true,
+              "particle_channel": "arcane"
+            }
+          },
+          "cubes": [
+            {
+              "origin": [-7.0, 12.0, -8.0],
+              "size": [2.0, 2.0, 12.0],
+              "pivot": [-6.0, 13.0, -2.0],
+              "rotation": [22.5, 0.0, 0.0],
+              "inflate": 0.1,
+              "uv": {
+                "north": { "uv": [0, 0], "uv_size": [2, 2], "material_instance": "blade_glow" },
+                "south": { "uv": [2, 0], "uv_size": [2, 2], "material_instance": "hilt_metal" },
+                "east": { "uv": [0, 2], "uv_size": [12, 2], "uv_rotation": 90 },
+                "west": { "uv": [0, 4], "uv_size": [12, 2] },
+                "up": { "uv": [4, 0], "uv_size": [2, 12] },
+                "down": { "uv": [6, 0], "uv_size": [2, 12] }
+              },
+              "custom_cube_flag": "enchanted"
+            }
+          ]
+        },
+        {
+          "name": "right_arm",
+          "parent": "root",
+          "pivot": [-5.0, 22.0, 0.0],
+          "rotation": [0.0, 0.0, 5.0],
+          "mirror": true,
+          "cubes": [
+            {
+              "origin": [-8.0, 12.0, -2.0],
+              "size": [4.0, 12.0, 4.0],
+              "uv": [40, 16]
+            }
+          ]
+        },
+        {
+          "name": "root",
+          "pivot": [0.0, 0.0, 0.0],
+          "cubes": [
+            {
+              "origin": [-4.0, 12.0, -2.0],
+              "size": [8.0, 12.0, 4.0],
+              "uv": [16, 16]
+            }
+          ],
+          "poly_mesh": {
+            "normalized_uvs": true,
+            "positions": [
+              [-2.0, 24.0, 2.0],
+              [2.0, 24.0, 2.0],
+              [0.0, 28.0, 4.0]
+            ],
+            "normals": [
+              [0.0, 0.0, 1.0]
+            ],
+            "uvs": [
+              [0.0, 0.0],
+              [1.0, 0.0],
+              [0.5, 1.0]
+            ],
+            "polys": [
+              [
+                [0, 0, 0],
+                [1, 0, 1],
+                [2, 0, 2]
+              ]
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
