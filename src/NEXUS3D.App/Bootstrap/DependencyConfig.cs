@@ -11,11 +11,13 @@ using NEXUS3D.Engine.Contracts;
 using NEXUS3D.Engine.Services;
 using NEXUS3D.Formats.Abstractions;
 using NEXUS3D.Formats.BedrockGeometry;
+using NEXUS3D.Formats.BedrockGeometry.Services;
 using NEXUS3D.Formats.Obj;
 using NEXUS3D.Formats.Obj.Services;
 using NEXUS3D.Formats.Schematic;
 using NEXUS3D.Formats.Schematic.Services;
 using NEXUS3D.Formats.VoxelJson;
+using NEXUS3D.Formats.VoxelJson.Services;
 using NEXUS3D.Infrastructure.Caching;
 using NEXUS3D.Infrastructure.Configuration;
 using NEXUS3D.Infrastructure.DependencyInjection;
@@ -95,7 +97,9 @@ public static class DependencyConfig
         services.AddSingleton<IFormatDescriptor, ObjFormatDescriptor>();
         services.AddObjFormatServices();
         services.AddSingleton<IFormatDescriptor, VoxelJsonFormatDescriptor>();
+        services.AddVoxelJsonFormatServices();
         services.AddSingleton<IFormatDescriptor, BedrockGeometryFormatDescriptor>();
+        services.AddBedrockGeometryFormatServices();
         services.AddSingleton<IFormatRegistry, FormatRegistry>();
 
         services.AddSingleton<IConversionPipeline, FoundationConversionPipeline>();
