@@ -41,12 +41,32 @@ public sealed class BedrockGeometryParser
     {
         "name", "parent", "pivot", "rotation", "bind_pose_rotation", "mirror",
         "inflate", "debug", "render_group_id", "binding", "material", "neverRender", "reset",
-        "cubes"
+        "cubes", "locators", "poly_mesh"
     };
 
     private static readonly HashSet<string> CubeKnownProperties = new(StringComparer.Ordinal)
     {
-        "origin", "size", "pivot", "rotation", "inflate", "mirror"
+        "origin", "size", "pivot", "rotation", "inflate", "mirror", "uv"
+    };
+
+    private static readonly HashSet<string> PerFaceUvKnownProperties = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "north", "south", "east", "west", "up", "down"
+    };
+
+    private static readonly HashSet<string> FaceUvEntryKnownProperties = new(StringComparer.Ordinal)
+    {
+        "uv", "uv_size", "material_instance", "uv_rotation"
+    };
+
+    private static readonly HashSet<string> LocatorObjectKnownProperties = new(StringComparer.Ordinal)
+    {
+        "offset", "rotation", "ignore_inherited_scale"
+    };
+
+    private static readonly HashSet<string> PolyMeshKnownProperties = new(StringComparer.Ordinal)
+    {
+        "normalized_uvs", "positions", "normals", "uvs", "polys"
     };
 
     private readonly BedrockGeometryValidator _validator = new();
@@ -589,6 +609,40 @@ public sealed class BedrockGeometryParser
                 }
             }
 
+            if (boneElem.TryGetProperty("locators", out JsonElement locatorsProp))
+            {
+                if (locatorsProp.ValueKind == JsonValueKind.Object)
+                {
+                    ParseLocatorsObject(locatorsProp, bone, options, diagnostics, filePath, $"{bonePath}.locators");
+                }
+                else
+                {
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.TypeMismatch,
+                        $"Property 'locators' on bone '{bone.Name}' must be a JSON object.",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{bonePath}.locators"));
+                }
+            }
+
+            if (boneElem.TryGetProperty("poly_mesh", out JsonElement polyMeshProp))
+            {
+                if (polyMeshProp.ValueKind == JsonValueKind.Object)
+                {
+                    bone.PolyMesh = ParsePolyMeshObject(polyMeshProp, options, diagnostics, filePath, $"{bonePath}.poly_mesh");
+                }
+                else
+                {
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.TypeMismatch,
+                        $"Property 'poly_mesh' on bone '{bone.Name}' must be a JSON object.",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{bonePath}.poly_mesh"));
+                }
+            }
+
             if (options.PreserveExtensionData)
             {
                 bone.ExtensionData.CaptureUnknownProperties(boneElem, BoneKnownProperties);
@@ -749,6 +803,11 @@ public sealed class BedrockGeometryParser
                 cube.Mirror = mirrorProp.GetBoolean();
             }
 
+            if (cubeElem.TryGetProperty("uv", out JsonElement uvProp))
+            {
+                cube.Uv = ParseCubeUv(uvProp, options, diagnostics, filePath, $"{cubePath}.uv");
+            }
+
             if (options.PreserveExtensionData)
             {
                 cube.ExtensionData.CaptureUnknownProperties(cubeElem, CubeKnownProperties);
@@ -757,6 +816,373 @@ public sealed class BedrockGeometryParser
             bone.Cubes.Add(cube);
             cubeIdx++;
         }
+    }
+
+    private static BedrockCubeUv ParseCubeUv(
+        JsonElement uvElem,
+        BedrockGeometryReadOptions options,
+        List<BedrockGeometryDiagnostic> diagnostics,
+        string? filePath,
+        string uvPath)
+    {
+        if (uvElem.ValueKind == JsonValueKind.Array)
+        {
+            if (TryParseVector2D(uvElem, out Vector2D boxOffset))
+            {
+                return new BedrockCubeUv
+                {
+                    Mode = BedrockUvMode.BoxUv,
+                    BoxUvOffset = boxOffset
+                };
+            }
+
+            diagnostics.Add(new BedrockGeometryDiagnostic(
+                JsonFormatErrorCodes.InvalidNumericValue,
+                $"Box UV at '{uvPath}' must be a 2-number array [u, v].",
+                IsError: true,
+                FilePath: filePath,
+                JsonPath: uvPath));
+
+            return new BedrockCubeUv
+            {
+                Mode = BedrockUvMode.BoxUv,
+                BoxUvOffset = new Vector2D(double.NaN, double.NaN)
+            };
+        }
+
+        if (uvElem.ValueKind == JsonValueKind.Object)
+        {
+            var cubeUv = new BedrockCubeUv
+            {
+                Mode = BedrockUvMode.PerFaceUv
+            };
+
+            foreach (JsonProperty prop in uvElem.EnumerateObject())
+            {
+                if (!PerFaceUvKnownProperties.Contains(prop.Name))
+                {
+                    if (options.PreserveExtensionData)
+                    {
+                        cubeUv.ExtensionData.Set(prop.Name, prop.Value);
+                    }
+
+                    continue;
+                }
+
+                string facePath = $"{uvPath}.{prop.Name}";
+                if (prop.Value.ValueKind != JsonValueKind.Object)
+                {
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.TypeMismatch,
+                        $"Per-face UV entry '{prop.Name}' at '{facePath}' must be a JSON object.",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: facePath));
+                    continue;
+                }
+
+                var faceUv = new BedrockFaceUv();
+                if (prop.Value.TryGetProperty("uv", out JsonElement faceUvCoordProp))
+                {
+                    if (TryParseVector2D(faceUvCoordProp, out Vector2D faceCoord))
+                    {
+                        faceUv.Uv = faceCoord;
+                    }
+                    else
+                    {
+                        faceUv.Uv = new Vector2D(double.NaN, double.NaN);
+                        diagnostics.Add(new BedrockGeometryDiagnostic(
+                            JsonFormatErrorCodes.InvalidNumericValue,
+                            $"Per-face UV '{prop.Name}.uv' at '{facePath}.uv' must be a 2-number array [u, v].",
+                            IsError: true,
+                            FilePath: filePath,
+                            JsonPath: $"{facePath}.uv"));
+                    }
+                }
+                else
+                {
+                    faceUv.Uv = new Vector2D(double.NaN, double.NaN);
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.MissingRequiredProperty,
+                        $"Per-face UV '{prop.Name}' at '{facePath}' is missing required 'uv' array.",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{facePath}.uv"));
+                }
+
+                if (prop.Value.TryGetProperty("uv_size", out JsonElement uvSizeProp))
+                {
+                    if (TryParseVector2D(uvSizeProp, out Vector2D uvSize))
+                    {
+                        faceUv.UvSize = uvSize;
+                    }
+                    else
+                    {
+                        faceUv.UvSize = new Vector2D(double.NaN, double.NaN);
+                        diagnostics.Add(new BedrockGeometryDiagnostic(
+                            JsonFormatErrorCodes.InvalidNumericValue,
+                            $"Per-face UV '{prop.Name}.uv_size' at '{facePath}.uv_size' must be a 2-number array [w, h].",
+                            IsError: true,
+                            FilePath: filePath,
+                            JsonPath: $"{facePath}.uv_size"));
+                    }
+                }
+
+                if (prop.Value.TryGetProperty("material_instance", out JsonElement matInstProp) &&
+                    matInstProp.ValueKind == JsonValueKind.String)
+                {
+                    faceUv.MaterialInstance = matInstProp.GetString();
+                }
+
+                if (prop.Value.TryGetProperty("uv_rotation", out JsonElement uvRotProp) &&
+                    uvRotProp.ValueKind == JsonValueKind.Number &&
+                    uvRotProp.TryGetInt32(out int uvRot))
+                {
+                    faceUv.UvRotation = uvRot;
+                }
+
+                if (options.PreserveExtensionData)
+                {
+                    faceUv.ExtensionData.CaptureUnknownProperties(prop.Value, FaceUvEntryKnownProperties);
+                }
+
+                cubeUv.Faces[prop.Name] = faceUv;
+            }
+
+            return cubeUv;
+        }
+
+        diagnostics.Add(new BedrockGeometryDiagnostic(
+            JsonFormatErrorCodes.TypeMismatch,
+            $"Cube 'uv' at '{uvPath}' must be a [u, v] array or per-face UV object.",
+            IsError: true,
+            FilePath: filePath,
+            JsonPath: uvPath));
+
+        return new BedrockCubeUv
+        {
+            Mode = BedrockUvMode.BoxUv,
+            BoxUvOffset = new Vector2D(double.NaN, double.NaN)
+        };
+    }
+
+    private static void ParseLocatorsObject(
+        JsonElement locatorsObj,
+        BedrockBone bone,
+        BedrockGeometryReadOptions options,
+        List<BedrockGeometryDiagnostic> diagnostics,
+        string? filePath,
+        string locatorsPath)
+    {
+        foreach (JsonProperty prop in locatorsObj.EnumerateObject())
+        {
+            string locPath = $"{locatorsPath}['{prop.Name}']";
+            if (prop.Value.ValueKind == JsonValueKind.Array)
+            {
+                if (TryParseVector3D(prop.Value, out Vector3D offset))
+                {
+                    bone.Locators[prop.Name] = new BedrockLocator
+                    {
+                        Name = prop.Name,
+                        Offset = offset,
+                        IsObjectForm = false
+                    };
+                }
+                else
+                {
+                    bone.Locators[prop.Name] = new BedrockLocator
+                    {
+                        Name = prop.Name,
+                        Offset = new Vector3D(double.NaN, 0, 0),
+                        IsObjectForm = false
+                    };
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Locator '{prop.Name}' at '{locPath}' must be a 3-number array [x, y, z].",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: locPath));
+                }
+            }
+            else if (prop.Value.ValueKind == JsonValueKind.Object)
+            {
+                var locator = new BedrockLocator
+                {
+                    Name = prop.Name,
+                    IsObjectForm = true
+                };
+
+                if (prop.Value.TryGetProperty("offset", out JsonElement offsetProp))
+                {
+                    if (TryParseVector3D(offsetProp, out Vector3D offset))
+                    {
+                        locator.Offset = offset;
+                    }
+                    else
+                    {
+                        locator.Offset = new Vector3D(double.NaN, 0, 0);
+                        diagnostics.Add(new BedrockGeometryDiagnostic(
+                            JsonFormatErrorCodes.InvalidNumericValue,
+                            $"Locator '{prop.Name}.offset' at '{locPath}.offset' must be a 3-number array [x, y, z].",
+                            IsError: true,
+                            FilePath: filePath,
+                            JsonPath: $"{locPath}.offset"));
+                    }
+                }
+
+                if (prop.Value.TryGetProperty("rotation", out JsonElement rotProp))
+                {
+                    if (TryParseVector3D(rotProp, out Vector3D rot))
+                    {
+                        locator.Rotation = rot;
+                    }
+                    else
+                    {
+                        locator.Rotation = new Vector3D(double.NaN, 0, 0);
+                        diagnostics.Add(new BedrockGeometryDiagnostic(
+                            JsonFormatErrorCodes.InvalidNumericValue,
+                            $"Locator '{prop.Name}.rotation' at '{locPath}.rotation' must be a 3-number array [x, y, z].",
+                            IsError: true,
+                            FilePath: filePath,
+                            JsonPath: $"{locPath}.rotation"));
+                    }
+                }
+
+                if (prop.Value.TryGetProperty("ignore_inherited_scale", out JsonElement iisProp) &&
+                    (iisProp.ValueKind == JsonValueKind.True || iisProp.ValueKind == JsonValueKind.False))
+                {
+                    locator.IgnoreInheritedScale = iisProp.GetBoolean();
+                }
+
+                if (options.PreserveExtensionData)
+                {
+                    locator.ExtensionData.CaptureUnknownProperties(prop.Value, LocatorObjectKnownProperties);
+                }
+
+                bone.Locators[prop.Name] = locator;
+            }
+            else
+            {
+                diagnostics.Add(new BedrockGeometryDiagnostic(
+                    JsonFormatErrorCodes.TypeMismatch,
+                    $"Locator '{prop.Name}' at '{locPath}' must be a [x, y, z] array or locator object.",
+                    IsError: true,
+                    FilePath: filePath,
+                    JsonPath: locPath));
+            }
+        }
+    }
+
+    private static BedrockPolyMesh ParsePolyMeshObject(
+        JsonElement polyMeshObj,
+        BedrockGeometryReadOptions options,
+        List<BedrockGeometryDiagnostic> diagnostics,
+        string? filePath,
+        string polyMeshPath)
+    {
+        var polyMesh = new BedrockPolyMesh();
+
+        if (polyMeshObj.TryGetProperty("normalized_uvs", out JsonElement normUvProp) &&
+            (normUvProp.ValueKind == JsonValueKind.True || normUvProp.ValueKind == JsonValueKind.False))
+        {
+            polyMesh.NormalizedUvs = normUvProp.GetBoolean();
+        }
+
+        if (polyMeshObj.TryGetProperty("positions", out JsonElement posArray) &&
+            posArray.ValueKind == JsonValueKind.Array)
+        {
+            int idx = 0;
+            foreach (JsonElement item in posArray.EnumerateArray())
+            {
+                if (TryParseVector3D(item, out Vector3D v))
+                {
+                    polyMesh.Positions.Add(v);
+                }
+                else
+                {
+                    polyMesh.Positions.Add(new Vector3D(double.NaN, 0, 0));
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Invalid position at '{polyMeshPath}.positions[{idx}]'.",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{polyMeshPath}.positions[{idx}]"));
+                }
+
+                idx++;
+            }
+        }
+
+        if (polyMeshObj.TryGetProperty("normals", out JsonElement normArray) &&
+            normArray.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement item in normArray.EnumerateArray())
+            {
+                if (TryParseVector3D(item, out Vector3D n))
+                {
+                    polyMesh.Normals.Add(n);
+                }
+            }
+        }
+
+        if (polyMeshObj.TryGetProperty("uvs", out JsonElement uvsArray) &&
+            uvsArray.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement item in uvsArray.EnumerateArray())
+            {
+                if (TryParseVector2D(item, out Vector2D uv))
+                {
+                    polyMesh.Uvs.Add(uv);
+                }
+            }
+        }
+
+        if (polyMeshObj.TryGetProperty("polys", out JsonElement polysProp))
+        {
+            if (polysProp.ValueKind == JsonValueKind.String)
+            {
+                polyMesh.PolyType = polysProp.GetString();
+            }
+            else if (polysProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement faceElem in polysProp.EnumerateArray())
+                {
+                    if (faceElem.ValueKind != JsonValueKind.Array)
+                    {
+                        continue;
+                    }
+
+                    var faceVertices = new List<int[]>();
+                    foreach (JsonElement vertElem in faceElem.EnumerateArray())
+                    {
+                        if (vertElem.ValueKind != JsonValueKind.Array)
+                        {
+                            continue;
+                        }
+
+                        var indices = new List<int>(3);
+                        foreach (JsonElement idxElem in vertElem.EnumerateArray())
+                        {
+                            if (idxElem.ValueKind == JsonValueKind.Number && idxElem.TryGetInt32(out int vi))
+                            {
+                                indices.Add(vi);
+                            }
+                        }
+
+                        faceVertices.Add([.. indices]);
+                    }
+
+                    polyMesh.Polys.Add([.. faceVertices]);
+                }
+            }
+        }
+
+        if (options.PreserveExtensionData)
+        {
+            polyMesh.ExtensionData.CaptureUnknownProperties(polyMeshObj, PolyMeshKnownProperties);
+        }
+
+        return polyMesh;
     }
 
     private static void ParseDescriptionObject(

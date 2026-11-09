@@ -26,6 +26,9 @@ public sealed class BedrockCube
     /// <summary>Optional UV horizontal mirror override for this cube.</summary>
     public bool? Mirror { get; set; }
 
+    /// <summary>Box UV or Per-Face UV mapping for this cube.</summary>
+    public BedrockCubeUv? Uv { get; set; }
+
     public JsonExtensionData ExtensionData { get; set; } = new();
 
     public bool HasValidOrigin => Origin.IsFinite();
@@ -44,6 +47,7 @@ public sealed class BedrockCube
         Rotation = Rotation,
         Inflate = Inflate,
         Mirror = Mirror,
+        Uv = Uv?.DeepClone(),
         ExtensionData = ExtensionData.DeepClone()
     };
 }

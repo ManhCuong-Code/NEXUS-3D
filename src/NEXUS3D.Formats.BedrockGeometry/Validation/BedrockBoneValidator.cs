@@ -5,7 +5,8 @@ using NEXUS3D.Formats.Json.Abstractions;
 namespace NEXUS3D.Formats.BedrockGeometry.Validation;
 
 /// <summary>
-/// Validates <see cref="BedrockBone"/> properties, parent references, duplicate bone names, and parent-child cycles.
+/// Validates <see cref="BedrockBone"/> properties, parent references, duplicate bone names, parent-child cycles,
+/// locators, and poly_mesh entries.
 /// </summary>
 public sealed class BedrockBoneValidator
 {
@@ -117,6 +118,35 @@ public sealed class BedrockBoneValidator
                     filePath,
                     $"{bonePath}.cubes[{c}]");
             }
+
+            foreach ((string locName, BedrockLocator locator) in bone.Locators)
+            {
+                if (!locator.HasValidCoordinates)
+                {
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Locator '{locName}' on bone '{bone.Name}' has non-finite offset or rotation.",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{bonePath}.locators['{locName}']"));
+                }
+            }
+
+            if (bone.PolyMesh is { } polyMesh)
+            {
+                for (int p = 0; p < polyMesh.Positions.Count; p++)
+                {
+                    if (!polyMesh.Positions[p].IsFinite())
+                    {
+                        diagnostics.Add(new BedrockGeometryDiagnostic(
+                            JsonFormatErrorCodes.InvalidNumericValue,
+                            $"PolyMesh position at index {p} on bone '{bone.Name}' is non-finite.",
+                            IsError: true,
+                            FilePath: filePath,
+                            JsonPath: $"{bonePath}.poly_mesh.positions[{p}]"));
+                    }
+                }
+            }
         }
 
         // Validate parent references and detect parent-child cycles
@@ -152,7 +182,6 @@ public sealed class BedrockBoneValidator
                 continue;
             }
 
-            // Walk ancestor chain to detect cycles (e.g. A -> B -> A)
             var visited = new HashSet<string>(StringComparer.Ordinal) { bone.Name };
             string? currentParent = bone.Parent;
 

@@ -50,24 +50,41 @@ public sealed class BedrockBone
     /// <summary>Cuboid primitives attached to this bone.</summary>
     public List<BedrockCube> Cubes { get; set; } = [];
 
+    /// <summary>Named attachment/effect locators on this bone.</summary>
+    public Dictionary<string, BedrockLocator> Locators { get; set; } = new(StringComparer.Ordinal);
+
+    /// <summary>Optional arbitrary polygon mesh attached to this bone.</summary>
+    public BedrockPolyMesh? PolyMesh { get; set; }
+
     public JsonExtensionData ExtensionData { get; set; } = new();
 
-    public BedrockBone DeepClone() => new()
+    public BedrockBone DeepClone()
     {
-        Name = Name,
-        Parent = Parent,
-        Pivot = Pivot,
-        Rotation = Rotation,
-        BindPoseRotation = BindPoseRotation,
-        Mirror = Mirror,
-        Inflate = Inflate,
-        Debug = Debug,
-        RenderGroupId = RenderGroupId,
-        Binding = Binding,
-        Material = Material,
-        NeverRender = NeverRender,
-        Reset = Reset,
-        Cubes = Cubes.Select(c => c.DeepClone()).ToList(),
-        ExtensionData = ExtensionData.DeepClone()
-    };
+        var clone = new BedrockBone
+        {
+            Name = Name,
+            Parent = Parent,
+            Pivot = Pivot,
+            Rotation = Rotation,
+            BindPoseRotation = BindPoseRotation,
+            Mirror = Mirror,
+            Inflate = Inflate,
+            Debug = Debug,
+            RenderGroupId = RenderGroupId,
+            Binding = Binding,
+            Material = Material,
+            NeverRender = NeverRender,
+            Reset = Reset,
+            Cubes = Cubes.Select(c => c.DeepClone()).ToList(),
+            PolyMesh = PolyMesh?.DeepClone(),
+            ExtensionData = ExtensionData.DeepClone()
+        };
+
+        foreach ((string k, BedrockLocator loc) in Locators)
+        {
+            clone.Locators[k] = loc.DeepClone();
+        }
+
+        return clone;
+    }
 }
