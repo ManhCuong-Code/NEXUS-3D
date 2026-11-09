@@ -64,4 +64,7 @@ public sealed class VarIntDecoder : IVarIntDecoder
 
         return value;
     }
+
+    public static int ReadNext(ReadOnlySpan<byte> data, ref int offset) =>
+        Instance.ReadVarInt(data, ref offset);
 }

@@ -36,4 +36,21 @@ public sealed class VarIntEncoder : IVarIntEncoder
 
         destination.WriteByte((byte)(unsignedVal & 0x7Fu));
     }
+
+    public static byte[] EncodeSingle(int value)
+    {
+        using var ms = new MemoryStream(5);
+        Instance.WriteVarInt(value, ms);
+        return ms.ToArray();
+    }
+
+    public static byte[] EncodeArray(ReadOnlySpan<int> values)
+    {
+        using var ms = new MemoryStream(values.Length);
+        for (int i = 0; i < values.Length; i++)
+        {
+            Instance.WriteVarInt(values[i], ms);
+        }
+        return ms.ToArray();
+    }
 }

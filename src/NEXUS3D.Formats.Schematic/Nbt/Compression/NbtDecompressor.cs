@@ -71,6 +71,13 @@ public static class NbtDecompressor
                 $"Decompressed NBT payload exceeds maximum allowed size ({maxDecompressedBytes} bytes).",
                 cancellationToken).ConfigureAwait(false);
 
+            if (decompressedBytes.Length == 0)
+            {
+                throw new NbtException(
+                    NbtErrorCodes.CompressionError,
+                    $"Corrupted or truncated {actualCompression} stream produced zero decompressed bytes.");
+            }
+
             return (decompressedBytes, actualCompression);
         }
         catch (NbtException)
