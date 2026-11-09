@@ -67,3 +67,4 @@ public sealed class ObjExportOptions
         return value.ToString(GetFloatFormatSpecifier(), CultureInfo.InvariantCulture);
     }
 }
+

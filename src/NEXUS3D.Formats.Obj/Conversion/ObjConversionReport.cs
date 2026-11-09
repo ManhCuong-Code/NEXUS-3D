@@ -26,3 +26,4 @@ public sealed class ObjConversionReport
     public LossReport LossReport { get; init; } = new();
     public TimeSpan Elapsed { get; init; }
 }
+

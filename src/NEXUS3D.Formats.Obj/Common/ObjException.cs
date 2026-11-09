@@ -46,3 +46,4 @@ public sealed class ObjException : Exception
         LineNumber = lineNumber;
     }
 }
+

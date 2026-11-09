@@ -104,3 +104,4 @@ public sealed class TextureValidationService
         }
     }
 }
+

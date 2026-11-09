@@ -111,3 +111,4 @@ public sealed class MtlTextureMapStatement
         return string.Join(' ', parts);
     }
 }
+

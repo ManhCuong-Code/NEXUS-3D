@@ -725,3 +725,4 @@ public sealed class ObjLineParser
     private static string[] SplitTokens(ReadOnlySpan<char> input) =>
         input.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 }
+

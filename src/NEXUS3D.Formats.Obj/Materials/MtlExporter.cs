@@ -300,3 +300,4 @@ public sealed class MtlExporter : IMtlExporter
         writer.WriteLine(statement.FormatArguments(floatFormat));
     }
 }
+

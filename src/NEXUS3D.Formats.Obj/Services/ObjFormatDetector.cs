@@ -155,3 +155,4 @@ public sealed class ObjFormatDetector : IObjFormatDetector
         return geometryStatementCount > 0 || (structuralStatementCount >= 2 && unrecognizedLineCount == 0);
     }
 }
+

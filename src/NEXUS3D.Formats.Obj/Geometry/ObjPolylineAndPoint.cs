@@ -41,3 +41,4 @@ public sealed class ObjPointElement
     public IReadOnlyList<string> GroupNames { get; init; } = [];
     public int SourceLineNumber { get; init; }
 }
+

@@ -48,3 +48,4 @@ public sealed record ObjParseResult
             Warnings = warnings ?? []
         };
 }
+

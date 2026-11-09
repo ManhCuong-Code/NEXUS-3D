@@ -22,3 +22,4 @@ public readonly record struct ObjTextureCoordinate(
 
     public Vector3D ToVector3D() => new(U, V, W);
 }
+

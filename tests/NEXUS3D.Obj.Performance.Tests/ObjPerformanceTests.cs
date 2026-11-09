@@ -156,3 +156,4 @@ public sealed class ObjPerformanceTests
         Assert.Equal(20, scene.Materials.Count);
     }
 }
+

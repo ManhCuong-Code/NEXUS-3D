@@ -102,3 +102,4 @@ When `ObjToSceneConverter` maps an `ObjDocument` to USM `MeshData`:
 ## 5. Atomic Multi-File Export
 
 `ObjFormatExporter.ExportSceneToFileAsync` stages all output files (`.obj`, `.mtl`, and optional copied textures) inside a temporary directory `.nexus_obj_stage_<guid>` first, parses back both `.obj` and `.mtl` to verify vertex/face/material counts, and only then moves the verified files into the target destination.
+

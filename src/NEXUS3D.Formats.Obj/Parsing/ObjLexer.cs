@@ -185,3 +185,4 @@ public sealed class ObjLexer
             IsCommentOnly: string.IsNullOrEmpty(content));
     }
 }
+

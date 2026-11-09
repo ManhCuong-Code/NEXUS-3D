@@ -22,3 +22,4 @@
    - Mở rộng tương thích ngược `Face` (`FaceCorner`, `GroupNames`) trong `NEXUS3D.Domain` mà không tạo trùng lặp mô hình USM.
    - Bảo toàn tuyệt đối UV seams và hard normal edges qua chu trình `OBJ + MTL + Textures -> USM Scene3D -> OBJ + MTL + Textures`.
    - Xuất file đa thành phần an toàn (`.obj` + `.mtl` + textures) thông qua thư mục tạm staging và kiểm tra đọc ngược trước khi ghi đè.
+

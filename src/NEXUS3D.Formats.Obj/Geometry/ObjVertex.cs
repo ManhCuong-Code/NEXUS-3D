@@ -23,3 +23,4 @@ public readonly record struct ObjVertex(double X, double Y, double Z, double W =
 
     public Vector4D ToVector4D() => new(X, Y, Z, W);
 }
+

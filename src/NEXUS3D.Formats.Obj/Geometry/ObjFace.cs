@@ -209,3 +209,4 @@ public sealed class ObjFace
         return !(hasNeg && hasPos);
     }
 }
+

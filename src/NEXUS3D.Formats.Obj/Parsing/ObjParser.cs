@@ -173,3 +173,4 @@ public sealed class ObjParser : IObjDocumentParser
         }
     }
 }
+

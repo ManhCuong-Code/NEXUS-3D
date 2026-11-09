@@ -15,3 +15,4 @@ public sealed class ObjSmoothingGroup
         GroupId = Math.Max(0, groupId);
     }
 }
+

@@ -227,3 +227,4 @@ public sealed class ObjParserTests
         Assert.Contains(doc.Warnings, w => w.Code == ObjErrorCodes.UnsupportedStatement);
     }
 }
+

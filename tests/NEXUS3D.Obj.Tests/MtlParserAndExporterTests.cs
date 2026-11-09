@@ -164,3 +164,4 @@ public sealed class MtlParserAndExporterTests
         Assert.Equal("Metal_2", reParsed.Document.Materials[1].Name);
     }
 }
+

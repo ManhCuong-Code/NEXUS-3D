@@ -322,3 +322,4 @@ public sealed class TexturePathResolver
         return false;
     }
 }
+

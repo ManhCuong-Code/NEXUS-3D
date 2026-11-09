@@ -19,3 +19,4 @@ public sealed class ObjExportResult
     public IReadOnlyList<ValidationIssue> Issues { get; init; } = [];
     public TimeSpan Elapsed { get; init; }
 }
+

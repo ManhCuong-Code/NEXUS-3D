@@ -15,3 +15,4 @@ public sealed class ObjObject
         Name = name ?? string.Empty;
     }
 }
+

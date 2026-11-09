@@ -29,3 +29,4 @@ public readonly record struct ObjNormal(double X, double Y, double Z, int Source
         return new ObjNormal(v.X, v.Y, v.Z, SourceLineNumber);
     }
 }
+

@@ -78,3 +78,4 @@ public sealed class ObjExporterTests
         Assert.All(reParsed.Faces, f => Assert.True(f.IsTriangle));
     }
 }
+

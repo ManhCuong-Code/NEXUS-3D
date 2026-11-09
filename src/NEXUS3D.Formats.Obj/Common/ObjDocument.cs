@@ -37,3 +37,4 @@ public sealed class ObjDocument
     public bool HasGeometry =>
         Positions.Count > 0 || Faces.Count > 0 || Polylines.Count > 0 || Points.Count > 0;
 }
+

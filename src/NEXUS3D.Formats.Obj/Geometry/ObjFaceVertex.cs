@@ -12,3 +12,4 @@ public readonly record struct ObjFaceVertex(
     public bool HasTextureCoord => TextureCoordIndex.HasValue;
     public bool HasNormal => NormalIndex.HasValue;
 }
+

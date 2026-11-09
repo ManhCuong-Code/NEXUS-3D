@@ -66,3 +66,4 @@ public sealed class ObjTextureReference
         return texData;
     }
 }
+

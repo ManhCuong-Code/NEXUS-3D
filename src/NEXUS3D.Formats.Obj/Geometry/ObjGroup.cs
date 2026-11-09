@@ -13,3 +13,4 @@ public sealed class ObjGroup
         Name = string.IsNullOrWhiteSpace(name) ? "default" : name;
     }
 }
+

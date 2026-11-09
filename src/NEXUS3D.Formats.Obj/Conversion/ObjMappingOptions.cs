@@ -19,3 +19,4 @@ public sealed record ObjMappingOptions
 
     public static ObjMappingOptions Default { get; } = new();
 }
+

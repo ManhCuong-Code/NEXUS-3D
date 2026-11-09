@@ -53,3 +53,4 @@ public sealed class MtlParseResult
 
     public bool HasErrors => Issues.Any(i => i.Severity >= ValidationSeverity.Error);
 }
+

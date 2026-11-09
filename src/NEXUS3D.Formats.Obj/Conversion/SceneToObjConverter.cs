@@ -465,3 +465,4 @@ public sealed class SceneToObjConverter : ISceneToObjConverter
         return string.IsNullOrWhiteSpace(cleaned) ? "materials" : cleaned;
     }
 }
+
