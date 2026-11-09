@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <Company>NEXUS 3D</Company>
+    <Product>NEXUS 3D – Universal 3D Model Converter &amp; Editor</Product>
+    <Version>0.1.0</Version>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+</Project>
+

@@ -1,0 +1,253 @@
+<UserControl x:Class="NEXUS3D.App.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="22">
+            <!-- Header & Quick Actions -->
+            <Grid Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding Title}" Style="{StaticResource Text.PageTitle}" />
+                    <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Text.PageSubtitle}" Margin="0,4,0,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource Style.SecondaryButton}"
+                            Content="Open Workspace Folder"
+                            Margin="0,0,8,0"
+                            Command="{Binding OpenAppDataFolderCommand}" />
+                    <Button Style="{StaticResource Style.SecondaryButton}"
+                            Content="Refresh Telemetry"
+                            Margin="0,0,8,0"
+                            Command="{Binding RefreshDashboardCommand}" />
+                    <Button Style="{StaticResource Style.PrimaryButton}"
+                            Content="New Conversion Workspace →"
+                            Command="{Binding OpenConverterWorkspaceCommand}" />
+                </StackPanel>
+            </Grid>
+
+            <!-- Top KPI Metric Cards (Responsive UniformGrid) -->
+            <UniformGrid Columns="5" Margin="0,0,0,18">
+                <Border Style="{StaticResource Style.MetricCardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="SUPPORTED FORMATS" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                        <TextBlock Text="{Binding SupportedFormatsCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
+                        <TextBlock Text="SCHEM • OBJ • JSON • GEO" Style="{StaticResource Text.MutedCaption}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Style.MetricCardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="CONVERSION PROFILES" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                        <TextBlock Text="{Binding ConversionProfilesCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
+                        <TextBlock Text="Preset &amp; Custom Pipelines" Style="{StaticResource Text.MutedCaption}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Style.MetricCardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="RECENT MODEL FILES" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                        <TextBlock Text="{Binding RecentFilesCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
+                        <TextBlock Text="Tracked in SQLite Index" Style="{StaticResource Text.MutedCaption}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Style.MetricCardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="PREPARED JOBS" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                        <TextBlock Text="{Binding TotalConversionsCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
+                        <TextBlock Text="Total Recorded Tasks" Style="{StaticResource Text.MutedCaption}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Style.MetricCardBorder}" Margin="0">
+                    <StackPanel>
+                        <TextBlock Text="ACTIVE ADAPTER PLUGINS" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                        <TextBlock Text="{Binding ActivePluginsCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
+                        <TextBlock Text="Foundation Modules Online" Style="{StaticResource Text.MutedCaption}" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Main Two-Column Grid -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.15*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="0.85*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left Column: Registered 3D Format Adapters -->
+                <Border Grid.Column="0" Style="{StaticResource Style.CardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="Registered 3D Format Adapters" Style="{StaticResource Text.SectionHeader}" />
+                        <TextBlock Text="Format descriptors registered in NEXUS3D.Formats.* for import &amp; export pipelines."
+                                   Style="{StaticResource Text.MutedCaption}"
+                                   Margin="0,2,0,12" />
+
+                        <ItemsControl ItemsSource="{Binding SupportedFormats}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource Brush.SurfaceSecondary}"
+                                            BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                            BorderThickness="1"
+                                            CornerRadius="5"
+                                            Padding="12,10"
+                                            Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="58" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <Border Grid.Column="0"
+                                                    Background="{StaticResource Brush.AccentMuted}"
+                                                    BorderBrush="{StaticResource Brush.AccentPrimary}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4"
+                                                    Padding="6,4"
+                                                    VerticalAlignment="Center"
+                                                    Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding ShortCode}"
+                                                           FontWeight="Bold"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource Brush.AccentHover}"
+                                                           HorizontalAlignment="Center" />
+                                            </Border>
+
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding DisplayName}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="13"
+                                                               Foreground="{StaticResource Brush.TextPrimary}" />
+                                                    <TextBlock Text="{Binding PrimaryExtension}"
+                                                               Style="{StaticResource Text.Monospace}"
+                                                               Margin="8,1,0,0" />
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Description}"
+                                                           Style="{StaticResource Text.MutedCaption}"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,2,0,0" />
+                                            </StackPanel>
+
+                                            <Border Grid.Column="2"
+                                                    Background="{StaticResource Brush.SurfacePrimary}"
+                                                    CornerRadius="4"
+                                                    Padding="8,3"
+                                                    VerticalAlignment="Center"
+                                                    Margin="8,0,0,0">
+                                                <TextBlock Text="{Binding NativeGeometryKind}"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource Brush.StatusInfo}" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Column: Infrastructure Diagnostics & Quick Navigation -->
+                <StackPanel Grid.Column="2">
+                    <Border Style="{StaticResource Style.CardBorder}" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Foundation Diagnostics" Style="{StaticResource Text.SectionHeader}" />
+                            <TextBlock Text="Runtime storage and logging paths resolved dynamically."
+                                       Style="{StaticResource Text.MutedCaption}"
+                                       Margin="0,2,0,12" />
+
+                            <TextBlock Text="SQLite Database File:" Style="{StaticResource Text.MutedCaption}" />
+                            <Border Background="{StaticResource Brush.WindowBackground}"
+                                    BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="8,6"
+                                    Margin="0,4,0,10">
+                                <TextBlock Text="{Binding DatabasePathDisplay}"
+                                           Style="{StaticResource Text.Monospace}"
+                                           TextWrapping="Wrap" />
+                            </Border>
+
+                            <TextBlock Text="Rolling File Logs Directory:" Style="{StaticResource Text.MutedCaption}" />
+                            <Border Background="{StaticResource Brush.WindowBackground}"
+                                    BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="8,6"
+                                    Margin="0,4,0,12">
+                                <TextBlock Text="{Binding LogsPathDisplay}"
+                                           Style="{StaticResource Text.Monospace}"
+                                           TextWrapping="Wrap" />
+                            </Border>
+
+                            <UniformGrid Columns="2">
+                                <Button Style="{StaticResource Style.SecondaryButton}"
+                                        Content="Manage Files &amp; History"
+                                        Margin="0,0,6,0"
+                                        Command="{Binding OpenFileManagerCommand}" />
+                                <Button Style="{StaticResource Style.SecondaryButton}"
+                                        Content="System Settings"
+                                        Margin="6,0,0,0"
+                                        Command="{Binding OpenSettingsCommand}" />
+                            </UniformGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Style.CardBorder}">
+                        <StackPanel>
+                            <TextBlock Text="Recent Conversion Queue" Style="{StaticResource Text.SectionHeader}" />
+                            <TextBlock Text="Latest prepared tasks stored in SQLite."
+                                       Style="{StaticResource Text.MutedCaption}"
+                                       Margin="0,2,0,10" />
+
+                            <ItemsControl ItemsSource="{Binding RecentHistory}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource Brush.SurfaceSecondary}"
+                                                CornerRadius="4"
+                                                Padding="10,7"
+                                                Margin="0,0,0,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{Binding JobName}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="12"
+                                                               Foreground="{StaticResource Brush.TextPrimary}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding TargetFilePath}"
+                                                               Style="{StaticResource Text.MutedCaption}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding Status}"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource Brush.AccentHover}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="8,0,0,0" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+

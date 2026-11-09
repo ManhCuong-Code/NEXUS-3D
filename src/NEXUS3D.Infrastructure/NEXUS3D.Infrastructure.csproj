@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>NEXUS3D.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NEXUS3D.Application\NEXUS3D.Application.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.Abstractions\NEXUS3D.Formats.Abstractions.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.Schematic\NEXUS3D.Formats.Schematic.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.Obj\NEXUS3D.Formats.Obj.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.VoxelJson\NEXUS3D.Formats.VoxelJson.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.BedrockGeometry\NEXUS3D.Formats.BedrockGeometry.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Engine\NEXUS3D.Engine.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Rendering\NEXUS3D.Rendering.csproj" />
+    <ProjectReference Include="..\NEXUS3D.PluginSystem\NEXUS3D.PluginSystem.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

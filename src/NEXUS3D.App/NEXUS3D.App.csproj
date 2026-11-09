@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>NEXUS3D.App</RootNamespace>
+    <AssemblyName>NEXUS3D.App</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NEXUS3D.Application\NEXUS3D.Application.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Infrastructure\NEXUS3D.Infrastructure.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.Abstractions\NEXUS3D.Formats.Abstractions.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Engine\NEXUS3D.Engine.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Rendering\NEXUS3D.Rendering.csproj" />
+    <ProjectReference Include="..\NEXUS3D.PluginSystem\NEXUS3D.PluginSystem.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,100 @@
+<UserControl x:Class="NEXUS3D.App.Controls.NotificationPanelControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Width="340">
+    <Border Background="{StaticResource Brush.SidebarBackground}"
+            BorderBrush="{StaticResource Brush.BorderStrong}"
+            BorderThickness="1,0,0,0"
+            Padding="14">
+        <DockPanel LastChildFill="True">
+            <!-- Header -->
+            <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Notification Center"
+                               Style="{StaticResource Text.SectionHeader}" />
+                    <TextBlock Text="System alerts, warnings &amp; task events"
+                               Style="{StaticResource Text.MutedCaption}" />
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Style="{StaticResource Style.SecondaryButton}"
+                        Content="Clear"
+                        Padding="8,4"
+                        Margin="0,0,6,0"
+                        Command="{Binding ClearNotificationsCommand}" />
+
+                <Button Grid.Column="2"
+                        Style="{StaticResource Style.SecondaryButton}"
+                        Content="Close"
+                        Padding="8,4"
+                        Command="{Binding ToggleNotificationPanelCommand}" />
+            </Grid>
+
+            <!-- Notifications List -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Notifications}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource Brush.SurfacePrimary}"
+                                    BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                    BorderThickness="1"
+                                    CornerRadius="5"
+                                    Padding="10,8"
+                                    Margin="0,0,0,8">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Title}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource Brush.TextPrimary}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <Border Grid.Column="1"
+                                                Background="{StaticResource Brush.SurfaceSecondary}"
+                                                CornerRadius="3"
+                                                Padding="5,1"
+                                                Margin="6,0,0,0">
+                                            <TextBlock Text="{Binding Severity}"
+                                                       FontSize="10"
+                                                       Foreground="{StaticResource Brush.AccentHover}" />
+                                        </Border>
+                                    </Grid>
+                                    <TextBlock Text="{Binding Message}"
+                                               FontSize="11.5"
+                                               Foreground="{StaticResource Brush.TextSecondary}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,4,0,4" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding SourceModule}"
+                                                   FontSize="10"
+                                                   Foreground="{StaticResource Brush.TextMuted}" />
+                                        <TextBlock Text=" • "
+                                                   FontSize="10"
+                                                   Foreground="{StaticResource Brush.TextMuted}" />
+                                        <TextBlock Text="{Binding CreatedAtUtc, StringFormat='{}{0:HH:mm:ss}'}"
+                                                   FontSize="10"
+                                                   Foreground="{StaticResource Brush.TextMuted}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>
+
