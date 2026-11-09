@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using NEXUS3D.Domain.Mathematics;
 using NEXUS3D.Formats.BedrockGeometry.Models;
+using NEXUS3D.Formats.BedrockGeometry.Validation;
 using NEXUS3D.Formats.Json.Abstractions;
 
 namespace NEXUS3D.Formats.BedrockGeometry.Parsing;
@@ -35,6 +36,20 @@ public sealed class BedrockGeometryParser
         "visible_bounds_width", "visible_bounds_height", "visible_bounds_offset",
         "bones", "cape"
     };
+
+    private static readonly HashSet<string> BoneKnownProperties = new(StringComparer.Ordinal)
+    {
+        "name", "parent", "pivot", "rotation", "bind_pose_rotation", "mirror",
+        "inflate", "debug", "render_group_id", "binding", "material", "neverRender", "reset",
+        "cubes"
+    };
+
+    private static readonly HashSet<string> CubeKnownProperties = new(StringComparer.Ordinal)
+    {
+        "origin", "size", "pivot", "rotation", "inflate", "mirror"
+    };
+
+    private readonly BedrockGeometryValidator _validator = new();
 
     public BedrockGeometryParseResult ParseFile(string filePath, BedrockGeometryReadOptions? options = null)
     {
@@ -69,7 +84,7 @@ public sealed class BedrockGeometryParser
         return ParseDocumentCore(jsonDoc.RootElement, options, filePath, sw);
     }
 
-    private static BedrockGeometryParseResult ParseDocumentCore(
+    private BedrockGeometryParseResult ParseDocumentCore(
         JsonElement root,
         BedrockGeometryReadOptions options,
         string? filePath,
@@ -125,6 +140,15 @@ public sealed class BedrockGeometryParser
         else
         {
             ParseModernOrIntermediateDocument(root, document, options, diagnostics, filePath);
+        }
+
+        IReadOnlyList<BedrockGeometryDiagnostic> validationDiagnostics = _validator.Validate(document, options, filePath);
+        foreach (BedrockGeometryDiagnostic diag in validationDiagnostics)
+        {
+            if (!diagnostics.Any(existing => existing.Code == diag.Code && existing.JsonPath == diag.JsonPath && existing.Message == diag.Message))
+            {
+                diagnostics.Add(diag);
+            }
         }
 
         if (options.StrictMode)
@@ -214,19 +238,29 @@ public sealed class BedrockGeometryParser
             JsonElement geoObj = prop.Value;
 
             if ((geoObj.TryGetProperty("texturewidth", out JsonElement twProp) ||
-                 geoObj.TryGetProperty("texture_width", out twProp)) &&
-                twProp.ValueKind == JsonValueKind.Number &&
-                twProp.TryGetInt32(out int tw))
+                 geoObj.TryGetProperty("texture_width", out twProp)))
             {
-                geometry.Description.TextureWidth = tw;
+                if (twProp.ValueKind == JsonValueKind.Number && twProp.TryGetInt32(out int tw) && tw > 0)
+                {
+                    geometry.Description.TextureWidth = tw;
+                }
+                else
+                {
+                    geometry.Description.TextureWidth = -1;
+                }
             }
 
             if ((geoObj.TryGetProperty("textureheight", out JsonElement thProp) ||
-                 geoObj.TryGetProperty("texture_height", out thProp)) &&
-                thProp.ValueKind == JsonValueKind.Number &&
-                thProp.TryGetInt32(out int th))
+                 geoObj.TryGetProperty("texture_height", out thProp)))
             {
-                geometry.Description.TextureHeight = th;
+                if (thProp.ValueKind == JsonValueKind.Number && thProp.TryGetInt32(out int th) && th > 0)
+                {
+                    geometry.Description.TextureHeight = th;
+                }
+                else
+                {
+                    geometry.Description.TextureHeight = -1;
+                }
             }
 
             ParseVisibleBounds(geoObj, geometry.Description, diagnostics, filePath, geoPath);
@@ -240,10 +274,7 @@ public sealed class BedrockGeometryParser
             {
                 if (bonesProp.ValueKind == JsonValueKind.Array)
                 {
-                    foreach (JsonElement boneElem in bonesProp.EnumerateArray())
-                    {
-                        geometry.RawBoneElements.Add(boneElem.Clone());
-                    }
+                    ParseBonesArray(bonesProp, geometry, options, diagnostics, filePath, $"{geoPath}.bones");
                 }
                 else
                 {
@@ -336,10 +367,7 @@ public sealed class BedrockGeometryParser
             {
                 if (bonesProp.ValueKind == JsonValueKind.Array)
                 {
-                    foreach (JsonElement boneElem in bonesProp.EnumerateArray())
-                    {
-                        geometry.RawBoneElements.Add(boneElem.Clone());
-                    }
+                    ParseBonesArray(bonesProp, geometry, options, diagnostics, filePath, $"{geoPath}.bones");
                 }
                 else
                 {
@@ -359,6 +387,375 @@ public sealed class BedrockGeometryParser
 
             document.Geometries.Add(geometry);
             index++;
+        }
+    }
+
+    private static void ParseBonesArray(
+        JsonElement bonesArray,
+        Models.BedrockGeometry geometry,
+        BedrockGeometryReadOptions options,
+        List<BedrockGeometryDiagnostic> diagnostics,
+        string? filePath,
+        string bonesPath)
+    {
+        int boneIdx = 0;
+        foreach (JsonElement boneElem in bonesArray.EnumerateArray())
+        {
+            if (boneIdx >= options.MaxBonesPerGeometry)
+            {
+                throw new JsonFormatException(
+                    JsonFormatErrorCodes.LimitExceeded,
+                    $"Bone count exceeds maximum allowed ({options.MaxBonesPerGeometry}).",
+                    $"{bonesPath}[{boneIdx}]");
+            }
+
+            geometry.RawBoneElements.Add(boneElem.Clone());
+            string bonePath = $"{bonesPath}[{boneIdx}]";
+
+            if (boneElem.ValueKind != JsonValueKind.Object)
+            {
+                diagnostics.Add(new BedrockGeometryDiagnostic(
+                    JsonFormatErrorCodes.TypeMismatch,
+                    $"Bone at '{bonePath}' must be a JSON object.",
+                    IsError: true,
+                    FilePath: filePath,
+                    JsonPath: bonePath));
+                boneIdx++;
+                continue;
+            }
+
+            var bone = new BedrockBone();
+
+            if (boneElem.TryGetProperty("name", out JsonElement nameProp) &&
+                nameProp.ValueKind == JsonValueKind.String &&
+                !string.IsNullOrWhiteSpace(nameProp.GetString()))
+            {
+                bone.Name = nameProp.GetString()!.Trim();
+            }
+            else
+            {
+                diagnostics.Add(new BedrockGeometryDiagnostic(
+                    JsonFormatErrorCodes.MissingRequiredProperty,
+                    $"Bone at '{bonePath}' is missing a valid non-empty 'name'.",
+                    IsError: true,
+                    FilePath: filePath,
+                    JsonPath: $"{bonePath}.name"));
+            }
+
+            if (boneElem.TryGetProperty("parent", out JsonElement parentProp))
+            {
+                if (parentProp.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(parentProp.GetString()))
+                {
+                    bone.Parent = parentProp.GetString()!.Trim();
+                }
+                else if (parentProp.ValueKind != JsonValueKind.Null)
+                {
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.TypeMismatch,
+                        $"Bone '{bone.Name}' property 'parent' must be a non-empty string.",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{bonePath}.parent"));
+                }
+            }
+
+            if (boneElem.TryGetProperty("pivot", out JsonElement pivotProp))
+            {
+                if (TryParseVector3D(pivotProp, out Vector3D pivot))
+                {
+                    bone.Pivot = pivot;
+                }
+                else
+                {
+                    bone.Pivot = new Vector3D(double.NaN, 0, 0);
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Bone '{bone.Name}' property 'pivot' must be a 3-number array [x, y, z].",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{bonePath}.pivot"));
+                }
+            }
+
+            if (boneElem.TryGetProperty("rotation", out JsonElement rotProp))
+            {
+                if (TryParseVector3D(rotProp, out Vector3D rot))
+                {
+                    bone.Rotation = rot;
+                }
+                else
+                {
+                    bone.Rotation = new Vector3D(double.NaN, 0, 0);
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Bone '{bone.Name}' property 'rotation' must be a 3-number array [x, y, z].",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{bonePath}.rotation"));
+                }
+            }
+
+            if (boneElem.TryGetProperty("bind_pose_rotation", out JsonElement bindRotProp))
+            {
+                if (TryParseVector3D(bindRotProp, out Vector3D bindRot))
+                {
+                    bone.BindPoseRotation = bindRot;
+                }
+                else
+                {
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Bone '{bone.Name}' property 'bind_pose_rotation' must be a 3-number array [x, y, z].",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{bonePath}.bind_pose_rotation"));
+                }
+            }
+
+            if (boneElem.TryGetProperty("mirror", out JsonElement mirrorProp) &&
+                (mirrorProp.ValueKind == JsonValueKind.True || mirrorProp.ValueKind == JsonValueKind.False))
+            {
+                bone.Mirror = mirrorProp.GetBoolean();
+            }
+
+            if (boneElem.TryGetProperty("inflate", out JsonElement inflateProp))
+            {
+                if (TryReadFiniteDouble(inflateProp, out double inflate))
+                {
+                    bone.Inflate = inflate;
+                }
+                else
+                {
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Bone '{bone.Name}' property 'inflate' must be a finite number.",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{bonePath}.inflate"));
+                }
+            }
+
+            if (boneElem.TryGetProperty("debug", out JsonElement debugProp) &&
+                (debugProp.ValueKind == JsonValueKind.True || debugProp.ValueKind == JsonValueKind.False))
+            {
+                bone.Debug = debugProp.GetBoolean();
+            }
+
+            if (boneElem.TryGetProperty("render_group_id", out JsonElement rgProp) &&
+                rgProp.ValueKind == JsonValueKind.Number &&
+                rgProp.TryGetInt32(out int rgId))
+            {
+                bone.RenderGroupId = rgId;
+            }
+
+            if (boneElem.TryGetProperty("binding", out JsonElement bindingProp) &&
+                bindingProp.ValueKind == JsonValueKind.String)
+            {
+                bone.Binding = bindingProp.GetString();
+            }
+
+            if (boneElem.TryGetProperty("material", out JsonElement matProp) &&
+                matProp.ValueKind == JsonValueKind.String)
+            {
+                bone.Material = matProp.GetString();
+            }
+
+            if (boneElem.TryGetProperty("neverRender", out JsonElement nrProp) &&
+                (nrProp.ValueKind == JsonValueKind.True || nrProp.ValueKind == JsonValueKind.False))
+            {
+                bone.NeverRender = nrProp.GetBoolean();
+            }
+
+            if (boneElem.TryGetProperty("reset", out JsonElement resetProp) &&
+                (resetProp.ValueKind == JsonValueKind.True || resetProp.ValueKind == JsonValueKind.False))
+            {
+                bone.Reset = resetProp.GetBoolean();
+            }
+
+            if (boneElem.TryGetProperty("cubes", out JsonElement cubesProp))
+            {
+                if (cubesProp.ValueKind == JsonValueKind.Array)
+                {
+                    ParseCubesArray(cubesProp, bone, options, diagnostics, filePath, $"{bonePath}.cubes");
+                }
+                else
+                {
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.TypeMismatch,
+                        $"Property 'cubes' on bone '{bone.Name}' must be a JSON array.",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{bonePath}.cubes"));
+                }
+            }
+
+            if (options.PreserveExtensionData)
+            {
+                bone.ExtensionData.CaptureUnknownProperties(boneElem, BoneKnownProperties);
+            }
+
+            geometry.Bones.Add(bone);
+            boneIdx++;
+        }
+    }
+
+    private static void ParseCubesArray(
+        JsonElement cubesArray,
+        BedrockBone bone,
+        BedrockGeometryReadOptions options,
+        List<BedrockGeometryDiagnostic> diagnostics,
+        string? filePath,
+        string cubesPath)
+    {
+        int cubeIdx = 0;
+        foreach (JsonElement cubeElem in cubesArray.EnumerateArray())
+        {
+            if (cubeIdx >= options.MaxCubesPerBone)
+            {
+                throw new JsonFormatException(
+                    JsonFormatErrorCodes.LimitExceeded,
+                    $"Cube count on bone '{bone.Name}' exceeds maximum allowed ({options.MaxCubesPerBone}).",
+                    $"{cubesPath}[{cubeIdx}]");
+            }
+
+            string cubePath = $"{cubesPath}[{cubeIdx}]";
+            if (cubeElem.ValueKind != JsonValueKind.Object)
+            {
+                diagnostics.Add(new BedrockGeometryDiagnostic(
+                    JsonFormatErrorCodes.TypeMismatch,
+                    $"Cube at '{cubePath}' must be a JSON object.",
+                    IsError: true,
+                    FilePath: filePath,
+                    JsonPath: cubePath));
+                cubeIdx++;
+                continue;
+            }
+
+            var cube = new BedrockCube();
+
+            if (cubeElem.TryGetProperty("origin", out JsonElement originProp))
+            {
+                if (TryParseVector3D(originProp, out Vector3D origin))
+                {
+                    cube.Origin = origin;
+                }
+                else
+                {
+                    cube.Origin = new Vector3D(double.NaN, 0, 0);
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Cube at '{cubePath}' has invalid 'origin'; expected [x, y, z].",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{cubePath}.origin"));
+                }
+            }
+            else
+            {
+                cube.Origin = new Vector3D(double.NaN, 0, 0);
+                diagnostics.Add(new BedrockGeometryDiagnostic(
+                    JsonFormatErrorCodes.MissingRequiredProperty,
+                    $"Cube at '{cubePath}' is missing required 'origin'.",
+                    IsError: true,
+                    FilePath: filePath,
+                    JsonPath: $"{cubePath}.origin"));
+            }
+
+            if (cubeElem.TryGetProperty("size", out JsonElement sizeProp))
+            {
+                if (TryParseVector3D(sizeProp, out Vector3D size))
+                {
+                    cube.Size = size;
+                }
+                else
+                {
+                    cube.Size = new Vector3D(-1, -1, -1);
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Cube at '{cubePath}' has invalid 'size'; expected [w, h, d].",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{cubePath}.size"));
+                }
+            }
+            else
+            {
+                cube.Size = new Vector3D(-1, -1, -1);
+                diagnostics.Add(new BedrockGeometryDiagnostic(
+                    JsonFormatErrorCodes.MissingRequiredProperty,
+                    $"Cube at '{cubePath}' is missing required 'size'.",
+                    IsError: true,
+                    FilePath: filePath,
+                    JsonPath: $"{cubePath}.size"));
+            }
+
+            if (cubeElem.TryGetProperty("pivot", out JsonElement pivotProp))
+            {
+                if (TryParseVector3D(pivotProp, out Vector3D pivot))
+                {
+                    cube.Pivot = pivot;
+                }
+                else
+                {
+                    cube.Pivot = new Vector3D(double.NaN, 0, 0);
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Cube at '{cubePath}' has invalid 'pivot'; expected [x, y, z].",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{cubePath}.pivot"));
+                }
+            }
+
+            if (cubeElem.TryGetProperty("rotation", out JsonElement rotProp))
+            {
+                if (TryParseVector3D(rotProp, out Vector3D rot))
+                {
+                    cube.Rotation = rot;
+                }
+                else
+                {
+                    cube.Rotation = new Vector3D(double.NaN, 0, 0);
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Cube at '{cubePath}' has invalid 'rotation'; expected [x, y, z].",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{cubePath}.rotation"));
+                }
+            }
+
+            if (cubeElem.TryGetProperty("inflate", out JsonElement inflateProp))
+            {
+                if (TryReadFiniteDouble(inflateProp, out double inflate))
+                {
+                    cube.Inflate = inflate;
+                }
+                else
+                {
+                    cube.Inflate = double.NaN;
+                    diagnostics.Add(new BedrockGeometryDiagnostic(
+                        JsonFormatErrorCodes.InvalidNumericValue,
+                        $"Cube at '{cubePath}' has non-finite 'inflate'.",
+                        IsError: true,
+                        FilePath: filePath,
+                        JsonPath: $"{cubePath}.inflate"));
+                }
+            }
+
+            if (cubeElem.TryGetProperty("mirror", out JsonElement mirrorProp) &&
+                (mirrorProp.ValueKind == JsonValueKind.True || mirrorProp.ValueKind == JsonValueKind.False))
+            {
+                cube.Mirror = mirrorProp.GetBoolean();
+            }
+
+            if (options.PreserveExtensionData)
+            {
+                cube.ExtensionData.CaptureUnknownProperties(cubeElem, CubeKnownProperties);
+            }
+
+            bone.Cubes.Add(cube);
+            cubeIdx++;
         }
     }
 
