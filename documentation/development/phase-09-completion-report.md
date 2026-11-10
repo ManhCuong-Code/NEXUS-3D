@@ -54,3 +54,4 @@ dotnet test -c Release
 - `src/NEXUS3D.App/ViewModels/ObjectInspectorViewModel.cs` - Full numerical transform, pivot, bone, and UV inspectors.
 - `src/NEXUS3D.App/Views/ViewportWorkspaceView.xaml` & `.cs` - UI layout, topbar, and keyboard shortcuts.
 - `documentation/formats/interactive-3d-editor-architecture.md` - Complete architectural and mathematical documentation.
+

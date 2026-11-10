@@ -101,3 +101,4 @@ Continuous mouse drags produce dozens of intermediate preview states. To ensure 
 1. **MouseDown**: Captures initial transforms and records start point.
 2. **MouseMove**: Continuously updates preview transforms in real-time.
 3. **MouseUp**: Consolidates the entire drag session into a single `IEditorCommand` pushed to `IUndoRedoService`.
+
