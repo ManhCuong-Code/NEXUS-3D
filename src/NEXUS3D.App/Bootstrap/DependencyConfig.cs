@@ -129,6 +129,10 @@ public static class DependencyConfig
 
         services.AddSingleton<CameraViewModel>();
         services.AddSingleton<RenderSettingsViewModel>();
+        services.AddSingleton<SceneHierarchyViewModel>();
+        services.AddSingleton<ObjectInspectorViewModel>();
+        services.AddSingleton<BoneHierarchyViewModel>();
+        services.AddSingleton<ViewportViewModel>();
         services.AddSingleton<DashboardViewModel>();
         services.AddSingleton<ConverterViewModel>();
         services.AddSingleton<FileManagerViewModel>();

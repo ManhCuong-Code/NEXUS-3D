@@ -53,6 +53,13 @@
 
                 <RadioButton Style="{StaticResource Style.SidebarNavButton}"
                              GroupName="MainNav"
+                             Tag="{StaticResource Icon.Converter}"
+                             Content="3D Viewport"
+                             IsChecked="{Binding IsViewportActive, Mode=OneWay}"
+                             Command="{Binding NavigateViewportCommand}" />
+
+                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                             GroupName="MainNav"
                              Tag="{StaticResource Icon.FileManager}"
                              Content="File Manager"
                              IsChecked="{Binding IsFileManagerActive, Mode=OneWay}"

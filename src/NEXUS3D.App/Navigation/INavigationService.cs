@@ -10,7 +10,8 @@ public enum NavigationModule
     Dashboard = 0,
     Converter = 1,
     FileManager = 2,
-    Settings = 3
+    Settings = 3,
+    Viewport = 4
 }
 
 /// <summary>

@@ -25,6 +25,7 @@ public sealed partial class MainWindowViewModel : BaseViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDashboardActive))]
     [NotifyPropertyChangedFor(nameof(IsConverterActive))]
+    [NotifyPropertyChangedFor(nameof(IsViewportActive))]
     [NotifyPropertyChangedFor(nameof(IsFileManagerActive))]
     [NotifyPropertyChangedFor(nameof(IsSettingsActive))]
     private NavigationModule _activeModule = NavigationModule.Dashboard;
@@ -49,6 +50,7 @@ public sealed partial class MainWindowViewModel : BaseViewModel
 
     public bool IsDashboardActive => ActiveModule == NavigationModule.Dashboard;
     public bool IsConverterActive => ActiveModule == NavigationModule.Converter;
+    public bool IsViewportActive => ActiveModule == NavigationModule.Viewport;
     public bool IsFileManagerActive => ActiveModule == NavigationModule.FileManager;
     public bool IsSettingsActive => ActiveModule == NavigationModule.Settings;
     public bool HasUnreadNotifications => UnreadNotificationCount > 0;
@@ -91,6 +93,10 @@ public sealed partial class MainWindowViewModel : BaseViewModel
     [RelayCommand]
     private Task NavigateConverterAsync() =>
         _navigationService.NavigateToAsync(NavigationModule.Converter);
+
+    [RelayCommand]
+    private Task NavigateViewportAsync() =>
+        _navigationService.NavigateToAsync(NavigationModule.Viewport);
 
     [RelayCommand]
     private Task NavigateFileManagerAsync() =>
