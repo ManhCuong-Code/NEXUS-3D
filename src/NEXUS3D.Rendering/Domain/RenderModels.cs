@@ -116,7 +116,7 @@ public sealed class RenderVoxelChunk
 public sealed class RenderBone
 {
     public string Name { get; init; } = string.Empty;
-    public string? ParentName { get; init; }
+    public string? ParentName { get; set; }
     public Vector3 Pivot { get; init; }
     public Vector3 Rotation { get; init; }
     public Matrix4x4 Transform { get; init; } = Matrix4x4.Identity;
