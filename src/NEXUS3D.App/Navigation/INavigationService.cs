@@ -11,7 +11,8 @@ public enum NavigationModule
     Converter = 1,
     FileManager = 2,
     Settings = 3,
-    Viewport = 4
+    Viewport = 4,
+    Voxelization = 5
 }
 
 /// <summary>

@@ -8,6 +8,10 @@ using NEXUS3D.Domain.Scene;
 using NEXUS3D.Domain.Voxels;
 using NEXUS3D.Shared.Guards;
 using NEXUS3D.Shared.Results;
+using VoxEngine = NEXUS3D.Voxelization.Abstractions.Contracts.IVoxelizationEngine;
+using VoxMode = NEXUS3D.Voxelization.Abstractions.Contracts.VoxelizationMode;
+using VoxResMode = NEXUS3D.Voxelization.Abstractions.Contracts.VoxelResolutionMode;
+using VoxSettings = NEXUS3D.Voxelization.Domain.Models.VoxelizationSettings;
 
 namespace NEXUS3D.Conversion.Engine.Services;
 
@@ -19,13 +23,16 @@ public sealed class MeshToVoxelConverter : IMeshToVoxelConverter
 {
     private readonly IPolygonTriangulator _triangulator;
     private readonly ILogger<MeshToVoxelConverter> _logger;
+    private readonly VoxEngine? _voxelizationEngine;
 
     public MeshToVoxelConverter(
         IPolygonTriangulator triangulator,
-        ILogger<MeshToVoxelConverter> logger)
+        ILogger<MeshToVoxelConverter> logger,
+        VoxEngine? voxelizationEngine = null)
     {
         _triangulator = Guard.NotNull(triangulator);
         _logger = Guard.NotNull(logger);
+        _voxelizationEngine = voxelizationEngine;
     }
 
     public OperationResult<VoxelGrid> ConvertMeshToVoxelGrid(
@@ -35,6 +42,39 @@ public sealed class MeshToVoxelConverter : IMeshToVoxelConverter
     {
         Guard.NotNull(mesh);
         options ??= new MeshToVoxelOptions();
+
+        // Delegate to high-performance Voxelization Engine if available
+        if (_voxelizationEngine is not null)
+        {
+            var voxelMode = VoxMode.SurfaceOnly;
+            if (options.FillInterior || options.Mode == NEXUS3D.Conversion.Abstractions.VoxelizationMode.SolidFill)
+            {
+                voxelMode = VoxMode.SolidVolume;
+            }
+            else if (options.Mode == NEXUS3D.Conversion.Abstractions.VoxelizationMode.ConservativeSurface)
+            {
+                voxelMode = VoxMode.Conservative;
+            }
+
+            var resMode = options.ResolutionMode == NEXUS3D.Conversion.Abstractions.VoxelResolutionMode.FixedGridDimension
+                ? VoxResMode.ByMaxGridDimension
+                : VoxResMode.ByVoxelSize;
+
+            var settings = new VoxSettings
+            {
+                Mode = voxelMode,
+                ResolutionMode = resMode,
+                VoxelSize = options.VoxelSize > 0.001 ? options.VoxelSize : 1.0,
+                MaxGridDimension = Math.Clamp(options.MaxGridDimension, 16, 512),
+                DefaultBlockNamespace = options.DefaultBlockNamespace
+            };
+
+            var engineResult = _voxelizationEngine.VoxelizeMeshAsync(mesh, parentScene, settings).GetAwaiter().GetResult();
+            if (engineResult.IsSuccess && engineResult.VoxelGrid is not null)
+            {
+                return OperationResult<VoxelGrid>.Success(engineResult.VoxelGrid);
+            }
+        }
 
         string gridName = $"{mesh.Name}_Voxels";
         var grid = new VoxelGrid(gridName);
