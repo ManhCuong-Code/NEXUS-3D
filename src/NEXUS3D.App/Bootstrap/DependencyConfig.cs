@@ -127,6 +127,7 @@ public static class DependencyConfig
     {
         services.AddSingleton<INavigationService, NavigationService>();
 
+        services.AddSingleton<CameraViewModel>();
         services.AddSingleton<DashboardViewModel>();
         services.AddSingleton<ConverterViewModel>();
         services.AddSingleton<FileManagerViewModel>();
