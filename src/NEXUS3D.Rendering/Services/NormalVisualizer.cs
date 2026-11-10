@@ -8,6 +8,35 @@ namespace NEXUS3D.Rendering.Services;
 /// </summary>
 public sealed class NormalVisualizer
 {
+    public List<RenderMesh> GenerateSceneNormals(RenderScene scene, float normalLength = 0.5f, Vector4? normalColor = null)
+    {
+        var result = new List<RenderMesh>();
+        if (scene is null) return result;
+
+        foreach (var node in scene.RootNodes)
+        {
+            CollectNodeNormals(node, result, normalLength, normalColor);
+        }
+
+        return result;
+    }
+
+    private void CollectNodeNormals(RenderNode node, List<RenderMesh> result, float length, Vector4? color)
+    {
+        foreach (var mesh in node.Meshes)
+        {
+            if (mesh.Normals.Length > 0)
+            {
+                result.Add(GenerateNormalLines(mesh, length, color));
+            }
+        }
+
+        foreach (var child in node.Children)
+        {
+            CollectNodeNormals(child, result, length, color);
+        }
+    }
+
     public RenderMesh GenerateNormalLines(RenderMesh mesh, float normalLength = 0.5f, Vector4? normalColor = null)
     {
         if (mesh is null || mesh.Positions.Length == 0 || mesh.Normals.Length == 0)
