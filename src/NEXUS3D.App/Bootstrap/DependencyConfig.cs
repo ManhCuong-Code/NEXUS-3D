@@ -33,6 +33,7 @@ using NEXUS3D.PluginSystem.Services;
 using NEXUS3D.Rendering.Contracts;
 using NEXUS3D.Rendering.DependencyInjection;
 using NEXUS3D.Rendering.Services;
+using NEXUS3D.Voxelization.Engine.DependencyInjection;
 
 namespace NEXUS3D.App.Bootstrap;
 
@@ -108,6 +109,7 @@ public static class DependencyConfig
         services.AddNexusConversionEngine();
         services.AddNexusBatchConversion();
         services.AddNexusRendering();
+        services.AddNexusVoxelization();
 
         services.AddSingleton<IConversionPipeline, FoundationConversionPipeline>();
         services.AddSingleton<IPluginCatalogService, PluginCatalogService>();
@@ -133,6 +135,7 @@ public static class DependencyConfig
         services.AddSingleton<ObjectInspectorViewModel>();
         services.AddSingleton<BoneHierarchyViewModel>();
         services.AddSingleton<ViewportViewModel>();
+        services.AddSingleton<VoxelizationViewModel>();
         services.AddSingleton<DashboardViewModel>();
         services.AddSingleton<ConverterViewModel>();
         services.AddSingleton<FileManagerViewModel>();

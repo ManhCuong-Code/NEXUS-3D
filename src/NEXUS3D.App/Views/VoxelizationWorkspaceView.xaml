@@ -1,0 +1,333 @@
+<UserControl x:Class="NEXUS3D.App.Views.VoxelizationWorkspaceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:NEXUS3D.App.Controls"
+             mc:Ignorable="d">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <!-- Page Header -->
+            <RowDefinition Height="Auto" />
+            <!-- Main Content Area -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 1. Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{Binding Title}" Style="{StaticResource Text.PageTitle}" />
+                <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Text.PageSubtitle}" Margin="0,4,0,0" />
+            </StackPanel>
+
+            <Border Grid.Column="1"
+                    Background="{StaticResource Brush.SurfacePrimary}"
+                    BorderBrush="{StaticResource Brush.BorderStrong}"
+                    BorderThickness="1"
+                    CornerRadius="5"
+                    Padding="12,6"
+                    VerticalAlignment="Center">
+                <TextBlock Text="STAGE 08 • VOXELIZATION ENGINE"
+                           FontSize="11.5"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource Brush.AccentHover}" />
+            </Border>
+        </Grid>
+
+        <!-- 2. Workspace Body: Left Settings, Center 3D Viewport, Right Statistics -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="300" />
+            </Grid.ColumnDefinitions>
+
+            <!-- LEFT PANEL: Configuration -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="0,0,6,0">
+                    <!-- Source Mesh Card -->
+                    <Border Style="{StaticResource Style.CardBorder}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="1. Source Mesh" Style="{StaticResource Text.SectionHeader}" Margin="0,0,0,8" />
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding InputFilePath, Mode=OneWay}"
+                                         IsReadOnly="True"
+                                         Padding="8,6"
+                                         Background="{StaticResource Brush.SurfaceSecondary}"
+                                         BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                         Foreground="{StaticResource Brush.TextSecondary}"
+                                         FontSize="11.5" />
+                                <Button Grid.Column="1"
+                                        Content="Browse..."
+                                        Command="{Binding BrowseMeshFileCommand}"
+                                        Style="{StaticResource Style.SecondaryButton}"
+                                        Margin="6,0,0,0"
+                                        Padding="12,6" />
+                            </Grid>
+                            <TextBlock Text="{Binding MeshSummary}"
+                                       FontSize="11.5"
+                                       Foreground="{StaticResource Brush.TextMuted}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Algorithm Settings Card -->
+                    <Border Style="{StaticResource Style.CardBorder}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="2. Voxelization Algorithm" Style="{StaticResource Text.SectionHeader}" Margin="0,0,0,10" />
+
+                            <!-- Mode -->
+                            <TextBlock Text="Voxelization Mode" FontSize="11.5" Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                            <ComboBox ItemsSource="{Binding AvailableModes}"
+                                      SelectedItem="{Binding SelectedMode}"
+                                      Margin="0,0,0,10"
+                                      Background="{StaticResource Brush.SurfaceSecondary}" />
+
+                            <!-- Resolution Mode -->
+                            <TextBlock Text="Resolution Strategy" FontSize="11.5" Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                            <ComboBox ItemsSource="{Binding AvailableResolutionModes}"
+                                      SelectedItem="{Binding SelectedResolutionMode}"
+                                      Margin="0,0,0,10"
+                                      Background="{StaticResource Brush.SurfaceSecondary}" />
+
+                            <!-- Max Grid Dimension -->
+                            <Grid Margin="0,0,0,4">
+                                <TextBlock Text="Max Grid Dimension" FontSize="11.5" Foreground="{StaticResource Brush.TextSecondary}" />
+                                <TextBlock Text="{Binding MaxGridDimension, StringFormat={}{0} voxels}" HorizontalAlignment="Right" FontSize="11.5" Foreground="{StaticResource Brush.AccentHover}" />
+                            </Grid>
+                            <Slider Minimum="16" Maximum="256" Value="{Binding MaxGridDimension}"
+                                    IsSnapToTickEnabled="True" TickFrequency="16"
+                                    Margin="0,0,0,10" />
+
+                            <!-- Voxel Size -->
+                            <Grid Margin="0,0,0,4">
+                                <TextBlock Text="Explicit Voxel Size" FontSize="11.5" Foreground="{StaticResource Brush.TextSecondary}" />
+                                <TextBlock Text="{Binding VoxelSize, StringFormat={}{0:F2} m}" HorizontalAlignment="Right" FontSize="11.5" Foreground="{StaticResource Brush.AccentHover}" />
+                            </Grid>
+                            <Slider Minimum="0.1" Maximum="4.0" Value="{Binding VoxelSize}"
+                                    SmallChange="0.1" LargeChange="0.5"
+                                    Margin="0,0,0,10" />
+
+                            <!-- Color Sampling -->
+                            <TextBlock Text="Color &amp; Material Sampling" FontSize="11.5" Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                            <ComboBox ItemsSource="{Binding AvailableColorSamplings}"
+                                      SelectedItem="{Binding SelectedColorSampling}"
+                                      Margin="0,0,0,10"
+                                      Background="{StaticResource Brush.SurfaceSecondary}" />
+
+                            <!-- Grid Alignment -->
+                            <TextBlock Text="Grid Alignment" FontSize="11.5" Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                            <ComboBox ItemsSource="{Binding AvailableAlignments}"
+                                      SelectedItem="{Binding SelectedAlignment}"
+                                      Margin="0,0,0,6"
+                                      Background="{StaticResource Brush.SurfaceSecondary}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Optimization & Cleanup Card -->
+                    <Border Style="{StaticResource Style.CardBorder}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="3. Post-Processing &amp; Optimizations" Style="{StaticResource Text.SectionHeader}" Margin="0,0,0,10" />
+
+                            <CheckBox Content="Fill Internal Gaps &amp; Cavities"
+                                      IsChecked="{Binding FillInternalGaps}"
+                                      Margin="0,0,0,8" />
+
+                            <CheckBox Content="Remove Isolated Floating Voxels"
+                                      IsChecked="{Binding RemoveIsolatedVoxels}"
+                                      Margin="0,0,0,8" />
+
+                            <CheckBox Content="Greedy 3D Cuboid Merging"
+                                      IsChecked="{Binding MergeAdjacentVoxels}"
+                                      Margin="0,0,0,8" />
+
+                            <CheckBox Content="Preserve Original Materials &amp; Colors"
+                                      IsChecked="{Binding PreserveMaterials}"
+                                      Margin="0,0,0,10" />
+
+                            <TextBlock Text="Default Block Namespace" FontSize="11.5" Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                            <TextBox Text="{Binding DefaultBlockNamespace, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="8,6"
+                                     Background="{StaticResource Brush.SurfaceSecondary}"
+                                     BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                     Foreground="{StaticResource Brush.TextPrimary}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Actions Card -->
+                    <Border Style="{StaticResource Style.CardBorder}">
+                        <StackPanel>
+                            <Button Content="▶ VOXELIZE MODEL"
+                                    Command="{Binding VoxelizeCommand}"
+                                    Style="{StaticResource Style.PrimaryButton}"
+                                    Padding="0,10"
+                                    FontWeight="Bold"
+                                    FontSize="13"
+                                    Margin="0,0,0,8" />
+
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Button Grid.Column="0"
+                                        Content="Cancel"
+                                        Command="{Binding CancelCommand}"
+                                        IsEnabled="{Binding CanCancel}"
+                                        Style="{StaticResource Style.SecondaryButton}"
+                                        Padding="0,8" />
+
+                                <Button Grid.Column="2"
+                                        Content="Reset Defaults"
+                                        Command="{Binding ResetSettingsCommand}"
+                                        Style="{StaticResource Style.SecondaryButton}"
+                                        Padding="0,8" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- CENTER PANEL: 3D Viewport Stage -->
+            <Border Grid.Column="2"
+                    Background="#16161C"
+                    BorderBrush="{StaticResource Brush.BorderSubtle}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    ClipToBounds="True">
+                <Grid>
+                    <!-- Main 3D Viewport Control -->
+                    <controls:Viewport3DControl Scene="{Binding ViewportScene}" />
+
+                    <!-- Top Floating Status Overlay -->
+                    <Border HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Margin="12"
+                            Background="#CC1E1E26"
+                            BorderBrush="{StaticResource Brush.BorderSubtle}"
+                            BorderThickness="1"
+                            CornerRadius="5"
+                            Padding="10,6">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Margin="0,0,8,0"
+                                     Fill="{Binding HasResult, Converter={StaticResource BoolToVis}, FallbackValue=#FF44AA44}" />
+                            <TextBlock Text="{Binding ProgressStatus}"
+                                       FontSize="11.5"
+                                       Foreground="{StaticResource Brush.TextSecondary}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Busy / Progress Overlay -->
+                    <Border Background="#88000000"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Bottom"
+                            Padding="16,12"
+                            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="{Binding ProgressStatus}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="#FFFFFF" />
+                                <TextBlock Text="{Binding ProgressPercentage, StringFormat={}{0:F0}%}"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush.AccentHover}"
+                                           HorizontalAlignment="Right" />
+                            </Grid>
+                            <ProgressBar Minimum="0" Maximum="100"
+                                         Value="{Binding ProgressPercentage}"
+                                         Height="6"
+                                         Foreground="{StaticResource Brush.AccentHover}"
+                                         Background="#33FFFFFF"
+                                         BorderThickness="0" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- RIGHT PANEL: Statistics & Diagnostics -->
+            <ScrollViewer Grid.Column="4" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="6,0,0,0">
+                    <!-- Voxel Count & Speed Card -->
+                    <Border Style="{StaticResource Style.CardBorder}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Output Voxels" Style="{StaticResource Text.SectionHeader}" Margin="0,0,0,8" />
+                            <TextBlock Text="{Binding ResultVoxelCount, StringFormat={}{0:N0}}"
+                                       FontSize="28"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource Brush.AccentHover}" />
+                            <TextBlock Text="{Binding ProcessingTimeText, StringFormat={}Computed in {0}}"
+                                       FontSize="11.5"
+                                       Foreground="{StaticResource Brush.TextMuted}"
+                                       Margin="0,2,0,8" />
+                            <Separator Background="{StaticResource Brush.BorderSubtle}" Margin="0,4,0,8" />
+                            <TextBlock Text="{Binding StatsSummaryText}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource Brush.TextSecondary}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Cuboid Optimization Card -->
+                    <Border Style="{StaticResource Style.CardBorder}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Greedy Cuboid Merging" Style="{StaticResource Text.SectionHeader}" Margin="0,0,0,8" />
+                            <TextBlock Text="{Binding ResultCuboidCount, StringFormat={}{0:N0} Cuboids}"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource Brush.TextPrimary}" />
+                            <TextBlock Text="{Binding ReductionRatioText}"
+                                       FontSize="11.5"
+                                       Foreground="{StaticResource Brush.StatusSuccess}"
+                                       Margin="0,4,0,10"
+                                       TextWrapping="Wrap" />
+
+                            <Button Content="Re-optimize Cuboids"
+                                    Command="{Binding OptimizeCuboidsCommand}"
+                                    Style="{StaticResource Style.SecondaryButton}"
+                                    Padding="0,8" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Warnings & Diagnostics Card -->
+                    <Border Style="{StaticResource Style.CardBorder}">
+                        <StackPanel>
+                            <TextBlock Text="Geometry Diagnostics" Style="{StaticResource Text.SectionHeader}" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding Warnings}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#2B201A"
+                                                BorderBrush="{StaticResource Brush.StatusWarning}"
+                                                BorderThickness="1"
+                                                CornerRadius="4"
+                                                Padding="8,5"
+                                                Margin="0,0,0,6">
+                                            <TextBlock Text="{Binding}"
+                                                       FontSize="11"
+                                                       Foreground="{StaticResource Brush.TextPrimary}"
+                                                       TextWrapping="Wrap" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

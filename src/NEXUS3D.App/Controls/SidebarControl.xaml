@@ -60,6 +60,13 @@
 
                 <RadioButton Style="{StaticResource Style.SidebarNavButton}"
                              GroupName="MainNav"
+                             Tag="{StaticResource Icon.Cube3D}"
+                             Content="Voxelization"
+                             IsChecked="{Binding IsVoxelizationActive, Mode=OneWay}"
+                             Command="{Binding NavigateVoxelizationCommand}" />
+
+                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                             GroupName="MainNav"
                              Tag="{StaticResource Icon.FileManager}"
                              Content="File Manager"
                              IsChecked="{Binding IsFileManagerActive, Mode=OneWay}"

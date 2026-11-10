@@ -27,6 +27,9 @@
         <DataTemplate DataType="{x:Type vm:ViewportViewModel}">
             <views:ViewportWorkspaceView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:VoxelizationViewModel}">
+            <views:VoxelizationWorkspaceView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:FileManagerViewModel}">
             <views:FileManagerView />
         </DataTemplate>

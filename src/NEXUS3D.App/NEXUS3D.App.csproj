@@ -28,6 +28,9 @@
     <ProjectReference Include="..\NEXUS3D.Formats.Abstractions\NEXUS3D.Formats.Abstractions.csproj" />
     <ProjectReference Include="..\NEXUS3D.Engine\NEXUS3D.Engine.csproj" />
     <ProjectReference Include="..\NEXUS3D.Rendering\NEXUS3D.Rendering.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Voxelization.Abstractions\NEXUS3D.Voxelization.Abstractions.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Voxelization.Domain\NEXUS3D.Voxelization.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Voxelization.Engine\NEXUS3D.Voxelization.Engine.csproj" />
     <ProjectReference Include="..\NEXUS3D.PluginSystem\NEXUS3D.PluginSystem.csproj" />
     <ProjectReference Include="..\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
   </ItemGroup>
