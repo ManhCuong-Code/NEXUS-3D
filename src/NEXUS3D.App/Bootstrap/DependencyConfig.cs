@@ -6,6 +6,8 @@ using NEXUS3D.App.Views;
 using NEXUS3D.Application.DependencyInjection;
 using NEXUS3D.Application.Interfaces;
 using NEXUS3D.Application.UseCases;
+using NEXUS3D.Conversion.Batch.DependencyInjection;
+using NEXUS3D.Conversion.Engine.DependencyInjection;
 using NEXUS3D.Domain.Repositories;
 using NEXUS3D.Engine.Contracts;
 using NEXUS3D.Engine.Services;
@@ -101,6 +103,9 @@ public static class DependencyConfig
         services.AddSingleton<IFormatDescriptor, BedrockGeometryFormatDescriptor>();
         services.AddBedrockGeometryFormatServices();
         services.AddSingleton<IFormatRegistry, FormatRegistry>();
+
+        services.AddNexusConversionEngine();
+        services.AddNexusBatchConversion();
 
         services.AddSingleton<IConversionPipeline, FoundationConversionPipeline>();
         services.AddSingleton<IViewportController, DefaultViewportController>();

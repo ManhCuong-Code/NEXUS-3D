@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\NEXUS3D.Conversion.Abstractions\NEXUS3D.Conversion.Abstractions.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Conversion.Domain\NEXUS3D.Conversion.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Conversion.Engine\NEXUS3D.Conversion.Engine.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Conversion.Batch\NEXUS3D.Conversion.Batch.csproj" />
     <ProjectReference Include="..\NEXUS3D.Application\NEXUS3D.Application.csproj" />
     <ProjectReference Include="..\NEXUS3D.Infrastructure\NEXUS3D.Infrastructure.csproj" />
     <ProjectReference Include="..\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
