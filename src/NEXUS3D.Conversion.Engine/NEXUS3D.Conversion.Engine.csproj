@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NEXUS3D.Conversion.Abstractions\NEXUS3D.Conversion.Abstractions.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Conversion.Domain\NEXUS3D.Conversion.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.Abstractions\NEXUS3D.Formats.Abstractions.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.Schematic\NEXUS3D.Formats.Schematic.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.Obj\NEXUS3D.Formats.Obj.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.VoxelJson\NEXUS3D.Formats.VoxelJson.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Formats.BedrockGeometry\NEXUS3D.Formats.BedrockGeometry.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
+  </ItemGroup>
+
+</Project>
