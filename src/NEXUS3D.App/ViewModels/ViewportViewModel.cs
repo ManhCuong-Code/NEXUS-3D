@@ -3,7 +3,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using NEXUS3D.Application.Interfaces;
+using NEXUS3D.Domain.Mathematics;
 using NEXUS3D.Domain.Scene;
+using NEXUS3D.Editor.Abstractions;
 using NEXUS3D.Formats.Abstractions;
 using NEXUS3D.Rendering.Contracts;
 using NEXUS3D.Rendering.Domain;
@@ -11,12 +13,17 @@ using NEXUS3D.Rendering.Domain;
 namespace NEXUS3D.App.ViewModels;
 
 /// <summary>
-/// Primary Workspace ViewModel coordinating the 3D Viewport, Camera, RenderSettings, Hierarchy, and Inspector.
+/// Primary Workspace ViewModel coordinating the 3D Viewport, Camera, RenderSettings, Hierarchy,
+/// Object Inspector, and Interactive 3D Editor Tools.
 /// </summary>
 public sealed partial class ViewportViewModel : BaseViewModel
 {
     private readonly IRenderService _renderService;
     private readonly IEnumerable<IFormatParser> _parsers;
+    private readonly ITransformService _transformService;
+    private readonly ISelectionService _selectionService;
+    private readonly IUndoRedoService _undoRedoService;
+    private readonly IPivotService _pivotService;
     private readonly ILogger<ViewportViewModel> _logger;
 
     public CameraViewModel Camera { get; }
@@ -29,14 +36,39 @@ public sealed partial class ViewportViewModel : BaseViewModel
     private RenderScene? _scene;
 
     [ObservableProperty]
+    private Scene3D? _rawUsmScene;
+
+    [ObservableProperty]
     private string _loadedModelName = "No Model Loaded";
 
     [ObservableProperty]
     private string _loadedFilePath = string.Empty;
 
+    // --- Active Editor State ---
+    [ObservableProperty]
+    private EditorToolType _activeTool = EditorToolType.Select;
+
+    [ObservableProperty]
+    private TransformSpace _activeSpace = TransformSpace.World;
+
+    [ObservableProperty]
+    private bool _snappingEnabled;
+
+    [ObservableProperty]
+    private string? _selectedNodeId;
+
+    public ITransformService TransformService => _transformService;
+    public ISelectionService SelectionService => _selectionService;
+    public IUndoRedoService UndoRedoService => _undoRedoService;
+    public IPivotService PivotService => _pivotService;
+
     public ViewportViewModel(
         IRenderService renderService,
         IEnumerable<IFormatParser> parsers,
+        ITransformService transformService,
+        ISelectionService selectionService,
+        IUndoRedoService undoRedoService,
+        IPivotService pivotService,
         CameraViewModel camera,
         RenderSettingsViewModel settings,
         SceneHierarchyViewModel hierarchy,
@@ -46,6 +78,10 @@ public sealed partial class ViewportViewModel : BaseViewModel
     {
         _renderService = renderService;
         _parsers = parsers;
+        _transformService = transformService;
+        _selectionService = selectionService;
+        _undoRedoService = undoRedoService;
+        _pivotService = pivotService;
         Camera = camera;
         Settings = settings;
         Hierarchy = hierarchy;
@@ -54,11 +90,13 @@ public sealed partial class ViewportViewModel : BaseViewModel
         _logger = logger;
 
         Title = "3D Viewport Workspace";
-        Subtitle = "Universal real-time rendering, inspection, and preview engine.";
+        Subtitle = "Universal real-time rendering, inspection, and interactive 3D editing engine.";
 
         Hierarchy.NodeSelected += OnHierarchyNodeSelected;
         Skeletons.BoneSelected += OnSkeletonBoneSelected;
         Settings.SettingsChanged += OnSettingsChanged;
+
+        _selectionService.SelectionChanged += OnSelectionServiceChanged;
     }
 
     public async Task LoadSceneModelAsync(Scene3D sceneModel, string? sourcePath = null, CancellationToken cancellationToken = default)
@@ -70,6 +108,7 @@ public sealed partial class ViewportViewModel : BaseViewModel
             IsBusy = true;
             StatusMessage = $"Preparing 3D render scene for '{sceneModel.Name}'...";
 
+            RawUsmScene = sceneModel;
             var rScene = await _renderService.LoadSceneAsync(sceneModel, cancellationToken);
             Scene = rScene;
             LoadedModelName = sceneModel.Name;
@@ -77,6 +116,7 @@ public sealed partial class ViewportViewModel : BaseViewModel
 
             Hierarchy.LoadScene(rScene);
             Skeletons.LoadSkeletons(rScene.Skeletons);
+            _selectionService.ClearSelection();
             Inspector.Clear();
 
             StatusMessage = $"Loaded '{sceneModel.Name}' ({rScene.TotalTriangles:N0} triangles, {rScene.TotalVoxels:N0} voxels).";
@@ -148,17 +188,75 @@ public sealed partial class ViewportViewModel : BaseViewModel
     [RelayCommand]
     public void SelectNode(string? nodeId)
     {
+        SelectedNodeId = nodeId;
         _renderService.SelectNode(nodeId);
         Hierarchy.SelectById(nodeId);
 
-        if (!string.IsNullOrEmpty(nodeId) && Scene is not null)
+        if (!string.IsNullOrEmpty(nodeId))
         {
-            var node = FindNodeRecursive(Scene.RootNodes, nodeId);
-            Inspector.InspectNode(node, Scene);
+            if (Guid.TryParse(nodeId, out var guid))
+            {
+                _selectionService.Select(guid);
+                var usmNode = RawUsmScene?.Graph.FindNode(guid);
+                if (usmNode is not null)
+                {
+                    Inspector.InspectUsmNode(usmNode, RawUsmScene);
+                    return;
+                }
+            }
+
+            if (Scene is not null)
+            {
+                var rNode = FindNodeRecursive(Scene.RootNodes, nodeId);
+                Inspector.InspectNode(rNode, Scene);
+            }
         }
         else
         {
+            _selectionService.ClearSelection();
             Inspector.Clear();
+        }
+    }
+
+    [RelayCommand]
+    public void SetTool(EditorToolType tool)
+    {
+        ActiveTool = tool;
+        _transformService.ActiveTool = tool;
+    }
+
+    [RelayCommand]
+    public void ToggleSpace()
+    {
+        ActiveSpace = ActiveSpace == TransformSpace.World ? TransformSpace.Local : TransformSpace.World;
+        _transformService.TransformSpace = ActiveSpace;
+        Inspector.ActiveSpace = ActiveSpace;
+    }
+
+    [RelayCommand]
+    public void ToggleSnapping()
+    {
+        SnappingEnabled = !SnappingEnabled;
+        _transformService.SnappingEnabled = SnappingEnabled;
+    }
+
+    [RelayCommand]
+    public void Undo()
+    {
+        _undoRedoService.Undo();
+        if (Inspector.ActiveNode is not null)
+        {
+            Inspector.InspectUsmNode(Inspector.ActiveNode, RawUsmScene);
+        }
+    }
+
+    [RelayCommand]
+    public void Redo()
+    {
+        _undoRedoService.Redo();
+        if (Inspector.ActiveNode is not null)
+        {
+            Inspector.InspectUsmNode(Inspector.ActiveNode, RawUsmScene);
         }
     }
 
@@ -182,6 +280,12 @@ public sealed partial class ViewportViewModel : BaseViewModel
     private void OnSettingsChanged(object? sender, RenderSettings settings)
     {
         // Viewport control automatically observes settings changes
+    }
+
+    private void OnSelectionServiceChanged(object? sender, EventArgs e)
+    {
+        var primary = _selectionService.PrimarySelectedNodeId;
+        SelectedNodeId = primary?.ToString();
     }
 
     private static RenderNode? FindNodeRecursive(IEnumerable<RenderNode> nodes, string id)

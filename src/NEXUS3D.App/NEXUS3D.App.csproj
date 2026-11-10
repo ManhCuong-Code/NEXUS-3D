@@ -31,6 +31,9 @@
     <ProjectReference Include="..\NEXUS3D.Voxelization.Abstractions\NEXUS3D.Voxelization.Abstractions.csproj" />
     <ProjectReference Include="..\NEXUS3D.Voxelization.Domain\NEXUS3D.Voxelization.Domain.csproj" />
     <ProjectReference Include="..\NEXUS3D.Voxelization.Engine\NEXUS3D.Voxelization.Engine.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Editor.Abstractions\NEXUS3D.Editor.Abstractions.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Editor.Domain\NEXUS3D.Editor.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Editor.Engine\NEXUS3D.Editor.Engine.csproj" />
     <ProjectReference Include="..\NEXUS3D.PluginSystem\NEXUS3D.PluginSystem.csproj" />
     <ProjectReference Include="..\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
   </ItemGroup>

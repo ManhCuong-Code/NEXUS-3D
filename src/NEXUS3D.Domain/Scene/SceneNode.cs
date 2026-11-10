@@ -19,8 +19,8 @@ public sealed class SceneNode : Entity, ISceneComponent, IDeepCloneable<SceneNod
     public bool IsLocked { get; set; }
     public SceneObject? Object { get; set; }
 
-    internal SceneNode? ParentNode { get; set; }
-    internal SceneGraph? OwningGraph { get; set; }
+    public SceneNode? ParentNode { get; internal set; }
+    public SceneGraph? OwningGraph { get; internal set; }
 
     public IReadOnlyCollection<SceneNode> Children => _children;
     internal List<SceneNode> InternalChildren => _children;
