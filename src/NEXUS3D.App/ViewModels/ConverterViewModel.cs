@@ -5,8 +5,12 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using NEXUS3D.Application.Interfaces;
 using NEXUS3D.Application.Models;
+using NEXUS3D.Conversion.Abstractions;
+using NEXUS3D.Conversion.Abstractions.Interfaces;
+using NEXUS3D.Conversion.Abstractions.Models;
 using NEXUS3D.Domain.Entities;
 using NEXUS3D.Domain.Enums;
+using NEXUS3D.Domain.Repositories;
 using NEXUS3D.Domain.Rules;
 using NEXUS3D.Engine.Contracts;
 using NEXUS3D.Formats.Abstractions;
@@ -17,15 +21,19 @@ using NEXUS3D.Shared.Helpers;
 namespace NEXUS3D.App.ViewModels;
 
 /// <summary>
-/// ViewModel for the Converter preparation workspace.
-/// Allows selecting source 3D models, inspecting metadata, configuring conversion profiles,
-/// controlling foundational viewport state, and queuing conversion tasks.
+/// ViewModel for the Converter workspace in NEXUS 3D.
+/// Controls model inspection, profile selection, viewport state, data loss preview,
+/// and single or batch format conversions through the Universal Scene Model (USM).
 /// </summary>
 public sealed partial class ConverterViewModel : BaseViewModel
 {
     private readonly IConverterPreparationService _converterService;
     private readonly IFormatRegistry _formatRegistry;
     private readonly IConversionPipeline _conversionPipeline;
+    private readonly IUniversalConversionPipeline _universalPipeline;
+    private readonly IBatchConversionService _batchService;
+    private readonly IConversionHistoryRepository _historyRepository;
+    private readonly IDataLossAnalyzer _lossAnalyzer;
     private readonly IViewportController _viewportController;
     private readonly INotificationService _notificationService;
     private readonly IApplicationPathsService _pathsService;
@@ -58,6 +66,24 @@ public sealed partial class ConverterViewModel : BaseViewModel
     private bool _preserveMaterials = true;
 
     [ObservableProperty]
+    private MeshingAlgorithm _selectedMeshingMode = MeshingAlgorithm.GreedyMeshing;
+
+    [ObservableProperty]
+    private VoxelizationMode _selectedVoxelizationMode = VoxelizationMode.SurfaceOnly;
+
+    [ObservableProperty]
+    private double _targetVoxelSize = 1.0;
+
+    [ObservableProperty]
+    private bool _triangulatePolygons = false;
+
+    [ObservableProperty]
+    private bool _autoCorrectWindingOrder = true;
+
+    [ObservableProperty]
+    private bool _bakeBedrockBones = true;
+
+    [ObservableProperty]
     private string _inspectedModelName = "No Model Selected";
 
     [ObservableProperty]
@@ -70,12 +96,27 @@ public sealed partial class ConverterViewModel : BaseViewModel
     private string _engineStatusSummary = "Engine Ready";
 
     [ObservableProperty]
+    private double _conversionProgress = 0.0;
+
+    [ObservableProperty]
+    private bool _isConverting = false;
+
+    [ObservableProperty]
+    private string _conversionProgressMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _lossSummaryText = "No loss predicted";
+
+    [ObservableProperty]
     private ViewportShadingMode _currentShadingMode = ViewportShadingMode.Textured;
 
     [ObservableProperty]
     private bool _showViewportGrid = true;
 
     public ObservableCollection<ConversionProfile> Profiles { get; } = [];
+    public ObservableCollection<ConversionLossItem> PredictedLossItems { get; } = [];
+    public ObservableCollection<string> ExecutionLogs { get; } = [];
+
     public ObservableCollection<ModelFormatType> AvailableFormats { get; } =
     [
         ModelFormatType.Schematic,
@@ -92,10 +133,21 @@ public sealed partial class ConverterViewModel : BaseViewModel
         ViewportShadingMode.VoxelGrid
     ];
 
+    public ObservableCollection<MeshingAlgorithm> AvailableMeshingModes { get; } =
+    [
+        MeshingAlgorithm.GreedyMeshing,
+        MeshingAlgorithm.ExposedFaceCulling,
+        MeshingAlgorithm.SimpleBlockQuads
+    ];
+
     public ConverterViewModel(
         IConverterPreparationService converterService,
         IFormatRegistry formatRegistry,
         IConversionPipeline conversionPipeline,
+        IUniversalConversionPipeline universalPipeline,
+        IBatchConversionService batchService,
+        IConversionHistoryRepository historyRepository,
+        IDataLossAnalyzer lossAnalyzer,
         IViewportController viewportController,
         INotificationService notificationService,
         IApplicationPathsService pathsService)
@@ -103,12 +155,16 @@ public sealed partial class ConverterViewModel : BaseViewModel
         _converterService = Guard.NotNull(converterService);
         _formatRegistry = Guard.NotNull(formatRegistry);
         _conversionPipeline = Guard.NotNull(conversionPipeline);
+        _universalPipeline = Guard.NotNull(universalPipeline);
+        _batchService = Guard.NotNull(batchService);
+        _historyRepository = Guard.NotNull(historyRepository);
+        _lossAnalyzer = Guard.NotNull(lossAnalyzer);
         _viewportController = Guard.NotNull(viewportController);
         _notificationService = Guard.NotNull(notificationService);
         _pathsService = Guard.NotNull(pathsService);
 
         Title = "3D Model Converter Workspace";
-        Subtitle = "Configure format pipelines, inspect model headers, and prepare conversion jobs.";
+        Subtitle = "Universal multi-format conversion via Universal Scene Model (USM).";
         OutputDirectory = Path.Combine(_pathsService.AppDataRootDirectory, "Exports");
 
         var snapshot = _conversionPipeline.GetStatusSnapshot();
@@ -215,10 +271,7 @@ public sealed partial class ConverterViewModel : BaseViewModel
     [RelayCommand]
     private async Task PrepareConversionAsync(CancellationToken cancellationToken = default)
     {
-        if (IsBusy)
-        {
-            return;
-        }
+        if (IsBusy) return;
 
         try
         {
@@ -258,6 +311,139 @@ public sealed partial class ConverterViewModel : BaseViewModel
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ExecuteConversionAsync(CancellationToken cancellationToken = default)
+    {
+        if (IsConverting || IsBusy) return;
+
+        if (string.IsNullOrWhiteSpace(SourceFilePath) || !File.Exists(SourceFilePath))
+        {
+            ErrorMessage = "Please specify a valid source 3D model file.";
+            return;
+        }
+
+        try
+        {
+            IsConverting = true;
+            ClearError();
+            ExecutionLogs.Clear();
+            PredictedLossItems.Clear();
+            ConversionProgress = 0.0;
+            ConversionProgressMessage = "Initializing Universal Scene Model pipeline...";
+
+            string baseFileName = Path.GetFileNameWithoutExtension(SourceFilePath);
+            if (baseFileName.EndsWith(".geo", StringComparison.OrdinalIgnoreCase) ||
+                baseFileName.EndsWith(".voxel", StringComparison.OrdinalIgnoreCase))
+            {
+                baseFileName = Path.GetFileNameWithoutExtension(baseFileName);
+            }
+
+            string targetExt = SelectedTargetFormat switch
+            {
+                ModelFormatType.Obj => ".obj",
+                ModelFormatType.Schematic => ".schem",
+                ModelFormatType.VoxelJson => ".voxel.json",
+                ModelFormatType.BedrockGeometry => ".geo.json",
+                _ => ".obj"
+            };
+
+            string outDir = string.IsNullOrWhiteSpace(OutputDirectory)
+                ? Path.Combine(_pathsService.AppDataRootDirectory, "Exports")
+                : OutputDirectory;
+
+            Directory.CreateDirectory(outDir);
+            string targetFilePath = Path.Combine(outDir, $"{baseFileName}{targetExt}");
+            string jobName = $"{baseFileName} ({SelectedSourceFormat} -> {SelectedTargetFormat})";
+
+            long sourceSize = new FileInfo(SourceFilePath).Length;
+            var historyRecord = new ConversionHistoryRecord(
+                jobName: jobName,
+                sourceFilePath: SourceFilePath,
+                targetFilePath: targetFilePath,
+                sourceFormat: SelectedSourceFormat,
+                targetFormat: SelectedTargetFormat,
+                sourceSizeBytes: sourceSize,
+                profileId: SelectedProfile?.Id);
+
+            var options = new ConversionOptions
+            {
+                ScaleFactor = ScaleFactor,
+                MeshingMode = GreedyMeshing ? MeshingAlgorithm.GreedyMeshing : SelectedMeshingMode,
+                PreserveMaterials = PreserveMaterials,
+                AutoCorrectWindingOrder = AutoCorrectWindingOrder,
+                AdaptCoordinates = true,
+                TriangulatePolygons = TriangulatePolygons,
+                BakeBedrockBonesToMesh = BakeBedrockBones,
+                TargetVoxelSize = TargetVoxelSize,
+                VoxelizationMode = SelectedVoxelizationMode
+            };
+
+            var request = new ConversionRequest(
+                SourceFilePath: SourceFilePath,
+                TargetFilePath: targetFilePath,
+                SourceFormat: SelectedSourceFormat,
+                TargetFormat: SelectedTargetFormat,
+                Options: options,
+                ProfileId: SelectedProfile?.Id);
+
+            var progressReporter = new Progress<double>(p =>
+            {
+                ConversionProgress = p * 100.0;
+                ConversionProgressMessage = $"Converting ({ConversionProgress:F0}%)...";
+            });
+
+            ConversionResult result = await _universalPipeline.ExecuteAsync(request, progressReporter, cancellationToken);
+
+            foreach (var log in result.Logs)
+            {
+                ExecutionLogs.Add(log);
+            }
+
+            foreach (var item in result.LossReport.Items)
+            {
+                PredictedLossItems.Add(item);
+            }
+
+            LossSummaryText = $"Loss Severity: {result.LossReport.OverallSeverity} ({result.LossReport.LostCount} lost, {result.LossReport.ApproximatedCount} approx, {result.LossReport.PreservedCount} preserved)";
+
+            if (result.IsSuccess)
+            {
+                historyRecord.MarkCompleted(result.TargetSizeBytes, result.DurationMs);
+                await _historyRepository.AddAsync(historyRecord, cancellationToken);
+
+                StatusMessage = $"Conversion Succeeded in {result.DurationMs}ms -> {Path.GetFileName(result.TargetFilePath)}";
+                _notificationService.Publish(
+                    "Conversion Succeeded",
+                    $"Generated {Path.GetFileName(result.TargetFilePath)} ({FileSizeFormatter.FormatBytes(result.TargetSizeBytes)}) in {result.DurationMs}ms.",
+                    NotificationSeverity.Success,
+                    "Converter");
+            }
+            else
+            {
+                historyRecord.MarkFailed(result.ErrorMessage ?? "Conversion failed", result.DurationMs);
+                await _historyRepository.AddAsync(historyRecord, cancellationToken);
+
+                ErrorMessage = result.ErrorMessage;
+                StatusMessage = $"Conversion Failed: {result.ErrorMessage}";
+                _notificationService.Publish(
+                    "Conversion Failed",
+                    result.ErrorMessage ?? "Unknown conversion failure.",
+                    NotificationSeverity.Error,
+                    "Converter");
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            StatusMessage = $"Conversion Error: {ex.Message}";
+        }
+        finally
+        {
+            IsConverting = false;
+            ConversionProgress = 100.0;
         }
     }
 
