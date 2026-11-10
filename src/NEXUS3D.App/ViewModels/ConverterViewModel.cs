@@ -15,6 +15,8 @@ using NEXUS3D.Domain.Rules;
 using NEXUS3D.Engine.Contracts;
 using NEXUS3D.Formats.Abstractions;
 using NEXUS3D.Rendering.Contracts;
+using NEXUS3D.Rendering.Domain;
+using NEXUS3D.Domain.Scene;
 using NEXUS3D.Shared.Guards;
 using NEXUS3D.Shared.Helpers;
 
@@ -37,6 +39,20 @@ public sealed partial class ConverterViewModel : BaseViewModel
     private readonly IViewportController _viewportController;
     private readonly INotificationService _notificationService;
     private readonly IApplicationPathsService _pathsService;
+    private readonly IRenderSceneAdapter _renderSceneAdapter;
+    private readonly IEnumerable<IFormatParser> _parsers;
+
+    [ObservableProperty]
+    private RenderScene? _previewScene;
+
+    [ObservableProperty]
+    private bool _isPreviewStale = true;
+
+    [ObservableProperty]
+    private bool _hasPreview = false;
+
+    [ObservableProperty]
+    private string _previewStatusText = "No 3D Preview Generated";
 
     [ObservableProperty]
     private string _sourceFilePath = string.Empty;
@@ -150,7 +166,9 @@ public sealed partial class ConverterViewModel : BaseViewModel
         IDataLossAnalyzer lossAnalyzer,
         IViewportController viewportController,
         INotificationService notificationService,
-        IApplicationPathsService pathsService)
+        IApplicationPathsService pathsService,
+        IRenderSceneAdapter renderSceneAdapter,
+        IEnumerable<IFormatParser> parsers)
     {
         _converterService = Guard.NotNull(converterService);
         _formatRegistry = Guard.NotNull(formatRegistry);
@@ -162,6 +180,8 @@ public sealed partial class ConverterViewModel : BaseViewModel
         _viewportController = Guard.NotNull(viewportController);
         _notificationService = Guard.NotNull(notificationService);
         _pathsService = Guard.NotNull(pathsService);
+        _renderSceneAdapter = Guard.NotNull(renderSceneAdapter);
+        _parsers = Guard.NotNull(parsers);
 
         Title = "3D Model Converter Workspace";
         Subtitle = "Universal multi-format conversion via Universal Scene Model (USM).";
@@ -452,5 +472,87 @@ public sealed partial class ConverterViewModel : BaseViewModel
     {
         _viewportController.ResetCamera();
         StatusMessage = "Viewport camera reset to default isometric orbit.";
+    }
+
+    partial void OnSourceFilePathChanged(string value)
+    {
+        IsPreviewStale = true;
+        PreviewStatusText = "Source model changed • Preview is stale";
+    }
+
+    partial void OnSelectedTargetFormatChanged(ModelFormatType value)
+    {
+        IsPreviewStale = true;
+        PreviewStatusText = "Target format changed • Preview is stale";
+    }
+
+    partial void OnSelectedMeshingModeChanged(MeshingAlgorithm value)
+    {
+        IsPreviewStale = true;
+        PreviewStatusText = "Meshing algorithm changed • Preview is stale";
+    }
+
+    partial void OnTargetVoxelSizeChanged(double value)
+    {
+        IsPreviewStale = true;
+        PreviewStatusText = "Target voxel size changed • Preview is stale";
+    }
+
+    [RelayCommand]
+    public async Task GeneratePreviewAsync(CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(SourceFilePath) || !File.Exists(SourceFilePath))
+        {
+            ErrorMessage = "Select a valid source model before generating 3D preview.";
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            ClearError();
+            StatusMessage = "Generating 3D conversion preview...";
+
+            string ext = Path.GetExtension(SourceFilePath).ToLowerInvariant();
+            var parser = _parsers.FirstOrDefault(p =>
+                (ext is ".schem" or ".schematic" && p.FormatIdentifier.Contains("schematic", StringComparison.OrdinalIgnoreCase)) ||
+                (ext is ".obj" && p.FormatIdentifier.Contains("obj", StringComparison.OrdinalIgnoreCase)) ||
+                (ext is ".json" or ".voxel.json" && p.FormatIdentifier.Contains("voxel", StringComparison.OrdinalIgnoreCase)) ||
+                (ext is ".geo.json" && p.FormatIdentifier.Contains("bedrock", StringComparison.OrdinalIgnoreCase)) ||
+                p.FormatIdentifier.Contains(ext.TrimStart('.'), StringComparison.OrdinalIgnoreCase));
+
+            if (parser is null)
+            {
+                ErrorMessage = $"No parser available for previewing format '{ext}'.";
+                return;
+            }
+
+            using var stream = File.OpenRead(SourceFilePath);
+            var parseResult = await parser.ParseToSceneAsync(
+                stream,
+                new ParseOptions { StrictValidation = false, PreserveUnknownData = true },
+                cancellationToken);
+
+            if (parseResult.IsFailure || parseResult.Value is null)
+            {
+                ErrorMessage = $"Failed to parse model for preview: {parseResult.Error.Message}";
+                return;
+            }
+
+            var rScene = _renderSceneAdapter.Adapt(parseResult.Value, RenderSettings.Default);
+            PreviewScene = rScene;
+            IsPreviewStale = false;
+            HasPreview = true;
+            PreviewStatusText = $"Preview ready: {rScene.TotalTriangles:N0} tris, {rScene.TotalVoxels:N0} voxels";
+            StatusMessage = "3D Preview updated successfully.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Preview generation error: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 }

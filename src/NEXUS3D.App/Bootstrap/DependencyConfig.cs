@@ -31,6 +31,7 @@ using NEXUS3D.Infrastructure.Persistence.Repositories;
 using NEXUS3D.PluginSystem.Contracts;
 using NEXUS3D.PluginSystem.Services;
 using NEXUS3D.Rendering.Contracts;
+using NEXUS3D.Rendering.DependencyInjection;
 using NEXUS3D.Rendering.Services;
 
 namespace NEXUS3D.App.Bootstrap;
@@ -106,9 +107,9 @@ public static class DependencyConfig
 
         services.AddNexusConversionEngine();
         services.AddNexusBatchConversion();
+        services.AddNexusRendering();
 
         services.AddSingleton<IConversionPipeline, FoundationConversionPipeline>();
-        services.AddSingleton<IViewportController, DefaultViewportController>();
         services.AddSingleton<IPluginCatalogService, PluginCatalogService>();
     }
 
@@ -126,6 +127,12 @@ public static class DependencyConfig
     {
         services.AddSingleton<INavigationService, NavigationService>();
 
+        services.AddSingleton<CameraViewModel>();
+        services.AddSingleton<RenderSettingsViewModel>();
+        services.AddSingleton<SceneHierarchyViewModel>();
+        services.AddSingleton<ObjectInspectorViewModel>();
+        services.AddSingleton<BoneHierarchyViewModel>();
+        services.AddSingleton<ViewportViewModel>();
         services.AddSingleton<DashboardViewModel>();
         services.AddSingleton<ConverterViewModel>();
         services.AddSingleton<FileManagerViewModel>();

@@ -27,6 +27,7 @@ public sealed class NavigationService : INavigationService
         {
             NavigationModule.Dashboard => _serviceProvider.GetRequiredService<DashboardViewModel>(),
             NavigationModule.Converter => _serviceProvider.GetRequiredService<ConverterViewModel>(),
+            NavigationModule.Viewport => _serviceProvider.GetRequiredService<ViewportViewModel>(),
             NavigationModule.FileManager => _serviceProvider.GetRequiredService<FileManagerViewModel>(),
             NavigationModule.Settings => _serviceProvider.GetRequiredService<SettingsViewModel>(),
             _ => _serviceProvider.GetRequiredService<DashboardViewModel>()

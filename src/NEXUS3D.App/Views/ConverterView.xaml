@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:NEXUS3D.App.Controls"
              mc:Ignorable="d">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="22">
@@ -181,15 +182,11 @@
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                        <CheckBox Content="Show Grid"
-                                                  Foreground="{StaticResource Brush.TextSecondary}"
-                                                  IsChecked="{Binding ShowViewportGrid}"
-                                                  VerticalAlignment="Center"
-                                                  Margin="0,0,12,0" />
-                                        <ComboBox ItemsSource="{Binding AvailableShadingModes}"
-                                                  SelectedItem="{Binding CurrentShadingMode}"
-                                                  Width="110"
-                                                  Margin="0,0,8,0" />
+                                        <Button Style="{StaticResource Style.PrimaryButton}"
+                                                Content="3D Preview"
+                                                Padding="10,4"
+                                                Margin="0,0,8,0"
+                                                Command="{Binding GeneratePreviewCommand}" />
                                         <Button Style="{StaticResource Style.SecondaryButton}"
                                                 Content="Reset Camera"
                                                 Padding="8,4"
@@ -198,25 +195,10 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Center Wireframe Cube Graphic & Stage Note -->
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Path Data="{StaticResource Icon.Cube3D}"
-                                      Fill="{StaticResource Brush.AccentPrimary}"
-                                      Opacity="0.65"
-                                      Width="68" Height="68"
-                                      Stretch="Uniform"
-                                      HorizontalAlignment="Center"
-                                      Margin="0,0,0,12" />
-                                <TextBlock Text="NEXUS 3D Viewport Canvas Foundation"
-                                           FontSize="15"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource Brush.TextPrimary}"
-                                           HorizontalAlignment="Center" />
-                                <TextBlock Text="Hardware-accelerated 3D mesh/voxel rendering will be connected in Stage 05."
-                                           Style="{StaticResource Text.MutedCaption}"
-                                           HorizontalAlignment="Center"
-                                           Margin="0,4,0,0" />
-                            </StackPanel>
+                            <!-- Live 3D Viewport Control -->
+                            <controls:Viewport3DControl Margin="0,40,0,0"
+                                                        MinHeight="320"
+                                                        Scene="{Binding PreviewScene}" />
                         </Grid>
                     </Border>
 
