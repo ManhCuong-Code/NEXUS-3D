@@ -46,7 +46,6 @@ public sealed class BatchWorker : IBatchWorker
         }
 
         int maxConcurrency = Math.Clamp(job.MaxConcurrency, 1, Math.Max(2, Environment.ProcessorCount));
-        using var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var jobToken = linkedCts.Token;
 
@@ -58,43 +57,44 @@ public sealed class BatchWorker : IBatchWorker
         // Ensure output directory exists
         Directory.CreateDirectory(job.OutputDirectory);
 
-        var tasks = job.Items.Select(async item =>
+        // Memory-optimized bounded worker queue: allocates exactly workerCount tasks instead of N closures
+        var queue = new System.Collections.Concurrent.ConcurrentQueue<BatchJobItem>(job.Items);
+        int workerCount = Math.Min(maxConcurrency, totalItems);
+
+        var workers = Enumerable.Range(0, workerCount).Select(async _ =>
         {
-            await semaphore.WaitAsync(jobToken).ConfigureAwait(false);
-            try
+            while (queue.TryDequeue(out var item))
             {
                 jobToken.ThrowIfCancellationRequested();
-
-                await ProcessItemWithRetryAsync(job, item, stopwatch, progress, jobToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                if (item.Status == BatchItemStatus.Pending || item.Status == BatchItemStatus.Processing)
+                try
                 {
-                    item.MarkFailed("CANCELLED", "Processing was cancelled by user.", 0);
+                    await ProcessItemWithRetryAsync(job, item, stopwatch, progress, jobToken).ConfigureAwait(false);
                 }
-                throw;
-            }
-            catch (Exception ex)
-            {
-                item.MarkFailed("UNEXPECTED_ERROR", ex.Message, 0);
-                _logger.LogError(ex, "Unexpected exception processing item '{Path}' in job '{JobName}'.", item.SourceFilePath, job.JobName);
-
-                if (!job.ContinueOnError)
+                catch (OperationCanceledException)
                 {
-                    _logger.LogWarning("Halting batch job '{JobName}' because ContinueOnError is false.", job.JobName);
-                    try { linkedCts.Cancel(); } catch { }
+                    if (item.Status == BatchItemStatus.Pending || item.Status == BatchItemStatus.Processing)
+                    {
+                        item.MarkFailed("CANCELLED", "Processing was cancelled by user.", 0);
+                    }
+                    throw;
                 }
-            }
-            finally
-            {
-                semaphore.Release();
+                catch (Exception ex)
+                {
+                    item.MarkFailed("UNEXPECTED_ERROR", ex.Message, 0);
+                    _logger.LogError(ex, "Unexpected exception processing item '{Path}' in job '{JobName}'.", item.SourceFilePath, job.JobName);
+
+                    if (!job.ContinueOnError)
+                    {
+                        _logger.LogWarning("Halting batch job '{JobName}' because ContinueOnError is false.", job.JobName);
+                        try { linkedCts.Cancel(); } catch { }
+                    }
+                }
             }
         });
 
         try
         {
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            await Task.WhenAll(workers).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
