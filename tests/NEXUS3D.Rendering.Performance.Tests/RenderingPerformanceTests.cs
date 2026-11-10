@@ -119,3 +119,4 @@ public sealed class RenderingPerformanceTests
         Assert.True(sw.ElapsedMilliseconds < 1500, $"Spatial chunking took {sw.ElapsedMilliseconds}ms, exceeding 1500ms target.");
     }
 }
+

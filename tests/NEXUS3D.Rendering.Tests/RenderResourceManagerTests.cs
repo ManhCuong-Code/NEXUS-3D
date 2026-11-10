@@ -73,3 +73,4 @@ public sealed class RenderResourceManagerTests
         Assert.Equal(50, manager.ActiveResourceCount);
     }
 }
+

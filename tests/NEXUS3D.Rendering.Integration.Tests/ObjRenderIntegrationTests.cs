@@ -57,3 +57,4 @@ public sealed class ObjRenderIntegrationTests
         Assert.True(mesh.BoundsMax.X > mesh.BoundsMin.X);
     }
 }
+

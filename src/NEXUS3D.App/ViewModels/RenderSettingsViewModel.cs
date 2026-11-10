@@ -131,3 +131,4 @@ public sealed partial class RenderSettingsViewModel : ObservableObject
         SettingsChanged?.Invoke(this, settings);
     }
 }
+

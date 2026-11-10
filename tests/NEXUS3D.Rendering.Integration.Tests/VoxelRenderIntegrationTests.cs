@@ -45,3 +45,4 @@ public sealed class VoxelRenderIntegrationTests
         Assert.NotEmpty(renderScene.RootNodes);
     }
 }
+

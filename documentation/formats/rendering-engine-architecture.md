@@ -136,3 +136,4 @@ public static IServiceCollection AddNexusRendering(this IServiceCollection servi
     return services;
 }
 ```
+

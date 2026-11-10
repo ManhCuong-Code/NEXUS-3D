@@ -165,3 +165,4 @@ public sealed class CameraService : ICameraService
         return CurrentCamera;
     }
 }
+

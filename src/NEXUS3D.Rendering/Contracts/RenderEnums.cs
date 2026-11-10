@@ -37,3 +37,4 @@ public enum RenderNodeType
     Locator = 3,
     Group = 4
 }
+

@@ -45,3 +45,4 @@ public sealed class BedrockGeometryRenderIntegrationTests
         Assert.True(renderScene.Skeletons.Count > 0 || renderScene.RootNodes.Any(n => n.Bones.Count > 0 || n.Meshes.Count > 0));
     }
 }
+

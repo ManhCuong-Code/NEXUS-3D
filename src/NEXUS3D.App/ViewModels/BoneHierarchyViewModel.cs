@@ -71,3 +71,4 @@ public sealed partial class BoneHierarchyViewModel : ObservableObject
         BoneSelected?.Invoke(this, item?.Name);
     }
 }
+
