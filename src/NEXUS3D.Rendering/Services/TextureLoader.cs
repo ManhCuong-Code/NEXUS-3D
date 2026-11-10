@@ -33,6 +33,12 @@ public sealed class TextureLoader : ITextureLoader
                 var fullBasePath = Path.GetFullPath(baseDirectory);
                 var combined = Path.GetFullPath(Path.Combine(fullBasePath, normalizedRef));
 
+                // Reject any attempt to break outside baseDirectory
+                if (!combined.StartsWith(fullBasePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
                 if (File.Exists(combined))
                 {
                     return combined;
