@@ -101,6 +101,60 @@ public sealed class DatabaseSchemaMigrator
                 InstalledAtUtc TEXT NOT NULL
             );
             """
+        ),
+        (
+            Version: 2,
+            Name: "002_BatchJobHistorySchema",
+            Sql: """
+            CREATE TABLE IF NOT EXISTS BatchJobs (
+                Id TEXT PRIMARY KEY NOT NULL,
+                JobName TEXT NOT NULL,
+                InputDirectory TEXT NULL,
+                OutputDirectory TEXT NOT NULL,
+                SourceFormat INTEGER NULL,
+                TargetFormat INTEGER NOT NULL,
+                Priority INTEGER NOT NULL DEFAULT 2,
+                Status INTEGER NOT NULL DEFAULT 0,
+                TotalFiles INTEGER NOT NULL DEFAULT 0,
+                SucceededFiles INTEGER NOT NULL DEFAULT 0,
+                FailedFiles INTEGER NOT NULL DEFAULT 0,
+                SkippedFiles INTEGER NOT NULL DEFAULT 0,
+                OverwriteExisting INTEGER NOT NULL DEFAULT 0,
+                ContinueOnError INTEGER NOT NULL DEFAULT 1,
+                RetryLimit INTEGER NOT NULL DEFAULT 1,
+                MaxConcurrency INTEGER NOT NULL DEFAULT 4,
+                DurationMs INTEGER NOT NULL DEFAULT 0,
+                ErrorMessage TEXT NULL,
+                CreatedAtUtc TEXT NOT NULL,
+                StartedAtUtc TEXT NULL,
+                CompletedAtUtc TEXT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS IX_BatchJobs_CreatedAtUtc
+                ON BatchJobs (CreatedAtUtc DESC);
+
+            CREATE TABLE IF NOT EXISTS BatchJobItems (
+                Id TEXT PRIMARY KEY NOT NULL,
+                JobId TEXT NOT NULL,
+                SourceFilePath TEXT NOT NULL,
+                TargetFilePath TEXT NOT NULL,
+                SourceFormat INTEGER NOT NULL,
+                TargetFormat INTEGER NOT NULL,
+                Status INTEGER NOT NULL DEFAULT 0,
+                ErrorMessage TEXT NULL,
+                ErrorCode TEXT NULL,
+                RetryCount INTEGER NOT NULL DEFAULT 0,
+                DurationMs INTEGER NOT NULL DEFAULT 0,
+                SourceSizeBytes INTEGER NOT NULL DEFAULT 0,
+                TargetSizeBytes INTEGER NOT NULL DEFAULT 0,
+                CreatedAtUtc TEXT NOT NULL,
+                CompletedAtUtc TEXT NULL,
+                FOREIGN KEY (JobId) REFERENCES BatchJobs(Id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS IX_BatchJobItems_JobId
+                ON BatchJobItems (JobId);
+            """
         )
     ];
 

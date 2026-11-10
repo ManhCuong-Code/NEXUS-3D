@@ -92,6 +92,7 @@ public static class DependencyConfig
         services.AddSingleton<IExportConfigurationRepository, SqliteExportConfigurationRepository>();
         services.AddSingleton<IAppSettingRepository, SqliteAppSettingRepository>();
         services.AddSingleton<IPluginRegistrationRepository, SqlitePluginRegistrationRepository>();
+        services.AddSingleton<IBatchJobRepository, SqliteBatchJobRepository>();
         services.AddSingleton<IDatabaseInitializer, DatabaseInitializer>();
         services.AddUsmInfrastructureServices();
     }

@@ -49,3 +49,13 @@ public interface IPluginRegistrationRepository
     Task SetEnabledAsync(string pluginId, bool isEnabled, CancellationToken cancellationToken = default);
 }
 
+public interface IBatchJobRepository
+{
+    Task AddJobAsync(BatchJobRecord job, CancellationToken cancellationToken = default);
+    Task UpdateJobAsync(BatchJobRecord job, CancellationToken cancellationToken = default);
+    Task<BatchJobRecord?> GetJobByIdAsync(Guid jobId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<BatchJobRecord>> GetRecentJobsAsync(int limit = 50, CancellationToken cancellationToken = default);
+    Task DeleteJobAsync(Guid jobId, CancellationToken cancellationToken = default);
+}
+
+
