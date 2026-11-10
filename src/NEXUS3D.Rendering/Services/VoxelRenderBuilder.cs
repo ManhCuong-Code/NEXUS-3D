@@ -5,7 +5,7 @@ using NEXUS3D.Rendering.Domain;
 namespace NEXUS3D.Rendering.Services;
 
 /// <summary>
-/// Builds high-performance, culled 3D mesh representation of VoxelGrids for GPU rendering.
+/// Builds high-performance, culled and chunk-partitioned 3D mesh representation of VoxelGrids for GPU rendering.
 /// </summary>
 public sealed class VoxelRenderBuilder
 {
@@ -176,6 +176,46 @@ public sealed class VoxelRenderBuilder
             VoxelCount = voxels.Count,
             Mesh = renderMesh
         };
+    }
+
+    /// <summary>
+    /// Divides a large voxel grid into 16x16x16 sub-chunks for spatial partitioning and fast frustum rendering.
+    /// </summary>
+    public List<RenderVoxelChunk> BuildSpatialChunks(VoxelGrid grid, int chunkSize = 16)
+    {
+        var result = new List<RenderVoxelChunk>();
+        if (grid is null || grid.GetVoxelCount() == 0) return result;
+
+        var chunkGroups = new Dictionary<(int CX, int CY, int CZ), List<Voxel>>();
+        foreach (var v in grid.Voxels)
+        {
+            int cx = (int)Math.Floor((float)v.Position.X / chunkSize);
+            int cy = (int)Math.Floor((float)v.Position.Y / chunkSize);
+            int cz = (int)Math.Floor((float)v.Position.Z / chunkSize);
+
+            var key = (cx, cy, cz);
+            if (!chunkGroups.TryGetValue(key, out var list))
+            {
+                list = [];
+                chunkGroups[key] = list;
+            }
+            list.Add(v);
+        }
+
+        foreach (var (key, chunkVoxels) in chunkGroups)
+        {
+            var subGrid = new VoxelGrid($"Chunk_{key.CX}_{key.CY}_{key.CZ}")
+            {
+                VoxelSize = grid.VoxelSize
+            };
+            foreach (var v in chunkVoxels)
+            {
+                subGrid.SetVoxel(v);
+            }
+            result.Add(Build(subGrid, enableCulling: true));
+        }
+
+        return result;
     }
 
     private static Vector4 ResolveVoxelColor(Voxel voxel)
