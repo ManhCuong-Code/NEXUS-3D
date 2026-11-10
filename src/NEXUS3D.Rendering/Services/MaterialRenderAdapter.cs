@@ -95,4 +95,63 @@ public sealed class MaterialRenderAdapter : IMaterialRenderAdapter
             NormalTexturePath: normalPath,
             EmissiveTexturePath: emissivePath);
     }
+
+    /// <summary>
+    /// Generates a standardized UV sphere geometry for material swatches and preview inspector.
+    /// </summary>
+    public RenderMesh CreatePreviewSphere(RenderMaterial material, int segments = 16, float radius = 1.0f)
+    {
+        var positions = new List<Vector3>();
+        var normals = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var indices = new List<int>();
+
+        for (int lat = 0; lat <= segments; lat++)
+        {
+            float theta = lat * (float)Math.PI / segments;
+            float sinTheta = (float)Math.Sin(theta);
+            float cosTheta = (float)Math.Cos(theta);
+
+            for (int lon = 0; lon <= segments; lon++)
+            {
+                float phi = lon * 2f * (float)Math.PI / segments;
+                float sinPhi = (float)Math.Sin(phi);
+                float cosPhi = (float)Math.Cos(phi);
+
+                var n = new Vector3(cosPhi * sinTheta, cosTheta, sinPhi * sinTheta);
+                positions.Add(n * radius);
+                normals.Add(n);
+                uvs.Add(new Vector2((float)lon / segments, (float)lat / segments));
+            }
+        }
+
+        for (int lat = 0; lat < segments; lat++)
+        {
+            for (int lon = 0; lon < segments; lon++)
+            {
+                int first = (lat * (segments + 1)) + lon;
+                int second = first + segments + 1;
+
+                indices.Add(first);
+                indices.Add(second);
+                indices.Add(first + 1);
+
+                indices.Add(second);
+                indices.Add(second + 1);
+                indices.Add(first + 1);
+            }
+        }
+
+        return new RenderMesh
+        {
+            Name = $"{material.Name}_SpherePreview",
+            Positions = [.. positions],
+            Normals = [.. normals],
+            UVs = [.. uvs],
+            Indices = [.. indices],
+            MaterialId = material.Id,
+            BoundsMin = -Vector3.One * radius,
+            BoundsMax = Vector3.One * radius
+        };
+    }
 }
