@@ -45,183 +45,549 @@
                            FontSize="12" />
             </Border>
 
-            <!-- Main Split Workspace: Left Configuration Panel & Right 3D Viewport Stage -->
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="420" />
-                    <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+            <!-- Workspace Tabs: Single Model Converter & Batch Processing Studio -->
+            <TabControl Background="Transparent"
+                        BorderThickness="0"
+                        SelectedIndex="{Binding SelectedWorkspaceTab}">
+                <TabControl.Resources>
+                    <Style TargetType="TabItem">
+                        <Setter Property="FontSize" Value="13" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Padding" Value="16,8" />
+                        <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+                        <Setter Property="Background" Value="{StaticResource Brush.SurfacePrimary}" />
+                        <Setter Property="Margin" Value="0,0,6,12" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabItem">
+                                    <Border x:Name="TabBorder"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{StaticResource Brush.BorderStrong}"
+                                            BorderThickness="1"
+                                            CornerRadius="5"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="TabBorder" Property="Background" Value="{StaticResource Brush.SurfaceElevated}" />
+                                            <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource Brush.AccentPrimary}" />
+                                            <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TabControl.Resources>
 
-                <!-- Left Panel: Source, Preset Profile, and Parameters -->
-                <StackPanel Grid.Column="0">
-                    <Border Style="{StaticResource Style.CardBorder}" Margin="0,0,0,14">
-                        <StackPanel>
-                            <TextBlock Text="1. Source Model &amp; Output Path" Style="{StaticResource Text.SectionHeader}" />
-                            <TextBlock Text="Select a 3D file (.schem, .obj, .json, .geo.json) to inspect and queue."
-                                       Style="{StaticResource Text.MutedCaption}"
-                                       Margin="0,2,0,12" />
+                <!-- TAB 1: Single Model Converter (Interactive 3D Viewport) -->
+                <TabItem Header="Single Model Converter">
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="420" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="Source Model File Path:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                            <Grid Margin="0,0,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0"
-                                         Style="{StaticResource Style.InputTextBox}"
-                                         Text="{Binding SourceFilePath, UpdateSourceTrigger=PropertyChanged}" />
-                                <Button Grid.Column="1"
-                                        Style="{StaticResource Style.SecondaryButton}"
-                                        Content="Browse..."
-                                        Margin="8,0,0,0"
-                                        Command="{Binding BrowseSourceFileCommand}" />
-                            </Grid>
+                        <!-- Left Panel: Source, Preset Profile, and Parameters -->
+                        <StackPanel Grid.Column="0">
+                            <Border Style="{StaticResource Style.CardBorder}" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <TextBlock Text="1. Source Model &amp; Output Path" Style="{StaticResource Text.SectionHeader}" />
+                                    <TextBlock Text="Select a 3D file (.schem, .obj, .json, .geo.json) to inspect and queue."
+                                               Style="{StaticResource Text.MutedCaption}"
+                                               Margin="0,2,0,12" />
 
-                            <TextBlock Text="Output Directory:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                            <TextBox Style="{StaticResource Style.InputTextBox}"
-                                     Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}"
-                                     Margin="0,0,0,10" />
+                                    <TextBlock Text="Source Model File Path:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0"
+                                                 Style="{StaticResource Style.InputTextBox}"
+                                                 Text="{Binding SourceFilePath, UpdateSourceTrigger=PropertyChanged}" />
+                                        <Button Grid.Column="1"
+                                                Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Browse..."
+                                                Margin="8,0,0,0"
+                                                Command="{Binding BrowseSourceFileCommand}" />
+                                    </Grid>
 
-                            <Button Style="{StaticResource Style.SecondaryButton}"
-                                    Content="Inspect File Header &amp; Metadata"
-                                    HorizontalAlignment="Left"
-                                    Command="{Binding InspectSelectedFileCommand}" />
-                        </StackPanel>
-                    </Border>
+                                    <TextBlock Text="Output Directory:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                    <TextBox Style="{StaticResource Style.InputTextBox}"
+                                             Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}"
+                                             Margin="0,0,0,10" />
 
-                    <Border Style="{StaticResource Style.CardBorder}">
-                        <StackPanel>
-                            <TextBlock Text="2. Conversion Pipeline Parameters" Style="{StaticResource Text.SectionHeader}" />
-                            <TextBlock Text="Choose a built-in profile or customize format conversion rules."
-                                       Style="{StaticResource Text.MutedCaption}"
-                                       Margin="0,2,0,12" />
-
-                            <TextBlock Text="Conversion Profile Preset:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                            <ComboBox ItemsSource="{Binding Profiles}"
-                                      SelectedItem="{Binding SelectedProfile}"
-                                      DisplayMemberPath="Name"
-                                      Padding="8,6"
-                                      Margin="0,0,0,10" />
-
-                            <UniformGrid Columns="2" Margin="0,0,0,10">
-                                <StackPanel Margin="0,0,6,0">
-                                    <TextBlock Text="Source Format:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                                    <ComboBox ItemsSource="{Binding AvailableFormats}"
-                                              SelectedItem="{Binding SelectedSourceFormat}"
-                                              Padding="8,6" />
+                                    <Button Style="{StaticResource Style.SecondaryButton}"
+                                            Content="Inspect File Header &amp; Metadata"
+                                            HorizontalAlignment="Left"
+                                            Command="{Binding InspectSelectedFileCommand}" />
                                 </StackPanel>
+                            </Border>
 
-                                <StackPanel Margin="6,0,0,0">
+                            <Border Style="{StaticResource Style.CardBorder}">
+                                <StackPanel>
+                                    <TextBlock Text="2. Conversion Pipeline Parameters" Style="{StaticResource Text.SectionHeader}" />
+                                    <TextBlock Text="Choose a built-in profile or customize format conversion rules."
+                                               Style="{StaticResource Text.MutedCaption}"
+                                               Margin="0,2,0,12" />
+
+                                    <TextBlock Text="Conversion Profile Preset:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                    <ComboBox ItemsSource="{Binding Profiles}"
+                                              SelectedItem="{Binding SelectedProfile}"
+                                              DisplayMemberPath="Name"
+                                              Padding="8,6"
+                                              Margin="0,0,0,10" />
+
+                                    <UniformGrid Columns="2" Margin="0,0,0,10">
+                                        <StackPanel Margin="0,0,6,0">
+                                            <TextBlock Text="Source Format:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                            <ComboBox ItemsSource="{Binding AvailableFormats}"
+                                                      SelectedItem="{Binding SelectedSourceFormat}"
+                                                      Padding="8,6" />
+                                        </StackPanel>
+
+                                        <StackPanel Margin="6,0,0,0">
+                                            <TextBlock Text="Target Format:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                            <ComboBox ItemsSource="{Binding AvailableFormats}"
+                                                      SelectedItem="{Binding SelectedTargetFormat}"
+                                                      Padding="8,6" />
+                                        </StackPanel>
+                                    </UniformGrid>
+
+                                    <TextBlock Text="Uniform Scale Factor (0.0001 - 10000):" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                    <TextBox Style="{StaticResource Style.InputTextBox}"
+                                             Text="{Binding ScaleFactor, UpdateSourceTrigger=PropertyChanged}"
+                                             Margin="0,0,0,10" />
+
+                                    <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                              Content="Optimize Polygon Mesh Topology"
+                                              IsChecked="{Binding OptimizeMesh}" />
+                                    <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                              Content="Enable Greedy Meshing for Voxel Surfaces"
+                                              IsChecked="{Binding GreedyMeshing}" />
+                                    <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                              Content="Preserve Material &amp; UV Texture Definitions"
+                                              IsChecked="{Binding PreserveMaterials}"
+                                              Margin="0,4,0,14" />
+
+                                    <Button Style="{StaticResource Style.PrimaryButton}"
+                                            Content="Prepare &amp; Queue Conversion Job"
+                                            Command="{Binding PrepareConversionCommand}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Right Panel: 3D Viewport Stage Placeholder & Model Inspector -->
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" MinHeight="340" />
+                                <RowDefinition Height="14" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Viewport Canvas Card -->
+                            <Border Grid.Row="0"
+                                    Background="{StaticResource Brush.ViewportCanvas}"
+                                    BorderBrush="{StaticResource Brush.BorderStrong}"
+                                    BorderThickness="1"
+                                    CornerRadius="6">
+                                <Grid>
+                                    <!-- Viewport Top Overlay Bar -->
+                                    <Border VerticalAlignment="Top"
+                                            Background="#B0111722"
+                                            BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                            BorderThickness="0,0,0,1"
+                                            Padding="12,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="3D VIEWPORT PREVIEW STAGE"
+                                                           FontSize="11"
+                                                           FontWeight="Bold"
+                                                           Foreground="{StaticResource Brush.TextSecondary}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Text=" • Isometric Camera (Y-Up)"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource Brush.TextMuted}"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button Style="{StaticResource Style.PrimaryButton}"
+                                                        Content="3D Preview"
+                                                        Padding="10,4"
+                                                        Margin="0,0,8,0"
+                                                        Command="{Binding GeneratePreviewCommand}" />
+                                                <Button Style="{StaticResource Style.SecondaryButton}"
+                                                        Content="Reset Camera"
+                                                        Padding="8,4"
+                                                        Command="{Binding ResetViewportCameraCommand}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Live 3D Viewport Control -->
+                                    <controls:Viewport3DControl Margin="0,40,0,0"
+                                                                MinHeight="320"
+                                                                Scene="{Binding PreviewScene}" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Bottom Inspector Summary Card -->
+                            <Border Grid.Row="2" Style="{StaticResource Style.CardBorder}">
+                                <UniformGrid Columns="3">
+                                    <StackPanel>
+                                        <TextBlock Text="INSPECTED MODEL NAME" FontSize="10" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                                        <TextBlock Text="{Binding InspectedModelName}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource Brush.TextPrimary}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="NATIVE GEOMETRY KIND" FontSize="10" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                                        <TextBlock Text="{Binding InspectedGeometryKind}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource Brush.AccentHover}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="FILE SIZE ON DISK" FontSize="10" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                                        <TextBlock Text="{Binding InspectedFileSize}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource Brush.StatusSuccess}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </UniformGrid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+
+                <!-- TAB 2: Batch Processing Studio -->
+                <TabItem Header="Batch Processing Studio">
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="420" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left Column: Input Staging & Conversion Settings -->
+                        <StackPanel Grid.Column="0">
+                            <!-- Area A: Input Files Staging Card -->
+                            <Border Style="{StaticResource Style.CardBorder}" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="A. Staged Input Models" Style="{StaticResource Text.SectionHeader}" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding BatchInputFiles.Count, StringFormat='{}{0} files'}"
+                                                   FontWeight="Bold"
+                                                   Foreground="{StaticResource Brush.AccentHover}" />
+                                    </Grid>
+
+                                    <!-- Action Buttons -->
+                                    <UniformGrid Columns="3" Margin="0,0,0,10">
+                                        <Button Style="{StaticResource Style.PrimaryButton}"
+                                                Content="+ Add Files"
+                                                Margin="0,0,4,0"
+                                                Command="{Binding AddBatchFilesCommand}" />
+                                        <Button Style="{StaticResource Style.SecondaryButton}"
+                                                Content="+ Add Folder"
+                                                Margin="4,0,4,0"
+                                                Command="{Binding AddBatchFolderCommand}" />
+                                        <Button Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Clear All"
+                                                Margin="4,0,0,0"
+                                                Command="{Binding ClearBatchFilesCommand}" />
+                                    </UniformGrid>
+
+                                    <!-- Drag and Drop Drop-Zone Area -->
+                                    <Border Background="#161E2D"
+                                            BorderBrush="{StaticResource Brush.BorderStrong}"
+                                            BorderThickness="1"
+                                            CornerRadius="5"
+                                            Padding="10"
+                                            Margin="0,0,0,10"
+                                            AllowDrop="True"
+                                            Drop="OnBatchFilesDrop"
+                                            DragOver="OnBatchFilesDragOver">
+                                        <TextBlock Text="Drag &amp; Drop 3D model files or folders here&#x0a;(.obj, .schem, .schematic, .json, .geo.json)"
+                                                   TextAlignment="Center"
+                                                   FontSize="11.5"
+                                                   Foreground="{StaticResource Brush.TextMuted}" />
+                                    </Border>
+
+                                    <!-- Staged Files List -->
+                                    <ListBox ItemsSource="{Binding BatchInputFiles}"
+                                             Height="160"
+                                             Background="{StaticResource Brush.SurfacePrimary}"
+                                             BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                             BorderThickness="1"
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="4,2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" FontSize="11.5" Foreground="{StaticResource Brush.TextPrimary}" />
+                                                        <TextBlock Text="{Binding FormattedSize}" FontSize="10" Foreground="{StaticResource Brush.TextMuted}" />
+                                                    </StackPanel>
+                                                    <Border Grid.Column="1"
+                                                            Background="#2A3446"
+                                                            CornerRadius="3"
+                                                            Padding="4,2"
+                                                            Margin="6,0"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DetectedFormat}" FontSize="9.5" Foreground="{StaticResource Brush.AccentHover}" />
+                                                    </Border>
+                                                    <Button Grid.Column="2"
+                                                            Content="×"
+                                                            Width="20" Height="20"
+                                                            Padding="0"
+                                                            VerticalAlignment="Center"
+                                                            Style="{StaticResource Style.SecondaryButton}"
+                                                            Command="{Binding DataContext.RemoveBatchFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Area B: Conversion Settings Card -->
+                            <Border Style="{StaticResource Style.CardBorder}">
+                                <StackPanel>
+                                    <TextBlock Text="B. Batch Conversion Settings" Style="{StaticResource Text.SectionHeader}" Margin="0,0,0,10" />
+
                                     <TextBlock Text="Target Format:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
                                     <ComboBox ItemsSource="{Binding AvailableFormats}"
-                                              SelectedItem="{Binding SelectedTargetFormat}"
-                                              Padding="8,6" />
+                                              SelectedItem="{Binding BatchSelectedTargetFormat}"
+                                              Padding="8,6"
+                                              Margin="0,0,0,10" />
+
+                                    <TextBlock Text="Output Destination Directory:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0"
+                                                 Style="{StaticResource Style.InputTextBox}"
+                                                 Text="{Binding BatchOutputDirectory, UpdateSourceTrigger=PropertyChanged}" />
+                                        <Button Grid.Column="1"
+                                                Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Browse..."
+                                                Margin="6,0,0,0"
+                                                Command="{Binding BrowseBatchOutputDirectoryCommand}" />
+                                    </Grid>
+
+                                    <UniformGrid Columns="2" Margin="0,0,0,10">
+                                        <StackPanel Margin="0,0,6,0">
+                                            <TextBlock Text="Parallel Concurrency:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                            <TextBox Style="{StaticResource Style.InputTextBox}"
+                                                     Text="{Binding BatchParallelism, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Margin="6,0,0,0">
+                                            <TextBlock Text="Queue Priority:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                            <ComboBox ItemsSource="{Binding AvailablePriorities}"
+                                                      SelectedItem="{Binding BatchPriority}"
+                                                      Padding="8,6" />
+                                        </StackPanel>
+                                    </UniformGrid>
+
+                                    <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                              Content="Overwrite Existing Target Files"
+                                              IsChecked="{Binding BatchOverwriteExisting}" />
+                                    <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                              Content="Continue On Individual File Errors"
+                                              IsChecked="{Binding BatchContinueOnError}" />
+                                    <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                              Content="Enable Mesh Voxelization Preprocessing"
+                                              IsChecked="{Binding BatchEnableVoxelization}"
+                                              Margin="0,4,0,10" />
                                 </StackPanel>
-                            </UniformGrid>
-
-                            <TextBlock Text="Uniform Scale Factor (0.0001 - 10000):" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                            <TextBox Style="{StaticResource Style.InputTextBox}"
-                                     Text="{Binding ScaleFactor, UpdateSourceTrigger=PropertyChanged}"
-                                     Margin="0,0,0,10" />
-
-                            <CheckBox Style="{StaticResource Style.ModernCheckBox}"
-                                      Content="Optimize Polygon Mesh Topology"
-                                      IsChecked="{Binding OptimizeMesh}" />
-                            <CheckBox Style="{StaticResource Style.ModernCheckBox}"
-                                      Content="Enable Greedy Meshing for Voxel Surfaces"
-                                      IsChecked="{Binding GreedyMeshing}" />
-                            <CheckBox Style="{StaticResource Style.ModernCheckBox}"
-                                      Content="Preserve Material &amp; UV Texture Definitions"
-                                      IsChecked="{Binding PreserveMaterials}"
-                                      Margin="0,4,0,14" />
-
-                            <Button Style="{StaticResource Style.PrimaryButton}"
-                                    Content="Prepare &amp; Queue Conversion Job"
-                                    Command="{Binding PrepareConversionCommand}" />
+                            </Border>
                         </StackPanel>
-                    </Border>
-                </StackPanel>
 
-                <!-- Right Panel: 3D Viewport Stage Placeholder & Model Inspector -->
-                <Grid Grid.Column="2">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" MinHeight="340" />
-                        <RowDefinition Height="14" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
+                        <!-- Right Column: Queue, Execution Controls & Results -->
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" MinHeight="260" />
+                                <RowDefinition Height="12" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                    <!-- Viewport Canvas Card -->
-                    <Border Grid.Row="0"
-                            Background="{StaticResource Brush.ViewportCanvas}"
-                            BorderBrush="{StaticResource Brush.BorderStrong}"
-                            BorderThickness="1"
-                            CornerRadius="6">
-                        <Grid>
-                            <!-- Viewport Top Overlay Bar -->
-                            <Border VerticalAlignment="Top"
-                                    Background="#B0111722"
-                                    BorderBrush="{StaticResource Brush.BorderSubtle}"
-                                    BorderThickness="0,0,0,1"
-                                    Padding="12,8">
+                            <!-- Area D: Batch Execution Controls Bar -->
+                            <Border Grid.Row="0" Style="{StaticResource Style.CardBorder}" Margin="0,0,0,12">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
+
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="3D VIEWPORT PREVIEW STAGE"
-                                                   FontSize="11"
-                                                   FontWeight="Bold"
-                                                   Foreground="{StaticResource Brush.TextSecondary}"
-                                                   VerticalAlignment="Center" />
-                                        <TextBlock Text=" • Isometric Camera (Y-Up)"
-                                                   FontSize="11"
-                                                   Foreground="{StaticResource Brush.TextMuted}"
-                                                   VerticalAlignment="Center" />
+                                        <Button Style="{StaticResource Style.PrimaryButton}"
+                                                Content="▶ Start Batch Conversion"
+                                                Padding="16,8"
+                                                Margin="0,0,8,0"
+                                                IsEnabled="{Binding CanStartBatch}"
+                                                Command="{Binding StartBatchCommand}" />
+                                        <Button Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Pause / Resume"
+                                                Padding="12,8"
+                                                Margin="0,0,6,0"
+                                                IsEnabled="{Binding IsBatchRunning}"
+                                                Command="{Binding TogglePauseBatchCommand}" />
+                                        <Button Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Cancel"
+                                                Padding="12,8"
+                                                Margin="0,0,6,0"
+                                                IsEnabled="{Binding IsBatchRunning}"
+                                                Command="{Binding CancelBatchCommand}" />
+                                        <Button Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Retry Failed"
+                                                Padding="10,8"
+                                                Margin="0,0,6,0"
+                                                Command="{Binding RetryFailedBatchCommand}" />
+                                        <Button Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Clear Completed"
+                                                Padding="10,8"
+                                                Command="{Binding ClearCompletedBatchCommand}" />
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                        <Button Style="{StaticResource Style.PrimaryButton}"
-                                                Content="3D Preview"
-                                                Padding="10,4"
-                                                Margin="0,0,8,0"
-                                                Command="{Binding GeneratePreviewCommand}" />
                                         <Button Style="{StaticResource Style.SecondaryButton}"
-                                                Content="Reset Camera"
-                                                Padding="8,4"
-                                                Command="{Binding ResetViewportCameraCommand}" />
+                                                Content="Open Folder"
+                                                Padding="10,8"
+                                                Margin="0,0,6,0"
+                                                Command="{Binding OpenBatchOutputFolderCommand}" />
+                                        <Button Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Export Report (JSON)"
+                                                Padding="10,8"
+                                                Command="{Binding ExportBatchJsonReportCommand}" />
                                     </StackPanel>
                                 </Grid>
                             </Border>
 
-                            <!-- Live 3D Viewport Control -->
-                            <controls:Viewport3DControl Margin="0,40,0,0"
-                                                        MinHeight="320"
-                                                        Scene="{Binding PreviewScene}" />
-                        </Grid>
-                    </Border>
+                            <!-- Area C: Job Queue & Active File Progress DataGrid -->
+                            <Border Grid.Row="1" Style="{StaticResource Style.CardBorder}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
 
-                    <!-- Bottom Inspector Summary Card -->
-                    <Border Grid.Row="2" Style="{StaticResource Style.CardBorder}">
-                        <UniformGrid Columns="3">
-                            <StackPanel>
-                                <TextBlock Text="INSPECTED MODEL NAME" FontSize="10" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
-                                <TextBlock Text="{Binding InspectedModelName}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource Brush.TextPrimary}" Margin="0,4,0,0" />
-                            </StackPanel>
-                            <StackPanel>
-                                <TextBlock Text="NATIVE GEOMETRY KIND" FontSize="10" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
-                                <TextBlock Text="{Binding InspectedGeometryKind}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource Brush.AccentHover}" Margin="0,4,0,0" />
-                            </StackPanel>
-                            <StackPanel>
-                                <TextBlock Text="FILE SIZE ON DISK" FontSize="10" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
-                                <TextBlock Text="{Binding InspectedFileSize}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource Brush.StatusSuccess}" Margin="0,4,0,0" />
-                            </StackPanel>
-                        </UniformGrid>
-                    </Border>
-                </Grid>
-            </Grid>
+                                    <!-- Progress Bar Header -->
+                                    <Grid Grid.Row="0" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding BatchProgressStatusText}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource Brush.TextPrimary}" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding BatchProgressPercentage, StringFormat='{}{0:F1}%'}"
+                                                   FontWeight="Bold"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource Brush.AccentHover}" />
+                                    </Grid>
+
+                                    <ProgressBar Grid.Row="1"
+                                                 Height="6"
+                                                 Value="{Binding BatchProgressPercentage}"
+                                                 Maximum="100"
+                                                 Foreground="{StaticResource Brush.AccentPrimary}"
+                                                 Background="{StaticResource Brush.SurfacePrimary}"
+                                                 Margin="0,0,0,12" />
+
+                                    <!-- Queue Items DataGrid -->
+                                    <DataGrid Grid.Row="2"
+                                              ItemsSource="{Binding BatchJobItems}"
+                                              AutoGenerateColumns="False"
+                                              IsReadOnly="True"
+                                              HeadersVisibility="Column"
+                                              GridLinesVisibility="Horizontal"
+                                              HorizontalGridLinesBrush="{StaticResource Brush.BorderSubtle}"
+                                              Background="{StaticResource Brush.SurfacePrimary}"
+                                              BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                              BorderThickness="1"
+                                              RowHeight="28">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Source Model" Binding="{Binding SourceFileName}" Width="160" />
+                                            <DataGridTextColumn Header="Target Format" Binding="{Binding TargetFormat}" Width="90" />
+                                            <DataGridTemplateColumn Header="Status" Width="100">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Status}" FontWeight="SemiBold" FontSize="11">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Status}" Value="Succeeded">
+                                                                            <Setter Property="Foreground" Value="{StaticResource Brush.StatusSuccess}" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Status}" Value="Failed">
+                                                                            <Setter Property="Foreground" Value="{StaticResource Brush.StatusDanger}" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Status}" Value="Processing">
+                                                                            <Setter Property="Foreground" Value="{StaticResource Brush.AccentHover}" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Status}" Value="Skipped">
+                                                                            <Setter Property="Foreground" Value="{StaticResource Brush.StatusWarning}" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTextColumn Header="Duration" Binding="{Binding DurationDisplay}" Width="80" />
+                                            <DataGridTextColumn Header="Message / Error" Binding="{Binding ErrorMessage}" Width="*" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </Grid>
+                            </Border>
+
+                            <!-- Area E: Batch Summary Metrics Card -->
+                            <Border Grid.Row="3" Style="{StaticResource Style.CardBorder}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding BatchSummaryText}"
+                                               FontSize="12.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource Brush.TextPrimary}"
+                                               VerticalAlignment="Center" />
+                                    <Border Grid.Column="1"
+                                            Background="#141E2D"
+                                            BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="10,4">
+                                        <TextBlock Text="NEXUS Bounded Concurrency Pipeline Active"
+                                                   FontSize="11"
+                                                   Foreground="{StaticResource Brush.AccentHover}" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+            </TabControl>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
-

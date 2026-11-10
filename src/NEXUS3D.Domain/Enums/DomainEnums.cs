@@ -46,3 +46,42 @@ public enum CoordinateAxisUp
     ZUp = 1
 }
 
+/// <summary>
+/// Priority level for batch jobs in priority queues.
+/// </summary>
+public enum BatchJobPriority
+{
+    Critical = 0,
+    High = 1,
+    Normal = 2,
+    Low = 3
+}
+
+/// <summary>
+/// Execution status of a batch conversion job.
+/// </summary>
+public enum BatchJobStatus
+{
+    Pending = 0,
+    Queued = 1,
+    Running = 2,
+    Paused = 3,
+    Completed = 4,
+    CompletedWithErrors = 5,
+    Failed = 6,
+    Cancelled = 7
+}
+
+/// <summary>
+/// Execution status of an individual item in a batch job.
+/// </summary>
+public enum BatchItemStatus
+{
+    Pending = 0,
+    Processing = 1,
+    Succeeded = 2,
+    Failed = 3,
+    Skipped = 4
+}
+
+

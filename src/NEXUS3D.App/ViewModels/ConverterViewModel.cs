@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -34,6 +35,7 @@ public sealed partial class ConverterViewModel : BaseViewModel
     private readonly IConversionPipeline _conversionPipeline;
     private readonly IUniversalConversionPipeline _universalPipeline;
     private readonly IBatchConversionService _batchService;
+    private readonly IBatchProcessingService _batchProcessingService;
     private readonly IConversionHistoryRepository _historyRepository;
     private readonly IDataLossAnalyzer _lossAnalyzer;
     private readonly IViewportController _viewportController;
@@ -129,6 +131,65 @@ public sealed partial class ConverterViewModel : BaseViewModel
     [ObservableProperty]
     private bool _showViewportGrid = true;
 
+    [ObservableProperty]
+    private int _selectedWorkspaceTab = 0;
+
+    [ObservableProperty]
+    private string _batchOutputDirectory = string.Empty;
+
+    [ObservableProperty]
+    private ModelFormatType _batchSelectedTargetFormat = ModelFormatType.Schematic;
+
+    [ObservableProperty]
+    private int _batchParallelism = 4;
+
+    [ObservableProperty]
+    private BatchJobPriority _batchPriority = BatchJobPriority.Normal;
+
+    [ObservableProperty]
+    private bool _batchOverwriteExisting = false;
+
+    [ObservableProperty]
+    private bool _batchContinueOnError = true;
+
+    [ObservableProperty]
+    private bool _batchEnableVoxelization = false;
+
+    [ObservableProperty]
+    private int _batchRetryLimit = 1;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanStartBatch))]
+    private bool _isBatchRunning = false;
+
+    public bool CanStartBatch => !IsBatchRunning;
+
+    [ObservableProperty]
+    private bool _isBatchPaused = false;
+
+    [ObservableProperty]
+    private double _batchProgressPercentage = 0.0;
+
+    [ObservableProperty]
+    private string _batchProgressStatusText = "Batch queue idle";
+
+    [ObservableProperty]
+    private string _batchSummaryText = "No batch jobs executed yet";
+
+    public ObservableCollection<BatchFileItemViewModel> BatchInputFiles { get; } = [];
+    public ObservableCollection<BatchJobItemViewModel> BatchJobItems { get; } = [];
+
+    public ObservableCollection<BatchJobPriority> AvailablePriorities { get; } =
+    [
+        BatchJobPriority.Critical,
+        BatchJobPriority.High,
+        BatchJobPriority.Normal,
+        BatchJobPriority.Low
+    ];
+
+    private CancellationTokenSource? _batchCts;
+    private BatchJobResult? _lastBatchResult;
+
     public ObservableCollection<ConversionProfile> Profiles { get; } = [];
     public ObservableCollection<ConversionLossItem> PredictedLossItems { get; } = [];
     public ObservableCollection<string> ExecutionLogs { get; } = [];
@@ -162,6 +223,7 @@ public sealed partial class ConverterViewModel : BaseViewModel
         IConversionPipeline conversionPipeline,
         IUniversalConversionPipeline universalPipeline,
         IBatchConversionService batchService,
+        IBatchProcessingService batchProcessingService,
         IConversionHistoryRepository historyRepository,
         IDataLossAnalyzer lossAnalyzer,
         IViewportController viewportController,
@@ -175,6 +237,7 @@ public sealed partial class ConverterViewModel : BaseViewModel
         _conversionPipeline = Guard.NotNull(conversionPipeline);
         _universalPipeline = Guard.NotNull(universalPipeline);
         _batchService = Guard.NotNull(batchService);
+        _batchProcessingService = Guard.NotNull(batchProcessingService);
         _historyRepository = Guard.NotNull(historyRepository);
         _lossAnalyzer = Guard.NotNull(lossAnalyzer);
         _viewportController = Guard.NotNull(viewportController);
@@ -186,6 +249,7 @@ public sealed partial class ConverterViewModel : BaseViewModel
         Title = "3D Model Converter Workspace";
         Subtitle = "Universal multi-format conversion via Universal Scene Model (USM).";
         OutputDirectory = Path.Combine(_pathsService.AppDataRootDirectory, "Exports");
+        BatchOutputDirectory = Path.Combine(_pathsService.AppDataRootDirectory, "BatchExports");
 
         var snapshot = _conversionPipeline.GetStatusSnapshot();
         EngineStatusSummary = $"{snapshot.EngineName} v{snapshot.EngineVersion} ({snapshot.MaxConcurrentJobs} Threads)";
@@ -553,6 +617,308 @@ public sealed partial class ConverterViewModel : BaseViewModel
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void AddBatchFiles()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Select 3D Models for Batch Conversion",
+            Filter = "All 3D Models|*.schem;*.schematic;*.obj;*.json;*.geo.json;*.voxel.json|OBJ Models (*.obj)|*.obj|Minecraft Schematic (*.schem;*.schematic)|*.schem;*.schematic|Voxel JSON (*.voxel.json;*.json)|*.voxel.json;*.json|Bedrock Geometry (*.geo.json)|*.geo.json|All Files (*.*)|*.*",
+            Multiselect = true
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            AddBatchFilesFromPaths(dialog.FileNames);
+        }
+    }
+
+    [RelayCommand]
+    private void AddBatchFolder()
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Select Folder Containing 3D Models"
+        };
+
+        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FolderName) && Directory.Exists(dialog.FolderName))
+        {
+            var files = Directory.EnumerateFiles(dialog.FolderName, "*.*", SearchOption.AllDirectories)
+                .Where(f => f.EndsWith(".obj", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith(".schem", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith(".schematic", StringComparison.OrdinalIgnoreCase) ||
+                            f.EndsWith(".json", StringComparison.OrdinalIgnoreCase));
+            AddBatchFilesFromPaths(files);
+        }
+    }
+
+    public void AddBatchFilesFromPaths(IEnumerable<string> paths)
+    {
+        foreach (var path in paths)
+        {
+            if (File.Exists(path) && !BatchInputFiles.Any(f => f.FilePath.Equals(path, StringComparison.OrdinalIgnoreCase)))
+            {
+                BatchInputFiles.Add(new BatchFileItemViewModel(path));
+            }
+        }
+        StatusMessage = $"Batch input files: {BatchInputFiles.Count} models staged.";
+    }
+
+    [RelayCommand]
+    private void RemoveBatchFile(BatchFileItemViewModel? item)
+    {
+        if (item is not null)
+        {
+            BatchInputFiles.Remove(item);
+            StatusMessage = $"Removed '{item.FileName}'. Remaining: {BatchInputFiles.Count} files.";
+        }
+    }
+
+    [RelayCommand]
+    private void ClearBatchFiles()
+    {
+        BatchInputFiles.Clear();
+        BatchJobItems.Clear();
+        BatchProgressPercentage = 0.0;
+        BatchProgressStatusText = "Batch queue cleared";
+        StatusMessage = "Batch queue cleared.";
+    }
+
+    [RelayCommand]
+    private void BrowseBatchOutputDirectory()
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Select Batch Export Directory"
+        };
+
+        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FolderName))
+        {
+            BatchOutputDirectory = dialog.FolderName;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenBatchOutputFolder()
+    {
+        try
+        {
+            if (!Directory.Exists(BatchOutputDirectory))
+            {
+                Directory.CreateDirectory(BatchOutputDirectory);
+            }
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = BatchOutputDirectory,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Unable to open output directory: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task StartBatchAsync()
+    {
+        if (BatchInputFiles.Count == 0)
+        {
+            ErrorMessage = "Add at least one 3D model file to the batch queue.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(BatchOutputDirectory))
+        {
+            ErrorMessage = "Select a valid output destination directory.";
+            return;
+        }
+
+        try
+        {
+            IsBatchRunning = true;
+            IsBatchPaused = false;
+            ClearError();
+            BatchJobItems.Clear();
+            BatchProgressPercentage = 0.0;
+            BatchProgressStatusText = "Initializing batch queue...";
+
+            Directory.CreateDirectory(BatchOutputDirectory);
+
+            var fileList = BatchInputFiles.Select(f => f.FilePath).ToList();
+            var options = new ConversionOptions
+            {
+                ScaleFactor = ScaleFactor,
+                MeshingMode = GreedyMeshing ? MeshingAlgorithm.GreedyMeshing : SelectedMeshingMode,
+                PreserveMaterials = PreserveMaterials,
+                VoxelizationMode = BatchEnableVoxelization ? SelectedVoxelizationMode : VoxelizationMode.SurfaceOnly
+            };
+
+            var request = new BatchJobRequest(
+                JobName: $"WPF-Batch-{DateTime.UtcNow:yyyyMMdd-HHmmss}",
+                InputFiles: fileList,
+                OutputDirectory: BatchOutputDirectory,
+                TargetFormat: BatchSelectedTargetFormat,
+                Priority: BatchPriority,
+                Options: options,
+                OverwriteExisting: BatchOverwriteExisting,
+                ContinueOnError: BatchContinueOnError,
+                RetryLimit: BatchRetryLimit,
+                MaxConcurrency: BatchParallelism);
+
+            var job = await _batchProcessingService.CreateJobAsync(request);
+
+            foreach (var item in job.Items)
+            {
+                BatchJobItems.Add(new BatchJobItemViewModel(
+                    item.ItemId,
+                    item.SourceFilePath,
+                    item.TargetFilePath,
+                    item.SourceFormat,
+                    item.TargetFormat));
+            }
+
+            _batchCts = new CancellationTokenSource();
+
+            var progress = new Progress<BatchProgress>(report =>
+            {
+                BatchProgressPercentage = report.PercentComplete;
+                BatchProgressStatusText = $"{report.PercentComplete:F0}% ({report.CompletedFiles}/{report.TotalFiles}) - {report.CurrentFileName}";
+
+                foreach (var item in job.Items)
+                {
+                    var vm = BatchJobItems.FirstOrDefault(v => v.ItemId == item.ItemId);
+                    if (vm is not null)
+                    {
+                        vm.UpdateStatus(item.Status, item.DurationMs, item.ErrorMessage);
+                    }
+                }
+            });
+
+            _lastBatchResult = await _batchProcessingService.StartJobAsync(job.JobId, progress, _batchCts.Token);
+
+            BatchSummaryText = $"Completed: {_lastBatchResult.SucceededFiles}/{_lastBatchResult.TotalFiles} Succeeded, {_lastBatchResult.FailedFiles} Failed, {_lastBatchResult.SkippedFiles} Skipped in {_lastBatchResult.DurationMs:N0}ms";
+            BatchProgressStatusText = $"Batch finished: {_lastBatchResult.Status}";
+
+            _notificationService.Publish(
+                "Batch Conversion Complete",
+                $"{_lastBatchResult.SucceededFiles}/{_lastBatchResult.TotalFiles} files converted successfully in {_lastBatchResult.DurationMs}ms.",
+                _lastBatchResult.FailedFiles == 0 ? NotificationSeverity.Success : NotificationSeverity.Warning,
+                "Batch Converter");
+        }
+        catch (OperationCanceledException)
+        {
+            BatchProgressStatusText = "Batch conversion cancelled by user.";
+            BatchSummaryText = "Batch cancelled.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Batch conversion error: {ex.Message}";
+            BatchProgressStatusText = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsBatchRunning = false;
+            _batchCts?.Dispose();
+            _batchCts = null;
+        }
+    }
+
+    [RelayCommand]
+    private async Task CancelBatchAsync()
+    {
+        if (_batchCts is not null && !_batchCts.IsCancellationRequested)
+        {
+            _batchCts.Cancel();
+            BatchProgressStatusText = "Cancelling batch operation...";
+            StatusMessage = "Batch cancellation requested.";
+        }
+        await Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private void PauseBatch()
+    {
+        IsBatchPaused = true;
+        BatchProgressStatusText = "Batch execution paused.";
+        StatusMessage = "Batch paused.";
+    }
+
+    [RelayCommand]
+    private void ResumeBatch()
+    {
+        IsBatchPaused = false;
+        BatchProgressStatusText = "Batch execution resumed.";
+        StatusMessage = "Batch resumed.";
+    }
+
+    [RelayCommand]
+    private void TogglePauseBatch()
+    {
+        IsBatchPaused = !IsBatchPaused;
+        BatchProgressStatusText = IsBatchPaused ? "Batch execution paused." : "Batch execution resumed.";
+        StatusMessage = IsBatchPaused ? "Batch paused." : "Batch resumed.";
+    }
+
+    [RelayCommand]
+    private async Task RetryFailedBatchAsync()
+    {
+        var failedVms = BatchJobItems.Where(i => i.Status == BatchItemStatus.Failed).ToList();
+        if (failedVms.Count == 0)
+        {
+            StatusMessage = "No failed items to retry.";
+            return;
+        }
+
+        var failedPaths = failedVms.Select(v => v.SourceFilePath).ToList();
+        BatchInputFiles.Clear();
+        AddBatchFilesFromPaths(failedPaths);
+        await StartBatchAsync();
+    }
+
+    [RelayCommand]
+    private void ClearCompletedBatch()
+    {
+        var toRemove = BatchJobItems.Where(i => i.Status is BatchItemStatus.Succeeded or BatchItemStatus.Skipped).ToList();
+        foreach (var item in toRemove)
+        {
+            BatchJobItems.Remove(item);
+        }
+        StatusMessage = $"Cleared {toRemove.Count} completed items.";
+    }
+
+    [RelayCommand]
+    private async Task ExportBatchJsonReportAsync()
+    {
+        if (_lastBatchResult is null)
+        {
+            ErrorMessage = "Run a batch job first before exporting a report.";
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save Batch Execution JSON Report",
+            Filter = "JSON Files (*.json)|*.json",
+            FileName = $"batch-report-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(_lastBatchResult, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                await File.WriteAllTextAsync(dialog.FileName, json);
+                StatusMessage = $"JSON report saved to '{Path.GetFileName(dialog.FileName)}'.";
+                _notificationService.Publish("Report Saved", $"Batch report saved to {dialog.FileName}", NotificationSeverity.Success, "Batch Converter");
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Failed to save report: {ex.Message}";
+            }
         }
     }
 }

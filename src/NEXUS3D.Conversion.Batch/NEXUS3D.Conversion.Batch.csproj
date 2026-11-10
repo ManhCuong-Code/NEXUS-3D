@@ -11,6 +11,7 @@
     <ProjectReference Include="..\NEXUS3D.Conversion.Abstractions\NEXUS3D.Conversion.Abstractions.csproj" />
     <ProjectReference Include="..\NEXUS3D.Conversion.Domain\NEXUS3D.Conversion.Domain.csproj" />
     <ProjectReference Include="..\NEXUS3D.Conversion.Engine\NEXUS3D.Conversion.Engine.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
     <ProjectReference Include="..\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
   </ItemGroup>
 
