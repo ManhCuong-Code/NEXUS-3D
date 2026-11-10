@@ -66,6 +66,10 @@ public partial class Viewport3DControl : UserControl
 
         HelixViewport.MouseDown += OnViewportMouseDown;
         HelixViewport.MouseUp += OnViewportMouseUp;
+        Unloaded += (s, e) =>
+        {
+            _sceneRenderer.Dispose();
+        };
     }
 
     private static void OnSceneChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -115,6 +119,7 @@ public partial class Viewport3DControl : UserControl
 
         if (Scene is null || (Scene.RootNodes.Count == 0 && Scene.Skeletons.Count == 0))
         {
+            _sceneRenderer.ClearCache();
             EmptyStateOverlay.Visibility = Visibility.Visible;
             TxtStats.Text = "Objects: 0 | Triangles: 0 | Vertices: 0 | Voxels: 0";
             return;

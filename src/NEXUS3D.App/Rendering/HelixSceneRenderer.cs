@@ -13,9 +13,24 @@ namespace NEXUS3D.App.Rendering;
 /// <summary>
 /// Hardware-accelerated WPF / HelixToolkit scene converter translating RenderScene snapshots into ModelVisual3D and LinesVisual3D.
 /// </summary>
-public sealed class HelixSceneRenderer
+public sealed class HelixSceneRenderer : IDisposable
 {
     private readonly ConcurrentDictionary<string, ImageBrush> _textureBrushCache = new(StringComparer.OrdinalIgnoreCase);
+    private bool _isDisposed;
+
+    public void ClearCache()
+    {
+        _textureBrushCache.Clear();
+    }
+
+    public void Dispose()
+    {
+        if (!_isDisposed)
+        {
+            ClearCache();
+            _isDisposed = true;
+        }
+    }
 
     public ModelVisual3D BuildSceneVisual(RenderScene scene, RenderSettings settings, out LinesVisual3D linesVisual, out BoundingBoxWireFrameVisual3D boundsVisual)
     {
