@@ -54,15 +54,50 @@ public sealed class BoneInfluence : IDeepCloneable<BoneInfluence>
 }
 
 /// <summary>
+/// Named attachment or effect locator point attached to a <see cref="BoneData"/>.
+/// </summary>
+public sealed class BoneLocator : IDeepCloneable<BoneLocator>
+{
+    public string Name { get; set; } = string.Empty;
+    public Vector3D Offset { get; set; } = Vector3D.Zero;
+    public Vector3D? RotationDegrees { get; set; }
+    public bool? IgnoreInheritedScale { get; set; }
+
+    public BoneLocator()
+    {
+    }
+
+    public BoneLocator(string name, Vector3D offset, Vector3D? rotationDegrees = null, bool? ignoreInheritedScale = null)
+    {
+        Name = DomainGuard.NotNullOrWhiteSpace(name);
+        Offset = offset;
+        RotationDegrees = rotationDegrees;
+        IgnoreInheritedScale = ignoreInheritedScale;
+    }
+
+    public BoneLocator DeepClone() => new()
+    {
+        Name = Name,
+        Offset = Offset,
+        RotationDegrees = RotationDegrees,
+        IgnoreInheritedScale = IgnoreInheritedScale
+    };
+}
+
+/// <summary>
 /// Represents an individual bone node in a <see cref="SkeletonData"/> hierarchy.
 /// </summary>
 public sealed class BoneData : Entity, ISceneComponent, IDeepCloneable<BoneData>
 {
     public string Name { get; set; } = "Bone";
     public Guid? ParentBoneId { get; set; }
+    public Vector3D Pivot { get; set; } = Vector3D.Zero;
+    public Vector3D BindRotationDegrees { get; set; } = Vector3D.Zero;
+    public string? BindingExpression { get; set; }
     public Transform3D LocalTransform { get; set; } = Transform3D.Identity();
     public Matrix4x4D? InverseBindMatrix { get; set; }
     public List<Guid> ChildBoneIds { get; set; } = [];
+    public List<BoneLocator> Locators { get; set; } = [];
 
     public BoneData()
     {
@@ -77,9 +112,13 @@ public sealed class BoneData : Entity, ISceneComponent, IDeepCloneable<BoneData>
     public BoneData DeepClone() => new(Name, ParentBoneId)
     {
         Id = Id,
+        Pivot = Pivot,
+        BindRotationDegrees = BindRotationDegrees,
+        BindingExpression = BindingExpression,
         LocalTransform = LocalTransform.DeepClone(),
         InverseBindMatrix = InverseBindMatrix,
-        ChildBoneIds = ChildBoneIds.ToList()
+        ChildBoneIds = ChildBoneIds.ToList(),
+        Locators = Locators.Select(l => l.DeepClone()).ToList()
     };
 }
 
