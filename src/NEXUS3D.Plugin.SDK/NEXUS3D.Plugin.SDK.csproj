@@ -9,8 +9,11 @@
     <NoWarn>$(NoWarn);1591</NoWarn>
     <PackageId>NEXUS3D.Plugin.SDK</PackageId>
     <Version>1.0.0</Version>
-    <Authors>NEXUS-3D Team</Authors>
-    <Description>Software Development Kit for building NEXUS-3D plugins and format extensions.</Description>
+    <Authors>ManhCuong-Code</Authors>
+    <Description>Software Development Kit for building NEXUS-3D plugins, custom 3D parsers, exporters, and format extensions.</Description>
+    <PackageTags>3d;converter;voxel;minecraft;schematic;obj;plugin;sdk</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/ManhCuong-Code/NEXUS-3D.git</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

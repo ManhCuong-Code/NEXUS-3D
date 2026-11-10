@@ -21,6 +21,7 @@ bld/
 [Ll]ogs/
 publish/
 artifacts/
+dist/
 
 # Visual Studio & IDE caches
 .vs/

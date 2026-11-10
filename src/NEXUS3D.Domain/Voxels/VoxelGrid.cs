@@ -64,6 +64,120 @@ public sealed class SparseVoxelStorageBackend : IVoxelStorageBackend
 }
 
 /// <summary>
+/// Spatial chunk-based (16x16x16) storage backend optimized for large-scale Minecraft structures,
+/// dense voxelizations, and streaming spatial partitions.
+/// </summary>
+public sealed class ChunkedVoxelStorageBackend : IVoxelStorageBackend
+{
+    public const int ChunkSize = 16;
+    public const int ChunkMask = ChunkSize - 1;
+
+    private readonly record struct ChunkKey(int X, int Y, int Z);
+
+    private readonly Dictionary<ChunkKey, Dictionary<int, Voxel>> _chunks = new();
+    private int _count;
+
+    public int Count => _count;
+
+    public IReadOnlyCollection<Voxel> Voxels
+    {
+        get
+        {
+            var list = new List<Voxel>(_count);
+            foreach (var chunk in _chunks.Values)
+            {
+                list.AddRange(chunk.Values);
+            }
+            return list;
+        }
+    }
+
+    public bool TryGet(VoxelPosition position, out Voxel? voxel)
+    {
+        int cx = position.X >> 4;
+        int cy = position.Y >> 4;
+        int cz = position.Z >> 4;
+
+        if (_chunks.TryGetValue(new ChunkKey(cx, cy, cz), out var chunk))
+        {
+            int localKey = (position.X & ChunkMask) | ((position.Y & ChunkMask) << 4) | ((position.Z & ChunkMask) << 8);
+            return chunk.TryGetValue(localKey, out voxel);
+        }
+
+        voxel = null;
+        return false;
+    }
+
+    public void Set(Voxel voxel)
+    {
+        DomainGuard.NotNull(voxel);
+        int cx = voxel.Position.X >> 4;
+        int cy = voxel.Position.Y >> 4;
+        int cz = voxel.Position.Z >> 4;
+
+        var key = new ChunkKey(cx, cy, cz);
+        if (!_chunks.TryGetValue(key, out var chunk))
+        {
+            chunk = new Dictionary<int, Voxel>();
+            _chunks[key] = chunk;
+        }
+
+        int localKey = (voxel.Position.X & ChunkMask) | ((voxel.Position.Y & ChunkMask) << 4) | ((voxel.Position.Z & ChunkMask) << 8);
+        if (!chunk.ContainsKey(localKey))
+        {
+            _count++;
+        }
+        chunk[localKey] = voxel;
+    }
+
+    public bool Remove(VoxelPosition position)
+    {
+        int cx = position.X >> 4;
+        int cy = position.Y >> 4;
+        int cz = position.Z >> 4;
+
+        var key = new ChunkKey(cx, cy, cz);
+        if (_chunks.TryGetValue(key, out var chunk))
+        {
+            int localKey = (position.X & ChunkMask) | ((position.Y & ChunkMask) << 4) | ((position.Z & ChunkMask) << 8);
+            if (chunk.Remove(localKey))
+            {
+                _count--;
+                if (chunk.Count == 0)
+                {
+                    _chunks.Remove(key);
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void Clear()
+    {
+        _chunks.Clear();
+        _count = 0;
+    }
+
+    public IVoxelStorageBackend DeepClone()
+    {
+        var clone = new ChunkedVoxelStorageBackend();
+        foreach (var (key, chunk) in _chunks)
+        {
+            var chunkClone = new Dictionary<int, Voxel>(chunk.Count);
+            foreach (var (localKey, voxel) in chunk)
+            {
+                chunkClone[localKey] = voxel.DeepClone();
+            }
+            clone._chunks[key] = chunkClone;
+        }
+        clone._count = _count;
+        return clone;
+    }
+}
+
+/// <summary>
 /// Represents a 3D grid of voxels with palette indexing, pluggable storage backend, layers, and validation.
 /// </summary>
 public sealed class VoxelGrid : Entity, ISceneComponent, IDeepCloneable<VoxelGrid>

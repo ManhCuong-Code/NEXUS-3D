@@ -25,11 +25,23 @@ public readonly record struct VertexAttribute(string Name, Vector4D Value);
 /// </summary>
 public sealed class Vertex : IDeepCloneable<Vertex>
 {
+    private Dictionary<string, Vector4D>? _customAttributes;
+
     public Vector3D Position { get; set; }
     public Vector3D? Normal { get; set; }
     public Vector2D? TexCoord { get; set; }
     public Vector4D? Color { get; set; }
-    public Dictionary<string, Vector4D> CustomAttributes { get; set; } = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Custom named vertex attributes. Lazily instantiated to minimize memory footprint on large models.
+    /// </summary>
+    public Dictionary<string, Vector4D> CustomAttributes
+    {
+        get => _customAttributes ??= new(StringComparer.Ordinal);
+        set => _customAttributes = value;
+    }
+
+    public bool HasCustomAttributes => _customAttributes is { Count: > 0 };
 
     public Vertex()
     {
@@ -49,7 +61,9 @@ public sealed class Vertex : IDeepCloneable<Vertex>
 
     public Vertex DeepClone() => new(Position, Normal, TexCoord, Color)
     {
-        CustomAttributes = new Dictionary<string, Vector4D>(CustomAttributes, StringComparer.Ordinal)
+        _customAttributes = _customAttributes is { Count: > 0 }
+            ? new Dictionary<string, Vector4D>(_customAttributes, StringComparer.Ordinal)
+            : null
     };
 }
 

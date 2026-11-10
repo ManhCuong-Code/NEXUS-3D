@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0+release</InformationalVersion>
+    <Authors>ManhCuong-Code</Authors>
+    <Company>NEXUS-3D Team</Company>
+    <Product>NEXUS-3D – Universal 3D &amp; Schematic Converter</Product>
+    <Copyright>Copyright © 2026 ManhCuong-Code. All rights reserved.</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/ManhCuong-Code/NEXUS-3D.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+</Project>
