@@ -12,7 +12,8 @@ public enum NavigationModule
     FileManager = 2,
     Settings = 3,
     Viewport = 4,
-    Voxelization = 5
+    Voxelization = 5,
+    ExtensionHub = 6
 }
 
 /// <summary>

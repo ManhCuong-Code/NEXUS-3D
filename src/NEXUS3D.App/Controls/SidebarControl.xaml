@@ -79,6 +79,13 @@
                              IsChecked="{Binding IsSettingsActive, Mode=OneWay}"
                              Command="{Binding NavigateSettingsCommand}" />
 
+                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                             GroupName="MainNav"
+                             Tag="{StaticResource Icon.Plugin}"
+                             Content="Extension Hub"
+                             IsChecked="{Binding IsExtensionHubActive, Mode=OneWay}"
+                             Command="{Binding NavigateExtensionHubCommand}" />
+
                 <Separator Background="{StaticResource Brush.BorderSubtle}" Margin="16,14" />
 
                 <TextBlock Text="UPCOMING STAGES"

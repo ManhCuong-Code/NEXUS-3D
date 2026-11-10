@@ -4,6 +4,7 @@ using NEXUS3D.Conversion.Abstractions;
 using NEXUS3D.Conversion.Abstractions.Interfaces;
 using NEXUS3D.Conversion.Abstractions.Models;
 using NEXUS3D.Domain.Enums;
+using NEXUS3D.Formats.Abstractions;
 using Nexus3D.CLI.Arguments;
 
 namespace Nexus3D.CLI.Commands;
@@ -11,13 +12,16 @@ namespace Nexus3D.CLI.Commands;
 public sealed class ConvertCommandHandler
 {
     private readonly IUniversalConversionPipeline _pipeline;
+    private readonly IFormatRegistry _formatRegistry;
     private readonly ILogger<ConvertCommandHandler> _logger;
 
     public ConvertCommandHandler(
         IUniversalConversionPipeline pipeline,
+        IFormatRegistry formatRegistry,
         ILogger<ConvertCommandHandler> logger)
     {
         _pipeline = pipeline;
+        _formatRegistry = formatRegistry;
         _logger = logger;
     }
 
@@ -152,20 +156,28 @@ public sealed class ConvertCommandHandler
         }
     }
 
-    private static ModelFormatType DetectFormat(string path)
+    private ModelFormatType DetectFormat(string path)
     {
         string name = Path.GetFileName(path).ToLowerInvariant();
         if (name.EndsWith(".geo.json", StringComparison.OrdinalIgnoreCase)) return ModelFormatType.BedrockGeometry;
         if (name.EndsWith(".voxel.json", StringComparison.OrdinalIgnoreCase)) return ModelFormatType.VoxelJson;
 
         string ext = Path.GetExtension(path).ToLowerInvariant();
-        return ext switch
+        switch (ext)
         {
-            ".obj" => ModelFormatType.Obj,
-            ".schem" or ".schematic" => ModelFormatType.Schematic,
-            ".json" => ModelFormatType.VoxelJson,
-            _ => ModelFormatType.Unknown
-        };
+            case ".obj": return ModelFormatType.Obj;
+            case ".schem":
+            case ".schematic": return ModelFormatType.Schematic;
+            case ".json": return ModelFormatType.VoxelJson;
+        }
+
+        var descriptor = _formatRegistry.ResolveByFilePath(path);
+        if (descriptor is not null)
+        {
+            return descriptor.FormatType;
+        }
+
+        return ModelFormatType.Unknown;
     }
 }
 

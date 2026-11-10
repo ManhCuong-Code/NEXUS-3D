@@ -117,6 +117,17 @@ public static class DependencyConfig
 
         services.AddSingleton<IConversionPipeline, FoundationConversionPipeline>();
         services.AddSingleton<IPluginCatalogService, PluginCatalogService>();
+
+        services.AddSingleton<PluginManager>(sp =>
+        {
+            var repo = sp.GetRequiredService<IPluginRegistrationRepository>();
+            var formatRegistry = sp.GetRequiredService<IFormatRegistry>();
+            var logger = sp.GetRequiredService<ILogger<PluginManager>>();
+            var paths = sp.GetRequiredService<IApplicationPathsService>();
+            return new PluginManager(repo, formatRegistry, sp, logger, paths.PluginsDirectory);
+        });
+        services.AddSingleton<IPluginManager>(sp => sp.GetRequiredService<PluginManager>());
+        services.AddSingleton<IDynamicFormatProvider>(sp => sp.GetRequiredService<PluginManager>());
     }
 
     public static void ConfigureApplicationServices(IServiceCollection services)
@@ -144,6 +155,7 @@ public static class DependencyConfig
         services.AddSingleton<ConverterViewModel>();
         services.AddSingleton<FileManagerViewModel>();
         services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<ExtensionHubViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
         services.AddTransient<MainWindow>();

@@ -36,6 +36,9 @@
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
             <views:SettingsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ExtensionHubViewModel}">
+            <views:ExtensionHubView />
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>

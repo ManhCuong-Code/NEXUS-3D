@@ -11,6 +11,13 @@ public enum CliCommandType
     JobsList,
     JobsStatus,
     JobsCancel,
+    PluginsList,
+    PluginsInfo,
+    PluginsInstall,
+    PluginsEnable,
+    PluginsDisable,
+    PluginsUninstall,
+    FormatsList,
     Unknown
 }
 
@@ -24,6 +31,7 @@ public sealed class ParsedArguments
     public string? OutputPath { get; set; }
     public ModelFormatType TargetFormat { get; set; } = ModelFormatType.Unknown;
     public ModelFormatType SourceFormat { get; set; } = ModelFormatType.Unknown;
+    public string? FormatString { get; set; }
     public double ScaleFactor { get; set; } = 1.0;
     public bool Voxelize { get; set; }
     public bool Overwrite { get; set; }
@@ -35,6 +43,8 @@ public sealed class ParsedArguments
     public string? JsonReportPath { get; set; }
     public List<string> Extensions { get; set; } = [];
     public Guid? JobId { get; set; }
+    public string? PluginId { get; set; }
+    public string? PackagePath { get; set; }
     public int Limit { get; set; } = 20;
     public string? ParseError { get; set; }
 }

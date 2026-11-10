@@ -29,6 +29,7 @@ public sealed partial class MainWindowViewModel : BaseViewModel
     [NotifyPropertyChangedFor(nameof(IsVoxelizationActive))]
     [NotifyPropertyChangedFor(nameof(IsFileManagerActive))]
     [NotifyPropertyChangedFor(nameof(IsSettingsActive))]
+    [NotifyPropertyChangedFor(nameof(IsExtensionHubActive))]
     private NavigationModule _activeModule = NavigationModule.Dashboard;
 
     [ObservableProperty]
@@ -55,6 +56,7 @@ public sealed partial class MainWindowViewModel : BaseViewModel
     public bool IsVoxelizationActive => ActiveModule == NavigationModule.Voxelization;
     public bool IsFileManagerActive => ActiveModule == NavigationModule.FileManager;
     public bool IsSettingsActive => ActiveModule == NavigationModule.Settings;
+    public bool IsExtensionHubActive => ActiveModule == NavigationModule.ExtensionHub;
     public bool HasUnreadNotifications => UnreadNotificationCount > 0;
 
     public ObservableCollection<NotificationMessage> Notifications { get; } = [];
@@ -111,6 +113,10 @@ public sealed partial class MainWindowViewModel : BaseViewModel
     [RelayCommand]
     private Task NavigateSettingsAsync() =>
         _navigationService.NavigateToAsync(NavigationModule.Settings);
+
+    [RelayCommand]
+    private Task NavigateExtensionHubAsync() =>
+        _navigationService.NavigateToAsync(NavigationModule.ExtensionHub);
 
     [RelayCommand]
     private void ToggleNotificationPanel()

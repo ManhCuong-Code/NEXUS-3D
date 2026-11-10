@@ -31,6 +31,8 @@ public sealed class UniversalConversionPipeline : IUniversalConversionPipeline
     private readonly IMaterialMappingService _materialMapper;
     private readonly IDataLossAnalyzer _lossAnalyzer;
     private readonly ILogger<UniversalConversionPipeline> _logger;
+    private readonly IDynamicFormatProvider? _dynamicFormatProvider;
+    private readonly IFormatRegistry? _formatRegistry;
 
     public UniversalConversionPipeline(
         IEnumerable<IFormatParser> parsers,
@@ -43,7 +45,9 @@ public sealed class UniversalConversionPipeline : IUniversalConversionPipeline
         IPolygonTriangulator triangulator,
         IMaterialMappingService materialMapper,
         IDataLossAnalyzer lossAnalyzer,
-        ILogger<UniversalConversionPipeline> logger)
+        ILogger<UniversalConversionPipeline> logger,
+        IDynamicFormatProvider? dynamicFormatProvider = null,
+        IFormatRegistry? formatRegistry = null)
     {
         _parsers = Guard.NotNull(parsers);
         _exporters = Guard.NotNull(exporters);
@@ -56,6 +60,8 @@ public sealed class UniversalConversionPipeline : IUniversalConversionPipeline
         _materialMapper = Guard.NotNull(materialMapper);
         _lossAnalyzer = Guard.NotNull(lossAnalyzer);
         _logger = Guard.NotNull(logger);
+        _dynamicFormatProvider = dynamicFormatProvider;
+        _formatRegistry = formatRegistry;
     }
 
     public async Task<ConversionResult> ExecuteAsync(
@@ -332,89 +338,162 @@ public sealed class UniversalConversionPipeline : IUniversalConversionPipeline
     {
         string ext = Path.GetExtension(filePath).ToLowerInvariant();
 
-        foreach (var parser in _parsers)
+        // 1. Check built-in parsers for known built-in formats
+        if (formatType != ModelFormatType.Custom && formatType != ModelFormatType.Unknown)
         {
-            if (formatType == ModelFormatType.Schematic &&
-                (parser.FormatIdentifier.Contains("sponge", StringComparison.OrdinalIgnoreCase) ||
-                 parser.FormatIdentifier.Contains("schematic", StringComparison.OrdinalIgnoreCase)))
+            foreach (var parser in _parsers)
             {
-                return parser;
-            }
+                if (formatType == ModelFormatType.Schematic &&
+                    (parser.FormatIdentifier.Contains("sponge", StringComparison.OrdinalIgnoreCase) ||
+                     parser.FormatIdentifier.Contains("schematic", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return parser;
+                }
 
-            if (formatType == ModelFormatType.Obj &&
-                parser.FormatIdentifier.Contains("obj", StringComparison.OrdinalIgnoreCase))
-            {
-                return parser;
-            }
+                if (formatType == ModelFormatType.Obj &&
+                    parser.FormatIdentifier.Contains("obj", StringComparison.OrdinalIgnoreCase))
+                {
+                    return parser;
+                }
 
-            if (formatType == ModelFormatType.VoxelJson &&
-                parser.FormatIdentifier.Contains("voxel", StringComparison.OrdinalIgnoreCase))
-            {
-                return parser;
-            }
+                if (formatType == ModelFormatType.VoxelJson &&
+                    parser.FormatIdentifier.Contains("voxel", StringComparison.OrdinalIgnoreCase))
+                {
+                    return parser;
+                }
 
-            if (formatType == ModelFormatType.BedrockGeometry &&
-                parser.FormatIdentifier.Contains("bedrock", StringComparison.OrdinalIgnoreCase))
-            {
-                return parser;
+                if (formatType == ModelFormatType.BedrockGeometry &&
+                    parser.FormatIdentifier.Contains("bedrock", StringComparison.OrdinalIgnoreCase))
+                {
+                    return parser;
+                }
             }
         }
 
-        // Fallback: match by identifier substring
-        var fallback = _parsers.FirstOrDefault(p =>
-            p.FormatIdentifier.Contains(formatType.ToString(), StringComparison.OrdinalIgnoreCase));
+        // 2. Check dynamic/plugin-provided parsers
+        if (_dynamicFormatProvider is not null)
+        {
+            foreach (var dynamicParser in _dynamicFormatProvider.GetParsers())
+            {
+                if (MatchesFormat(dynamicParser.FormatIdentifier, ext, formatType))
+                {
+                    return dynamicParser;
+                }
+            }
+        }
 
-        return fallback ?? throw new InvalidOperationException($"No registered IFormatParser found for format '{formatType}'.");
+        // 3. Fallback: match by identifier substring among all registered parsers
+        var fallback = _parsers.FirstOrDefault(p => MatchesFormat(p.FormatIdentifier, ext, formatType));
+        if (fallback is not null) return fallback;
+
+        // 4. Check IFormatRegistry descriptor
+        if (_formatRegistry is not null)
+        {
+            var descriptor = _formatRegistry.ResolveByFilePath(filePath);
+            if (descriptor is not null)
+            {
+                var candidate = GetAllParsers().FirstOrDefault(p =>
+                    p.FormatIdentifier.Contains(descriptor.ShortCode, StringComparison.OrdinalIgnoreCase) ||
+                    p.FormatIdentifier.Contains(descriptor.PrimaryExtension.TrimStart('.'), StringComparison.OrdinalIgnoreCase));
+                if (candidate is not null) return candidate;
+            }
+        }
+
+        throw new InvalidOperationException($"No registered IFormatParser found for format '{formatType}' or extension '{ext}'.");
     }
 
     private IFormatExporter ResolveExporter(ModelFormatType formatType, string filePath)
     {
         string ext = Path.GetExtension(filePath).ToLowerInvariant();
 
-        foreach (var exporter in _exporters)
+        // 1. Check built-in exporters for known built-in formats
+        if (formatType != ModelFormatType.Custom && formatType != ModelFormatType.Unknown)
         {
-            if (formatType == ModelFormatType.Schematic &&
-                (exporter.FormatIdentifier.Contains("sponge", StringComparison.OrdinalIgnoreCase) ||
-                 exporter.FormatIdentifier.Contains("schematic", StringComparison.OrdinalIgnoreCase)))
+            foreach (var exporter in _exporters)
             {
-                // Prefer Sponge v3 for .schem, or Legacy for .schematic
-                if (ext == ".schematic" && exporter.FormatIdentifier.Contains("legacy", StringComparison.OrdinalIgnoreCase))
+                if (formatType == ModelFormatType.Schematic &&
+                    (exporter.FormatIdentifier.Contains("sponge", StringComparison.OrdinalIgnoreCase) ||
+                     exporter.FormatIdentifier.Contains("schematic", StringComparison.OrdinalIgnoreCase)))
+                {
+                    // Prefer Sponge v3 for .schem, or Legacy for .schematic
+                    if (ext == ".schematic" && exporter.FormatIdentifier.Contains("legacy", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return exporter;
+                    }
+
+                    if (ext == ".schem" && exporter.FormatIdentifier.Contains("sponge", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return exporter;
+                    }
+
+                    return exporter;
+                }
+
+                if (formatType == ModelFormatType.Obj &&
+                    exporter.FormatIdentifier.Contains("obj", StringComparison.OrdinalIgnoreCase))
                 {
                     return exporter;
                 }
 
-                if (ext == ".schem" && exporter.FormatIdentifier.Contains("sponge", StringComparison.OrdinalIgnoreCase))
+                if (formatType == ModelFormatType.VoxelJson &&
+                    exporter.FormatIdentifier.Contains("voxel", StringComparison.OrdinalIgnoreCase))
                 {
                     return exporter;
                 }
 
-                return exporter;
-            }
-
-            if (formatType == ModelFormatType.Obj &&
-                exporter.FormatIdentifier.Contains("obj", StringComparison.OrdinalIgnoreCase))
-            {
-                return exporter;
-            }
-
-            if (formatType == ModelFormatType.VoxelJson &&
-                exporter.FormatIdentifier.Contains("voxel", StringComparison.OrdinalIgnoreCase))
-            {
-                return exporter;
-            }
-
-            if (formatType == ModelFormatType.BedrockGeometry &&
-                exporter.FormatIdentifier.Contains("bedrock", StringComparison.OrdinalIgnoreCase))
-            {
-                return exporter;
+                if (formatType == ModelFormatType.BedrockGeometry &&
+                    exporter.FormatIdentifier.Contains("bedrock", StringComparison.OrdinalIgnoreCase))
+                {
+                    return exporter;
+                }
             }
         }
 
-        var fallback = _exporters.FirstOrDefault(e =>
-            e.FormatIdentifier.Contains(formatType.ToString(), StringComparison.OrdinalIgnoreCase));
+        // 2. Check dynamic/plugin-provided exporters
+        if (_dynamicFormatProvider is not null)
+        {
+            foreach (var dynamicExporter in _dynamicFormatProvider.GetExporters())
+            {
+                if (MatchesFormat(dynamicExporter.FormatIdentifier, ext, formatType))
+                {
+                    return dynamicExporter;
+                }
+            }
+        }
 
-        return fallback ?? throw new InvalidOperationException($"No registered IFormatExporter found for format '{formatType}'.");
+        // 3. Fallback: match by identifier substring among all registered exporters
+        var fallback = _exporters.FirstOrDefault(e => MatchesFormat(e.FormatIdentifier, ext, formatType));
+        if (fallback is not null) return fallback;
+
+        // 4. Check IFormatRegistry descriptor
+        if (_formatRegistry is not null)
+        {
+            var descriptor = _formatRegistry.ResolveByFilePath(filePath);
+            if (descriptor is not null)
+            {
+                var candidate = GetAllExporters().FirstOrDefault(e =>
+                    e.FormatIdentifier.Contains(descriptor.ShortCode, StringComparison.OrdinalIgnoreCase) ||
+                    e.FormatIdentifier.Contains(descriptor.PrimaryExtension.TrimStart('.'), StringComparison.OrdinalIgnoreCase));
+                if (candidate is not null) return candidate;
+            }
+        }
+
+        throw new InvalidOperationException($"No registered IFormatExporter found for format '{formatType}' or extension '{ext}'.");
     }
+
+    private static bool MatchesFormat(string formatIdentifier, string ext, ModelFormatType formatType)
+    {
+        string cleanExt = ext.TrimStart('.');
+        return (!string.IsNullOrEmpty(cleanExt) && formatIdentifier.Contains(cleanExt, StringComparison.OrdinalIgnoreCase)) ||
+               (formatType != ModelFormatType.Custom && formatType != ModelFormatType.Unknown &&
+                formatIdentifier.Contains(formatType.ToString(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private IEnumerable<IFormatParser> GetAllParsers() =>
+        _dynamicFormatProvider is not null ? _parsers.Concat(_dynamicFormatProvider.GetParsers()) : _parsers;
+
+    private IEnumerable<IFormatExporter> GetAllExporters() =>
+        _dynamicFormatProvider is not null ? _exporters.Concat(_dynamicFormatProvider.GetExporters()) : _exporters;
 
     private static CoordinateSystem ResolveTargetCoordinates(ModelFormatType format) => format switch
     {

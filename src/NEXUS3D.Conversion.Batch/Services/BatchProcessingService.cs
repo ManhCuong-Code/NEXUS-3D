@@ -5,6 +5,7 @@ using NEXUS3D.Conversion.Abstractions.Models;
 using NEXUS3D.Domain.Entities;
 using NEXUS3D.Domain.Enums;
 using NEXUS3D.Domain.Repositories;
+using NEXUS3D.Formats.Abstractions;
 using NEXUS3D.Shared.Guards;
 
 namespace NEXUS3D.Conversion.Batch.Services;
@@ -18,6 +19,7 @@ public sealed class BatchProcessingService : IBatchProcessingService
     private readonly IBatchWorker _worker;
     private readonly IBatchProgressReporter _progressReporter;
     private readonly IBatchJobRepository? _repository;
+    private readonly IFormatRegistry? _formatRegistry;
     private readonly ILogger<BatchProcessingService> _logger;
 
     private readonly ConcurrentDictionary<Guid, BatchJob> _jobs = new();
@@ -28,13 +30,15 @@ public sealed class BatchProcessingService : IBatchProcessingService
         IBatchWorker worker,
         IBatchProgressReporter progressReporter,
         ILogger<BatchProcessingService> logger,
-        IBatchJobRepository? repository = null)
+        IBatchJobRepository? repository = null,
+        IFormatRegistry? formatRegistry = null)
     {
         _priorityQueue = Guard.NotNull(priorityQueue);
         _worker = Guard.NotNull(worker);
         _progressReporter = Guard.NotNull(progressReporter);
         _logger = Guard.NotNull(logger);
         _repository = repository;
+        _formatRegistry = formatRegistry;
     }
 
     public async Task<BatchJob> CreateJobAsync(
@@ -77,7 +81,7 @@ public sealed class BatchProcessingService : IBatchProcessingService
             retryLimit: request.RetryLimit,
             maxConcurrency: request.MaxConcurrency);
 
-        string targetExt = GetTargetExtension(request.TargetFormat);
+        string targetExt = GetTargetExtension(request.TargetFormat, request.TargetExtension);
 
         foreach (var sourceFile in filePaths)
         {
@@ -336,29 +340,62 @@ public sealed class BatchProcessingService : IBatchProcessingService
         _logger.LogInformation("Deleted BatchJob '{JobId}'.", jobId);
     }
 
-    private static string GetTargetExtension(ModelFormatType format) => format switch
+    private string GetTargetExtension(ModelFormatType format, string? customExtensionHint = null)
     {
-        ModelFormatType.Obj => ".obj",
-        ModelFormatType.Schematic => ".schem",
-        ModelFormatType.VoxelJson => ".voxel.json",
-        ModelFormatType.BedrockGeometry => ".geo.json",
-        _ => ".obj"
-    };
+        if (!string.IsNullOrWhiteSpace(customExtensionHint))
+        {
+            return customExtensionHint.StartsWith('.') ? customExtensionHint : $".{customExtensionHint}";
+        }
 
-    private static ModelFormatType DetectFormat(string path)
+        if (format != ModelFormatType.Custom && format != ModelFormatType.Unknown)
+        {
+            return format switch
+            {
+                ModelFormatType.Obj => ".obj",
+                ModelFormatType.Schematic => ".schem",
+                ModelFormatType.VoxelJson => ".voxel.json",
+                ModelFormatType.BedrockGeometry => ".geo.json",
+                _ => ".obj"
+            };
+        }
+
+        if (_formatRegistry is not null)
+        {
+            var descriptor = _formatRegistry.GetByFormatType(format);
+            if (descriptor is not null)
+            {
+                return descriptor.PrimaryExtension;
+            }
+        }
+
+        return ".obj";
+    }
+
+    private ModelFormatType DetectFormat(string path)
     {
         string name = Path.GetFileName(path).ToLowerInvariant();
         if (name.EndsWith(".geo.json", StringComparison.OrdinalIgnoreCase)) return ModelFormatType.BedrockGeometry;
         if (name.EndsWith(".voxel.json", StringComparison.OrdinalIgnoreCase)) return ModelFormatType.VoxelJson;
 
         string ext = Path.GetExtension(path).ToLowerInvariant();
-        return ext switch
+        switch (ext)
         {
-            ".obj" => ModelFormatType.Obj,
-            ".schem" or ".schematic" => ModelFormatType.Schematic,
-            ".json" => ModelFormatType.VoxelJson,
-            _ => ModelFormatType.Unknown
-        };
+            case ".obj": return ModelFormatType.Obj;
+            case ".schem":
+            case ".schematic": return ModelFormatType.Schematic;
+            case ".json": return ModelFormatType.VoxelJson;
+        }
+
+        if (_formatRegistry is not null)
+        {
+            var descriptor = _formatRegistry.ResolveByFilePath(path);
+            if (descriptor is not null)
+            {
+                return descriptor.FormatType;
+            }
+        }
+
+        return ModelFormatType.Unknown;
     }
 
     public static BatchJobRecord MapToRecord(BatchJob job)

@@ -9,7 +9,8 @@ public enum ModelFormatType
     Schematic = 1,
     Obj = 2,
     VoxelJson = 3,
-    BedrockGeometry = 4
+    BedrockGeometry = 4,
+    Custom = 99
 }
 
 /// <summary>

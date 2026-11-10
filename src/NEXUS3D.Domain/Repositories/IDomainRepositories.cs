@@ -47,6 +47,7 @@ public interface IPluginRegistrationRepository
     Task<IReadOnlyList<PluginRegistration>> GetAllAsync(CancellationToken cancellationToken = default);
     Task UpsertAsync(PluginRegistration plugin, CancellationToken cancellationToken = default);
     Task SetEnabledAsync(string pluginId, bool isEnabled, CancellationToken cancellationToken = default);
+    Task DeleteAsync(string pluginId, CancellationToken cancellationToken = default);
 }
 
 public interface IBatchJobRepository

@@ -13,6 +13,7 @@ namespace NEXUS3D.Infrastructure.Formats;
 public sealed class FormatRegistry : IFormatRegistry
 {
     private readonly List<IFormatDescriptor> _descriptors;
+    private readonly object _syncRoot = new();
 
     public FormatRegistry(IEnumerable<IFormatDescriptor>? descriptors = null)
     {
@@ -33,16 +34,71 @@ public sealed class FormatRegistry : IFormatRegistry
         }
     }
 
-    public IReadOnlyList<IFormatDescriptor> GetAllFormats() => _descriptors;
+    public void RegisterDescriptor(IFormatDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        lock (_syncRoot)
+        {
+            // Avoid duplicate shortcodes or extensions
+            if (!_descriptors.Any(d => string.Equals(d.ShortCode, descriptor.ShortCode, StringComparison.OrdinalIgnoreCase) ||
+                                      string.Equals(d.PrimaryExtension, descriptor.PrimaryExtension, StringComparison.OrdinalIgnoreCase)))
+            {
+                _descriptors.Add(descriptor);
+            }
+        }
+    }
 
-    public IReadOnlyList<IFormatDescriptor> GetImportableFormats() =>
-        _descriptors.Where(d => d.SupportsImport).ToList();
+    public bool UnregisterDescriptor(string shortCodeOrExtension)
+    {
+        if (string.IsNullOrWhiteSpace(shortCodeOrExtension)) return false;
 
-    public IReadOnlyList<IFormatDescriptor> GetExportableFormats() =>
-        _descriptors.Where(d => d.SupportsExport).ToList();
+        lock (_syncRoot)
+        {
+            var match = _descriptors.FirstOrDefault(d =>
+                string.Equals(d.ShortCode, shortCodeOrExtension, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(d.PrimaryExtension, shortCodeOrExtension, StringComparison.OrdinalIgnoreCase) ||
+                d.SupportedExtensions.Any(ext => string.Equals(ext, shortCodeOrExtension, StringComparison.OrdinalIgnoreCase)));
 
-    public IFormatDescriptor? GetByFormatType(ModelFormatType formatType) =>
-        _descriptors.FirstOrDefault(d => d.FormatType == formatType);
+            if (match is not null)
+            {
+                return _descriptors.Remove(match);
+            }
+
+            return false;
+        }
+    }
+
+    public IReadOnlyList<IFormatDescriptor> GetAllFormats()
+    {
+        lock (_syncRoot)
+        {
+            return _descriptors.ToList();
+        }
+    }
+
+    public IReadOnlyList<IFormatDescriptor> GetImportableFormats()
+    {
+        lock (_syncRoot)
+        {
+            return _descriptors.Where(d => d.SupportsImport).ToList();
+        }
+    }
+
+    public IReadOnlyList<IFormatDescriptor> GetExportableFormats()
+    {
+        lock (_syncRoot)
+        {
+            return _descriptors.Where(d => d.SupportsExport).ToList();
+        }
+    }
+
+    public IFormatDescriptor? GetByFormatType(ModelFormatType formatType)
+    {
+        lock (_syncRoot)
+        {
+            return _descriptors.FirstOrDefault(d => d.FormatType == formatType);
+        }
+    }
 
     public IFormatDescriptor? ResolveByFilePath(string filePath)
     {
@@ -51,16 +107,19 @@ public sealed class FormatRegistry : IFormatRegistry
             return null;
         }
 
-        // Check longer compound extensions first (e.g. .geo.json before .json)
-        foreach (var descriptor in _descriptors.OrderByDescending(d => d.PrimaryExtension.Length))
+        lock (_syncRoot)
         {
-            if (descriptor.CanHandleExtension(filePath))
+            // Check longer compound extensions first (e.g. .geo.json before .json)
+            foreach (var descriptor in _descriptors.OrderByDescending(d => d.PrimaryExtension.Length))
             {
-                return descriptor;
+                if (descriptor.CanHandleExtension(filePath))
+                {
+                    return descriptor;
+                }
             }
-        }
 
-        return null;
+            return null;
+        }
     }
 
     public string BuildFileDialogFilter(bool includeAllSupported = true)

@@ -52,6 +52,18 @@ public static class CliArgumentParser
             return result;
         }
 
+        if (first == "plugins")
+        {
+            ParsePluginsArguments(args, 1, result);
+            return result;
+        }
+
+        if (first == "formats")
+        {
+            ParseFormatsArguments(args, 1, result);
+            return result;
+        }
+
         // Unknown command
         result.Command = CliCommandType.Unknown;
         result.ParseError = $"Unknown command or flag '{args[0]}'. Use 'nexus3d --help' for available commands.";
@@ -99,6 +111,20 @@ public static class CliArgumentParser
                     return;
                 }
             }
+            else if (lower is "--format" or "-f")
+            {
+                if (i + 1 < args.Length)
+                {
+                    string fmt = args[++i];
+                    result.FormatString = fmt;
+                    result.TargetFormat = ParseFormatType(fmt);
+                }
+                else
+                {
+                    result.ParseError = "Missing value for --format parameter.";
+                    return;
+                }
+            }
             else
             {
                 result.ParseError = $"Unrecognized option '{token}' for 'convert' command.";
@@ -137,12 +163,9 @@ public static class CliArgumentParser
             {
                 if (i + 1 < args.Length)
                 {
-                    result.TargetFormat = ParseFormatType(args[++i]);
-                    if (result.TargetFormat == ModelFormatType.Unknown)
-                    {
-                        result.ParseError = $"Unsupported target format '{args[i]}'. Supported: obj, schem, voxeljson, bedrock.";
-                        return;
-                    }
+                    string fmt = args[++i];
+                    result.FormatString = fmt;
+                    result.TargetFormat = ParseFormatType(fmt);
                 }
                 else { result.ParseError = "Missing value for --format parameter."; return; }
             }
@@ -279,8 +302,93 @@ public static class CliArgumentParser
         "schem" or "schematic" => ModelFormatType.Schematic,
         "json" or "voxeljson" or "voxel.json" or "voxel" => ModelFormatType.VoxelJson,
         "bedrock" or "geo" or "geo.json" or "geometry" => ModelFormatType.BedrockGeometry,
-        _ => ModelFormatType.Unknown
+        "" => ModelFormatType.Unknown,
+        _ => ModelFormatType.Custom
     };
+
+    private static void ParsePluginsArguments(string[] args, int startIndex, ParsedArguments result)
+    {
+        if (startIndex >= args.Length)
+        {
+            result.Command = CliCommandType.PluginsList;
+            return;
+        }
+
+        string sub = args[startIndex].Trim().ToLowerInvariant();
+        if (sub == "list")
+        {
+            result.Command = CliCommandType.PluginsList;
+        }
+        else if (sub == "info")
+        {
+            result.Command = CliCommandType.PluginsInfo;
+            if (startIndex + 1 < args.Length)
+            {
+                result.PluginId = args[startIndex + 1].Trim();
+            }
+            else
+            {
+                result.ParseError = "Missing <plugin-id> for 'plugins info <plugin-id>'.";
+            }
+        }
+        else if (sub == "install")
+        {
+            result.Command = CliCommandType.PluginsInstall;
+            if (startIndex + 1 < args.Length)
+            {
+                result.PackagePath = args[startIndex + 1].Trim();
+            }
+            else
+            {
+                result.ParseError = "Missing <plugin-file> path for 'plugins install <plugin-file>'.";
+            }
+        }
+        else if (sub == "enable")
+        {
+            result.Command = CliCommandType.PluginsEnable;
+            if (startIndex + 1 < args.Length)
+            {
+                result.PluginId = args[startIndex + 1].Trim();
+            }
+            else
+            {
+                result.ParseError = "Missing <plugin-id> for 'plugins enable <plugin-id>'.";
+            }
+        }
+        else if (sub == "disable")
+        {
+            result.Command = CliCommandType.PluginsDisable;
+            if (startIndex + 1 < args.Length)
+            {
+                result.PluginId = args[startIndex + 1].Trim();
+            }
+            else
+            {
+                result.ParseError = "Missing <plugin-id> for 'plugins disable <plugin-id>'.";
+            }
+        }
+        else if (sub == "uninstall")
+        {
+            result.Command = CliCommandType.PluginsUninstall;
+            if (startIndex + 1 < args.Length)
+            {
+                result.PluginId = args[startIndex + 1].Trim();
+            }
+            else
+            {
+                result.ParseError = "Missing <plugin-id> for 'plugins uninstall <plugin-id>'.";
+            }
+        }
+        else
+        {
+            result.ParseError = $"Unknown plugins subcommand '{args[startIndex]}'. Available: list, info, install, enable, disable, uninstall.";
+        }
+    }
+
+    private static void ParseFormatsArguments(string[] args, int startIndex, ParsedArguments result)
+    {
+        result.Command = CliCommandType.FormatsList;
+    }
 
     public static BatchJobPriority ParsePriority(string raw) => raw.Trim().ToLowerInvariant() switch
     {

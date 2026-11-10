@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using NEXUS3D.Conversion.Abstractions.Interfaces;
 using NEXUS3D.Conversion.Abstractions.Models;
 using NEXUS3D.Domain.Enums;
+using NEXUS3D.Formats.Abstractions;
 using Nexus3D.CLI.Arguments;
 using Nexus3D.CLI.Formatting;
 
@@ -10,13 +11,16 @@ namespace Nexus3D.CLI.Commands;
 public sealed class BatchCommandHandler
 {
     private readonly IBatchProcessingService _batchService;
+    private readonly IFormatRegistry _formatRegistry;
     private readonly ILogger<BatchCommandHandler> _logger;
 
     public BatchCommandHandler(
         IBatchProcessingService batchService,
+        IFormatRegistry formatRegistry,
         ILogger<BatchCommandHandler> logger)
     {
         _batchService = batchService;
+        _formatRegistry = formatRegistry;
         _logger = logger;
     }
 
@@ -46,10 +50,24 @@ public sealed class BatchCommandHandler
             return CliExitCodes.InvalidArguments;
         }
 
+        if (args.TargetFormat is ModelFormatType.Unknown or ModelFormatType.Custom && !string.IsNullOrWhiteSpace(args.FormatString))
+        {
+            var matchedDesc = _formatRegistry.GetAllFormats().FirstOrDefault(f =>
+                f.ShortCode.Equals(args.FormatString, StringComparison.OrdinalIgnoreCase) ||
+                f.PrimaryExtension.Equals(args.FormatString, StringComparison.OrdinalIgnoreCase) ||
+                f.SupportedExtensions.Any(e => e.Equals(args.FormatString, StringComparison.OrdinalIgnoreCase) ||
+                                               e.TrimStart('.').Equals(args.FormatString, StringComparison.OrdinalIgnoreCase)));
+            if (matchedDesc is not null)
+            {
+                args.TargetFormat = matchedDesc.FormatType;
+                args.Extensions.Add(matchedDesc.PrimaryExtension);
+            }
+        }
+
         if (args.TargetFormat == ModelFormatType.Unknown)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Error: Missing or invalid --format parameter.");
+            Console.WriteLine($"Error: Missing or invalid --format parameter '{args.FormatString}'. Use 'nexus3d formats list' to see available formats.");
             Console.ResetColor();
             return CliExitCodes.InvalidArguments;
         }
@@ -70,7 +88,8 @@ public sealed class BatchCommandHandler
             OverwriteExisting: args.Overwrite,
             ContinueOnError: args.ContinueOnError,
             RetryLimit: args.RetryLimit,
-            ExtensionFilter: filters);
+            ExtensionFilter: filters,
+            TargetExtension: args.FormatString);
 
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine($"[NEXUS-3D] Initializing Batch Job: {jobName}");
