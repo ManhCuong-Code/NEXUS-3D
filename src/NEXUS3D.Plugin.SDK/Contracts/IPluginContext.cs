@@ -35,3 +35,4 @@ public interface IPluginContext
     /// </summary>
     string DataDirectory { get; }
 }
+

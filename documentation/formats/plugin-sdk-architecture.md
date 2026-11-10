@@ -191,3 +191,4 @@ The desktop UI provides a clean master-detail management hub:
   - `Reload` plugin in collectible ALC
   - `Uninstall` plugin
   - `Open Plugins Folder` in File Explorer
+

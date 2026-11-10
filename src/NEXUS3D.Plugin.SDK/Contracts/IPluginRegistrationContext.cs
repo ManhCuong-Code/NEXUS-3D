@@ -32,3 +32,4 @@ public interface IPluginRegistrationContext
     /// </summary>
     void RegisterValidator(IFormatValidator validator);
 }
+

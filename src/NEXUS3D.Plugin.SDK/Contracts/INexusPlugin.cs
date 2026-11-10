@@ -27,3 +27,4 @@ public interface INexusPlugin
     Task<OperationResult> ShutdownAsync(
         CancellationToken cancellationToken = default);
 }
+

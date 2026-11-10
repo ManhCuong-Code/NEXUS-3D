@@ -12,3 +12,4 @@ public interface IPluginConfiguration
     Task SaveAsync(CancellationToken cancellationToken = default);
     Task ReloadAsync(CancellationToken cancellationToken = default);
 }
+

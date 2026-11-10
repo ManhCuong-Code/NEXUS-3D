@@ -67,3 +67,4 @@ public sealed record PluginManifest
     [JsonPropertyName("sha256Checksum")]
     public string? Sha256Checksum { get; init; }
 }
+

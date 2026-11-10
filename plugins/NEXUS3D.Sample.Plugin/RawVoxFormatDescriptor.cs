@@ -26,3 +26,4 @@ public sealed class RawVoxFormatDescriptor : IFormatDescriptor
         return SupportedExtensions.Any(s => string.Equals(s, ext, StringComparison.OrdinalIgnoreCase));
     }
 }
+

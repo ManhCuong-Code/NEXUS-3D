@@ -31,3 +31,4 @@ public sealed class PluginContext : IPluginContext
         DataDirectory = Guard.NotNullOrWhiteSpace(dataDirectory);
     }
 }
+

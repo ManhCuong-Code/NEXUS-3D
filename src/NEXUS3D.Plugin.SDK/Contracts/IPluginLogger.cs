@@ -10,3 +10,4 @@ public interface IPluginLogger
     void LogWarning(string message);
     void LogError(string message, Exception? exception = null);
 }
+

@@ -80,3 +80,4 @@ public abstract class NexusPluginBase : INexusPlugin
     protected virtual Task<OperationResult> OnShutdownAsync(CancellationToken cancellationToken) =>
         Task.FromResult(OperationResult.Success());
 }
+

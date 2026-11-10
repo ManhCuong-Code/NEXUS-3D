@@ -70,3 +70,4 @@ public sealed class PluginLoadContext : AssemblyLoadContext
         return IntPtr.Zero;
     }
 }
+

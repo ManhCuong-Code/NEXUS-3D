@@ -46,3 +46,4 @@ public sealed class RawVoxValidator : IFormatValidator
         }
     }
 }
+

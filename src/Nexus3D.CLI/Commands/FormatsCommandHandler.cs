@@ -46,3 +46,4 @@ public sealed class FormatsCommandHandler
     private static string Truncate(string str, int maxLength) =>
         str.Length <= maxLength ? str : str[..(maxLength - 3)] + "...";
 }
+

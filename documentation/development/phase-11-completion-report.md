@@ -126,3 +126,4 @@ nexus3d convert -i test_model.obj -o test_reverse.rawvox --format rawvox
 ## IV. KẾT LUẬN
 
 Giai đoạn 11 – **Plugin SDK & Extension Hub** đã hoàn thành xuất sắc, tuân thủ nghiêm ngặt nguyên tắc kiến trúc Clean Architecture, bảo vệ hệ thống trước các lỗ hổng tệp nén Zip Slip, đảm bảo khả năng mở rộng không giới hạn cho các bên thứ ba mà không cần chạm vào mã nguồn lõi NEXUS-3D.
+

@@ -122,3 +122,4 @@ public static partial class PluginManifestValidator
         return result;
     }
 }
+

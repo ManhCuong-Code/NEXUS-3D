@@ -12,3 +12,4 @@ public enum PluginLifecycleStatus
     Disabled = 4,
     Faulted = 5
 }
+

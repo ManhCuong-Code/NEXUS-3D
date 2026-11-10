@@ -47,3 +47,4 @@ public sealed class PluginRegistrationContext : IPluginRegistrationContext
         _instance.RegisteredValidators.Add(validator);
     }
 }
+
