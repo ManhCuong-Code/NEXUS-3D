@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Voxelization.Abstractions\NEXUS3D.Voxelization.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

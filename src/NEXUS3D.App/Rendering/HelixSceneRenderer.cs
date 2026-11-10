@@ -131,7 +131,13 @@ public sealed class HelixSceneRenderer : IDisposable
             if (chunk.Mesh is not null)
             {
                 var geom = BuildMeshGeometry(chunk.Mesh);
-                var mat = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(200, 200, 205)));
+                Color chunkColor = Color.FromRgb(180, 185, 195);
+                if (chunk.Mesh.Colors.Length > 0)
+                {
+                    var c = chunk.Mesh.Colors[0];
+                    chunkColor = Color.FromRgb((byte)Math.Clamp((int)(c.X * 255), 0, 255), (byte)Math.Clamp((int)(c.Y * 255), 0, 255), (byte)Math.Clamp((int)(c.Z * 255), 0, 255));
+                }
+                var mat = new DiffuseMaterial(new SolidColorBrush(chunkColor));
                 mat.Freeze();
 
                 var model = new GeometryModel3D(geom, mat)

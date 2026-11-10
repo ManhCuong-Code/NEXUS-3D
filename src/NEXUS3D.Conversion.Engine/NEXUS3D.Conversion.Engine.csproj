@@ -10,6 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\NEXUS3D.Conversion.Abstractions\NEXUS3D.Conversion.Abstractions.csproj" />
     <ProjectReference Include="..\NEXUS3D.Conversion.Domain\NEXUS3D.Conversion.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Voxelization.Abstractions\NEXUS3D.Voxelization.Abstractions.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Voxelization.Domain\NEXUS3D.Voxelization.Domain.csproj" />
     <ProjectReference Include="..\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
     <ProjectReference Include="..\NEXUS3D.Formats.Abstractions\NEXUS3D.Formats.Abstractions.csproj" />
     <ProjectReference Include="..\NEXUS3D.Formats.Schematic\NEXUS3D.Formats.Schematic.csproj" />
