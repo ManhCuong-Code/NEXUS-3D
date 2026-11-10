@@ -291,3 +291,4 @@ public static class CliArgumentParser
         _ => BatchJobPriority.Normal
     };
 }
+

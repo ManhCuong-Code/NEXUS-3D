@@ -181,3 +181,4 @@ public sealed record BatchJobResult(
     long DurationMs,
     IReadOnlyList<BatchJobItem> Items,
     string? ErrorMessage);
+

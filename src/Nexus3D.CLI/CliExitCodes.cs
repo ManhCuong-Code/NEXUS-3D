@@ -26,3 +26,4 @@ public static class CliExitCodes
     /// <summary>Process was interrupted or cancelled by the user (e.g. Ctrl+C).</summary>
     public const int CancelledByUser = 6;
 }
+

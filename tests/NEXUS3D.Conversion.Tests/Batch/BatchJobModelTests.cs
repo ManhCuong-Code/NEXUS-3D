@@ -77,3 +77,4 @@ public sealed class BatchJobModelTests
         Assert.Equal(95, item.DurationMs);
     }
 }
+

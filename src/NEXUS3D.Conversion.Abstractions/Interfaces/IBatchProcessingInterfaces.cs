@@ -65,3 +65,4 @@ public interface IBatchProgressReporter
 
     event EventHandler<BatchProgress>? ProgressChanged;
 }
+

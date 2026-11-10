@@ -212,3 +212,4 @@ public sealed class BatchCommandHandler
         Console.WriteLine();
     }
 }
+

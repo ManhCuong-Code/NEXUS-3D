@@ -71,3 +71,4 @@ public static class HelpCommandHandler
         Console.WriteLine();
     }
 }
+

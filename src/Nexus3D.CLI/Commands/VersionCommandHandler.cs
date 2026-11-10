@@ -21,3 +21,4 @@ public static class VersionCommandHandler
         Console.WriteLine("                   Voxel JSON (.voxel.json), Bedrock Geometry (.geo.json)");
     }
 }
+

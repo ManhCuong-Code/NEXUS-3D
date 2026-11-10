@@ -148,3 +148,4 @@ public sealed class CliArgumentParserTests
         Assert.Equal(6, CliExitCodes.CancelledByUser);
     }
 }
+

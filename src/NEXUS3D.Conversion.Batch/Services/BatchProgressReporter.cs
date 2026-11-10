@@ -15,3 +15,4 @@ public sealed class BatchProgressReporter : IBatchProgressReporter
         ProgressChanged?.Invoke(this, progress);
     }
 }
+

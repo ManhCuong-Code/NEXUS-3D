@@ -285,3 +285,4 @@ public sealed class BatchWorker : IBatchWorker
         };
     }
 }
+

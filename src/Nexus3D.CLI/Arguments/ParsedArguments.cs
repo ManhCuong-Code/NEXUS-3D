@@ -38,3 +38,4 @@ public sealed class ParsedArguments
     public int Limit { get; set; } = 20;
     public string? ParseError { get; set; }
 }
+

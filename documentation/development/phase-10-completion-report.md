@@ -118,3 +118,4 @@ Bổ sung tab **Batch Processing Studio** trong giao diện chuyển đổi (`Co
 2. **Khả năng xử lý hàng loạt:** Đã hoạt động thực tế với đa luồng giới hạn an toàn, hàng đợi ưu tiên thông minh có chống bỏ đói và lưu trữ SQLite lâu dài.
 3. **Tính độc lập của CLI:** Ứng dụng console `nexus3d.exe` hoàn toàn độc lập với WPF, hỗ trợ đầy đủ các lệnh chuyển đổi và quản lý mẻ tác vụ.
 4. **Đủ điều kiện chuyển tiếp:** Dự án **HOÀN TOÀN ĐỦ ĐIỀU KIỆN** để bắt đầu Giai đoạn 11.
+

@@ -110,3 +110,4 @@ public sealed class BatchJobRecord
         CreatedAtUtc = DateTimeOffset.UtcNow;
     }
 }
+

@@ -106,3 +106,4 @@ The WPF application (`NEXUS3D.App`) features a dedicated **Batch Processing Stud
 3. **Area C – Live Job Queue**: Animated progress bar, active file label, live status DataGrid (Pending, Processing, Succeeded, Failed, Skipped).
 4. **Area D – Execution Controls**: Start, Pause, Resume, Cancel, Retry Failed, Clear Completed.
 5. **Area E – Summary & Results**: Metrics cards (Total, Succeeded, Failed, Skipped), execution time, "Open Output Folder", "Export JSON Report".
+

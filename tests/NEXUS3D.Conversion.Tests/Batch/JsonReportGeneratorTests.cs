@@ -57,3 +57,4 @@ public sealed class JsonReportGeneratorTests
         Assert.Equal("PARSE_ERROR", second.GetProperty("ErrorCode").GetString());
     }
 }
+

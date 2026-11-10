@@ -61,3 +61,4 @@ public static class JsonReportGenerator
         await File.WriteAllTextAsync(filePath, json, cancellationToken).ConfigureAwait(false);
     }
 }
+

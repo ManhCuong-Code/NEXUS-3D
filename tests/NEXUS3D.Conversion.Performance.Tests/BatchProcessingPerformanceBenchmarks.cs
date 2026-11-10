@@ -73,3 +73,4 @@ public sealed class BatchProcessingPerformanceBenchmarks
         Assert.True(sw.ElapsedMilliseconds < 500, $"1,000 item transitions took {sw.ElapsedMilliseconds}ms, expected < 500ms");
     }
 }
+
