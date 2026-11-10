@@ -103,6 +103,30 @@ public sealed class TextureLoader : ITextureLoader
         }
     }
 
+    /// <summary>
+    /// Validates UV coordinate bounds and identifies if texture coordinates exceed [0, 1] requiring wrap/repeat tiling.
+    /// </summary>
+    public (bool RequiresTiling, float MinU, float MaxU, float MinV, float MaxV) AnalyzeUVBounds(IEnumerable<System.Numerics.Vector2> uvs)
+    {
+        float minU = float.MaxValue, maxU = float.MinValue;
+        float minV = float.MaxValue, maxV = float.MinValue;
+        bool hasData = false;
+
+        foreach (var uv in uvs)
+        {
+            minU = Math.Min(minU, uv.X);
+            maxU = Math.Max(maxU, uv.X);
+            minV = Math.Min(minV, uv.Y);
+            maxV = Math.Max(maxV, uv.Y);
+            hasData = true;
+        }
+
+        if (!hasData) return (false, 0, 1, 0, 1);
+
+        bool requiresTiling = minU < -0.01f || maxU > 1.01f || minV < -0.01f || maxV > 1.01f;
+        return (requiresTiling, minU, maxU, minV, maxV);
+    }
+
     public (int Width, int Height) GetTextureDimensions(string texturePath)
     {
         if (string.IsNullOrWhiteSpace(texturePath))
