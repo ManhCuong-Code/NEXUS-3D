@@ -1,0 +1,85 @@
+<UserControl x:Class="NEXUS3D.App.Controls.Viewport3DControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:helix="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800">
+    <Grid Background="#1E1E24">
+        <!-- Main Helix 3D Viewport -->
+        <helix:HelixViewport3D x:Name="HelixViewport"
+                               ShowCoordinateSystem="True"
+                               CoordinateSystemLabelX="X"
+                               CoordinateSystemLabelY="Y"
+                               CoordinateSystemLabelZ="Z"
+                               ShowViewCube="True"
+                               ViewCubeVerticalPosition="Top"
+                               ViewCubeHorizontalPosition="Right"
+                               IsChangeFieldOfViewEnabled="True"
+                               IsPanEnabled="True"
+                               IsRotationEnabled="True"
+                               IsZoomEnabled="True"
+                               RotateAroundMouseDownPoint="True"
+                               ZoomAroundMouseDownPoint="True"
+                               ClipToBounds="True">
+            <helix:HelixViewport3D.DefaultCamera>
+                <PerspectiveCamera Position="16,16,24" LookDirection="-16,-16,-24" UpDirection="0,1,0" FieldOfView="45"/>
+            </helix:HelixViewport3D.DefaultCamera>
+
+            <!-- Default Lighting Environment -->
+            <helix:DefaultLights />
+
+            <!-- Floor Grid Lines -->
+            <helix:GridLinesVisual3D x:Name="GridVisual"
+                                     Width="80"
+                                     Length="80"
+                                     MajorDistance="10"
+                                     MinorDistance="1"
+                                     Thickness="0.5"
+                                     Fill="#33AAAAAA" />
+
+            <!-- Dynamic Model Container will be populated in code-behind -->
+        </helix:HelixViewport3D>
+
+        <!-- Empty State Watermark -->
+        <Border x:Name="EmptyStateOverlay"
+                Background="#66000000"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                CornerRadius="8"
+                Padding="24,16"
+                Visibility="Collapsed">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="NEXUS 3D VIEWPORT"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Foreground="#FFFFFF"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="No 3D Model Loaded. Open a model or run conversion preview to inspect."
+                           FontSize="13"
+                           Foreground="#AAAAAA"
+                           Margin="0,8,0,0"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- Telemetry HUD Overlay in Bottom Left -->
+        <Border Background="#99141419"
+                BorderBrush="#33FFFFFF"
+                BorderThickness="1"
+                CornerRadius="4"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Margin="12"
+                Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="TxtStats"
+                           Text="Objects: 0 | Triangles: 0 | Vertices: 0 | Voxels: 0"
+                           FontSize="11"
+                           Foreground="#E0E0E0"
+                           FontFamily="Consolas" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
