@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Editor.Abstractions\NEXUS3D.Editor.Abstractions.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Editor.Domain\NEXUS3D.Editor.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Rendering\NEXUS3D.Rendering.csproj" />
+  </ItemGroup>
+
+</Project>
+

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Editor.Abstractions\NEXUS3D.Editor.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>
+

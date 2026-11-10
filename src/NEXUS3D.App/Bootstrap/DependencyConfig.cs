@@ -9,6 +9,8 @@ using NEXUS3D.Application.UseCases;
 using NEXUS3D.Conversion.Batch.DependencyInjection;
 using NEXUS3D.Conversion.Engine.DependencyInjection;
 using NEXUS3D.Domain.Repositories;
+using NEXUS3D.Editor.Abstractions;
+using NEXUS3D.Editor.Engine.Extensions;
 using NEXUS3D.Engine.Contracts;
 using NEXUS3D.Engine.Services;
 using NEXUS3D.Formats.Abstractions;
@@ -110,6 +112,7 @@ public static class DependencyConfig
         services.AddNexusBatchConversion();
         services.AddNexusRendering();
         services.AddNexusVoxelization();
+        services.AddNexus3DEditorEngine();
 
         services.AddSingleton<IConversionPipeline, FoundationConversionPipeline>();
         services.AddSingleton<IPluginCatalogService, PluginCatalogService>();

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NEXUS3D.Editor.Abstractions\NEXUS3D.Editor.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\NEXUS3D.Editor.Domain\NEXUS3D.Editor.Domain.csproj" />
+    <ProjectReference Include="..\..\src\NEXUS3D.Editor.Engine\NEXUS3D.Editor.Engine.csproj" />
+    <ProjectReference Include="..\..\src\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
+    <ProjectReference Include="..\..\src\NEXUS3D.Rendering\NEXUS3D.Rendering.csproj" />
+    <ProjectReference Include="..\..\src\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
+    <ProjectReference Include="..\..\src\NEXUS3D.Formats.Obj\NEXUS3D.Formats.Obj.csproj" />
+    <ProjectReference Include="..\..\src\NEXUS3D.Formats.VoxelJson\NEXUS3D.Formats.VoxelJson.csproj" />
+  </ItemGroup>
+
+</Project>
+
