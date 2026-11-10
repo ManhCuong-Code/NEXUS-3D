@@ -51,6 +51,10 @@ public static class Program
                 CliCommandType.Batch => await provider.GetRequiredService<BatchCommandHandler>().ExecuteAsync(parsed, cts.Token).ConfigureAwait(false),
                 CliCommandType.JobsList or CliCommandType.JobsStatus or CliCommandType.JobsCancel =>
                     await provider.GetRequiredService<JobsCommandHandler>().ExecuteAsync(parsed, cts.Token).ConfigureAwait(false),
+                CliCommandType.PluginsList or CliCommandType.PluginsInfo or CliCommandType.PluginsInstall or
+                CliCommandType.PluginsEnable or CliCommandType.PluginsDisable or CliCommandType.PluginsUninstall =>
+                    await provider.GetRequiredService<PluginsCommandHandler>().ExecuteAsync(parsed, cts.Token).ConfigureAwait(false),
+                CliCommandType.FormatsList => provider.GetRequiredService<FormatsCommandHandler>().Execute(),
                 _ => CliExitCodes.InvalidArguments
             };
         }

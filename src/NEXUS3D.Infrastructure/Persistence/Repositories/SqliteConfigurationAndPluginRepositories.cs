@@ -266,5 +266,16 @@ public sealed class SqlitePluginRegistrationRepository : IPluginRegistrationRepo
         cmd.Parameters.AddWithValue("$pluginId", pluginId);
         await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    public async Task DeleteAsync(string pluginId, CancellationToken cancellationToken = default)
+    {
+        Guard.NotNullOrWhiteSpace(pluginId);
+
+        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM PluginRegistrations WHERE PluginId = $pluginId;";
+        cmd.Parameters.AddWithValue("$pluginId", pluginId);
+        await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
 }
 

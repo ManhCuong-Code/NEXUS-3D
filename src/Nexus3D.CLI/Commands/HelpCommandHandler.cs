@@ -21,6 +21,13 @@ public static class HelpCommandHandler
         Console.WriteLine("  jobs list        Display persistent history of batch conversion jobs.");
         Console.WriteLine("  jobs status <id> Inspect status and file progress of a specific batch job.");
         Console.WriteLine("  jobs cancel <id> Cancel a pending or running batch job.");
+        Console.WriteLine("  plugins list     List installed and active plugins.");
+        Console.WriteLine("  plugins info <id> Show detailed manifest and capabilities of a plugin.");
+        Console.WriteLine("  plugins install <pkg> Install a .nexusplugin archive package.");
+        Console.WriteLine("  plugins enable <id> Enable an installed plugin.");
+        Console.WriteLine("  plugins disable <id> Disable an installed plugin.");
+        Console.WriteLine("  plugins uninstall <id> Safely remove and uninstall a plugin.");
+        Console.WriteLine("  formats list     Display all active 3D model formats (built-in & plugins).");
         Console.WriteLine("  --version, -v    Display application version and runtime metadata.");
         Console.WriteLine("  --help, -h       Show this detailed help manual.");
         Console.WriteLine();

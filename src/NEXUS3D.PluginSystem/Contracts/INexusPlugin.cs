@@ -4,17 +4,10 @@ using NEXUS3D.Shared.Results;
 namespace NEXUS3D.PluginSystem.Contracts;
 
 /// <summary>
-/// Contract implemented by external NEXUS 3D plugins.
+/// Alias forwarding to the core SDK plugin contract.
 /// </summary>
-public interface INexusPlugin
+public interface INexusPlugin : NEXUS3D.Plugin.SDK.Contracts.INexusPlugin
 {
-    string PluginId { get; }
-    string Name { get; }
-    string Version { get; }
-    string Author { get; }
-    string Description { get; }
-
-    Task<OperationResult> InitializeAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -25,4 +18,3 @@ public interface IPluginCatalogService
     Task<IReadOnlyList<PluginRegistration>> GetRegisteredPluginsAsync(CancellationToken cancellationToken = default);
     Task<OperationResult> SetPluginStateAsync(string pluginId, bool isEnabled, CancellationToken cancellationToken = default);
 }
-

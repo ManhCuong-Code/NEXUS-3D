@@ -42,6 +42,18 @@ public sealed class AppBootstrapper : IDisposable
                 "SQLite");
         }
 
+        try
+        {
+            var pluginManager = _serviceProvider.GetRequiredService<NEXUS3D.PluginSystem.Services.IPluginManager>();
+            await pluginManager.DiscoverAndLoadPluginsAsync();
+            logger.LogInformation("NEXUS-3D Plugin System initialized: {Count} active format extensions loaded.",
+                pluginManager.GetActiveFormatDescriptors().Count);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to initialize some plugins during startup.");
+        }
+
         var shellViewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.DataContext = shellViewModel;

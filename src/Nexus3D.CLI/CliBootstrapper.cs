@@ -13,6 +13,7 @@ using NEXUS3D.Infrastructure.FileSystem;
 using NEXUS3D.Infrastructure.Formats;
 using NEXUS3D.Infrastructure.Persistence;
 using NEXUS3D.Infrastructure.Persistence.Repositories;
+using NEXUS3D.PluginSystem.Services;
 using NEXUS3D.Voxelization.Engine.DependencyInjection;
 using Nexus3D.CLI.Commands;
 
@@ -44,6 +45,7 @@ public static class CliBootstrapper
         services.AddSingleton<SqliteConnectionFactory>();
         services.AddSingleton<DatabaseSchemaMigrator>();
         services.AddSingleton<IBatchJobRepository, SqliteBatchJobRepository>();
+        services.AddSingleton<IPluginRegistrationRepository, SqlitePluginRegistrationRepository>();
 
         // Format Parsers & Exporters
         services.AddSchematicFormatServices();
@@ -51,6 +53,10 @@ public static class CliBootstrapper
         services.AddVoxelJsonFormatServices();
         services.AddBedrockGeometryFormatServices();
         services.AddSingleton<IFormatRegistry, FormatRegistry>();
+
+        // Plugin Engine
+        services.AddSingleton<IPluginManager, PluginManager>();
+        services.AddSingleton<IDynamicFormatProvider>(sp => sp.GetRequiredService<IPluginManager>());
 
         // Conversion Engine & Voxelization & Batch
         services.AddNexusConversionEngine();
@@ -61,6 +67,8 @@ public static class CliBootstrapper
         services.AddTransient<ConvertCommandHandler>();
         services.AddTransient<BatchCommandHandler>();
         services.AddTransient<JobsCommandHandler>();
+        services.AddTransient<PluginsCommandHandler>();
+        services.AddTransient<FormatsCommandHandler>();
 
         var provider = services.BuildServiceProvider();
 
@@ -75,6 +83,17 @@ public static class CliBootstrapper
         catch
         {
             // Fallback for transient DB lock or file permission in CLI
+        }
+
+        // Initialize active plugins
+        try
+        {
+            var pluginManager = provider.GetRequiredService<IPluginManager>();
+            pluginManager.DiscoverAndLoadPluginsAsync().GetAwaiter().GetResult();
+        }
+        catch
+        {
+            // Suppress discovery failure in CLI
         }
 
         return provider;

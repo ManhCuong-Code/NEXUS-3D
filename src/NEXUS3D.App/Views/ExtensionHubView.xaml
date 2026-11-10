@@ -1,0 +1,335 @@
+<UserControl x:Class="NEXUS3D.App.Views.ExtensionHubView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:NEXUS3D.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:ExtensionHubViewModel}">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <!-- Header bar -->
+            <RowDefinition Height="Auto" />
+            <!-- Telemetry summary cards -->
+            <RowDefinition Height="Auto" />
+            <!-- Main master-detail view -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 1. Header & Actions -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{Binding Title}" Style="{StaticResource Text.PageTitle}" />
+                <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Text.PageSubtitle}" Margin="0,4,0,0" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Style="{StaticResource Style.SecondaryButton}"
+                        Content="Open Plugins Folder"
+                        Margin="0,0,8,0"
+                        Command="{Binding OpenPluginsDirectoryCommand}" />
+                <Button Style="{StaticResource Style.SecondaryButton}"
+                        Content="Rescan / Reload All"
+                        Margin="0,0,8,0"
+                        Command="{Binding RefreshPluginsCommand}" />
+                <Button Style="{StaticResource Style.PrimaryButton}"
+                        Content="+ Install Package (.nexusplugin)..."
+                        Command="{Binding InstallPackageCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 2. Telemetry Cards -->
+        <Grid Grid.Row="1" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Style.MetricCardBorder}">
+                <StackPanel>
+                    <TextBlock Text="TOTAL EXTENSIONS" Style="{StaticResource Text.MutedCaption}" />
+                    <TextBlock Text="{Binding TotalPluginCount}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource Brush.TextPrimary}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Style.MetricCardBorder}">
+                <StackPanel>
+                    <TextBlock Text="ACTIVE &amp; LOADED" Style="{StaticResource Text.MutedCaption}" />
+                    <TextBlock Text="{Binding ActivePluginCount}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource Brush.StatusSuccess}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Style.MetricCardBorder}">
+                <StackPanel>
+                    <TextBlock Text="DISABLED" Style="{StaticResource Text.MutedCaption}" />
+                    <TextBlock Text="{Binding DisabledPluginCount}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="3" Style="{StaticResource Style.MetricCardBorder}">
+                <StackPanel>
+                    <TextBlock Text="FAULTED / CONFLICTS" Style="{StaticResource Text.MutedCaption}" />
+                    <TextBlock Text="{Binding FaultedPluginCount}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource Brush.StatusDanger}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 3. Master-Detail Layout -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="380" MinWidth="280" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Plugin List & Search -->
+            <Border Grid.Column="0" Style="{StaticResource Style.CardBorder}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Search Filter -->
+                    <TextBox Grid.Row="0"
+                             Style="{StaticResource Style.InputTextBox}"
+                             Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0,0,0,12" />
+
+                    <!-- Plugin Items -->
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding FilteredPlugins}"
+                             SelectedItem="{Binding SelectedPlugin, Mode=TwoWay}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Padding" Value="10,8" />
+                                <Setter Property="Margin" Value="0,0,0,6" />
+                                <Setter Property="Background" Value="{StaticResource Brush.SurfaceSecondary}" />
+                                <Setter Property="Cursor" Value="Hand" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="ItemBorder"
+                                                    Background="{TemplateBinding Background}"
+                                                    BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource Brush.SurfaceElevated}" />
+                                                    <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{StaticResource Brush.AccentPrimary}" />
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource Brush.SurfaceElevated}" />
+                                                    <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{StaticResource Brush.AccentHover}" />
+                                                    <Setter TargetName="ItemBorder" Property="BorderThickness" Value="1.5" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:PluginItemViewModel}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Plugin Name & Version -->
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource Brush.TextPrimary}" FontSize="13" />
+                                        <TextBlock Text="{Binding Version, StringFormat=' v{0}'}" Foreground="{StaticResource Brush.TextSecondary}" FontSize="11.5" VerticalAlignment="Center" Margin="4,0,0,0" />
+                                    </StackPanel>
+
+                                    <!-- Status Pill -->
+                                    <Border Grid.Row="0" Grid.Column="1"
+                                            CornerRadius="4"
+                                            Padding="6,2"
+                                            Background="{StaticResource Brush.SurfacePrimary}">
+                                        <TextBlock Text="{Binding StatusBadge}"
+                                                   FontSize="9.5"
+                                                   FontWeight="Bold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsEnabled}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource Brush.StatusSuccess}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsFaulted}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource Brush.StatusDanger}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+
+                                    <!-- Plugin ID -->
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                               Text="{Binding Id}"
+                                               FontSize="11"
+                                               Foreground="{StaticResource Brush.TextMuted}"
+                                               Margin="0,2,0,4" />
+
+                                    <!-- Description preview -->
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                               Text="{Binding Description}"
+                                               FontSize="11.5"
+                                               Foreground="{StaticResource Brush.TextSecondary}"
+                                               TextTrimming="CharacterEllipsis"
+                                               TextWrapping="Wrap"
+                                               MaxHeight="34" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Right: Plugin Detail Pane -->
+            <Border Grid.Column="2" Style="{StaticResource Style.CardBorder}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <!-- If no plugin selected -->
+                    <Grid>
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Visibility="{Binding SelectedPlugin, Converter={StaticResource BoolToVis}, Mode=OneWay, ConverterParameter=Invert}">
+                            <TextBlock Text="Select a plugin from the list to view manifest, formats, and configuration."
+                                       Style="{StaticResource Text.MutedCaption}"
+                                       FontSize="13"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- If plugin selected -->
+                        <StackPanel DataContext="{Binding SelectedPlugin}">
+                            <!-- Title & Action Bar -->
+                            <Grid Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource Brush.TextPrimary}" />
+                                        <TextBlock Text="{Binding Version, StringFormat=' v{0}'}" FontSize="14" Foreground="{StaticResource Brush.AccentHover}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Id}" FontSize="12" Foreground="{StaticResource Brush.TextMuted}" Margin="0,2,0,0" />
+                                    <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="{StaticResource Brush.TextSecondary}" Margin="0,2,0,0" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource Style.SecondaryButton}"
+                                            Content="{Binding ToggleActionText}"
+                                            Margin="0,0,8,0"
+                                            Command="{Binding DataContext.TogglePluginStatusCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Style="{StaticResource Style.SecondaryButton}"
+                                            Content="Reload"
+                                            Margin="0,0,8,0"
+                                            Command="{Binding DataContext.ReloadPluginCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Style="{StaticResource Style.SecondaryButton}"
+                                            Content="Uninstall"
+                                            Command="{Binding DataContext.UninstallPluginCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Fault Message if any -->
+                            <Border Margin="0,0,0,14"
+                                    Padding="12,10"
+                                    CornerRadius="6"
+                                    Background="#2D1515"
+                                    BorderBrush="{StaticResource Brush.StatusDanger}"
+                                    BorderThickness="1"
+                                    Visibility="{Binding IsFaulted, Converter={StaticResource BoolToVis}}">
+                                <StackPanel>
+                                    <TextBlock Text="PLUGIN FAULT / EXCEPTION" FontWeight="Bold" Foreground="{StaticResource Brush.StatusDanger}" FontSize="11" />
+                                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource Brush.TextPrimary}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Border>
+
+                            <Separator Background="{StaticResource Brush.BorderSubtle}" Margin="0,0,0,16" />
+
+                            <!-- Description -->
+                            <TextBlock Text="Description" Style="{StaticResource Text.SectionHeader}" />
+                            <TextBlock Text="{Binding Description}"
+                                       Foreground="{StaticResource Brush.TextPrimary}"
+                                       FontSize="12.5"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,16" />
+
+                            <!-- Metadata Table -->
+                            <TextBlock Text="Extension Metadata &amp; Manifest" Style="{StaticResource Text.SectionHeader}" />
+                            <Grid Margin="0,8,0,16">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="SDK API Version:" Style="{StaticResource Text.MutedCaption}" Margin="0,3" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ApiVersion}" Foreground="{StaticResource Brush.TextPrimary}" Margin="0,3" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Entry Point Assembly:" Style="{StaticResource Text.MutedCaption}" Margin="0,3" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding EntryPoint}" Foreground="{StaticResource Brush.TextPrimary}" Margin="0,3" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Supported Formats:" Style="{StaticResource Text.MutedCaption}" Margin="0,3" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding FormatsDisplay}" Foreground="{StaticResource Brush.AccentHover}" FontWeight="SemiBold" Margin="0,3" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Capabilities:" Style="{StaticResource Text.MutedCaption}" Margin="0,3" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding CapabilitiesDisplay}" Foreground="{StaticResource Brush.TextPrimary}" Margin="0,3" />
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Dependencies:" Style="{StaticResource Text.MutedCaption}" Margin="0,3" />
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding DependenciesDisplay}" Foreground="{StaticResource Brush.TextPrimary}" Margin="0,3" />
+                            </Grid>
+
+                            <!-- Directory Location -->
+                            <TextBlock Text="Installation Location" Style="{StaticResource Text.SectionHeader}" />
+                            <TextBox Style="{StaticResource Style.InputTextBox}"
+                                     Text="{Binding RootDirectory, Mode=OneWay}"
+                                     IsReadOnly="True"
+                                     Margin="0,6,0,16" />
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

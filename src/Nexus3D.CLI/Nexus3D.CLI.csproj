@@ -33,6 +33,8 @@
     <ProjectReference Include="..\NEXUS3D.Conversion.Batch\NEXUS3D.Conversion.Batch.csproj" />
     <ProjectReference Include="..\NEXUS3D.Voxelization.Abstractions\NEXUS3D.Voxelization.Abstractions.csproj" />
     <ProjectReference Include="..\NEXUS3D.Voxelization.Engine\NEXUS3D.Voxelization.Engine.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Plugin.SDK\NEXUS3D.Plugin.SDK.csproj" />
+    <ProjectReference Include="..\NEXUS3D.PluginSystem\NEXUS3D.PluginSystem.csproj" />
   </ItemGroup>
 
 </Project>

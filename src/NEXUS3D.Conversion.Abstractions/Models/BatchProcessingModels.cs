@@ -149,7 +149,8 @@ public sealed record BatchJobRequest(
     bool ContinueOnError = true,
     int RetryLimit = 1,
     int MaxConcurrency = 4,
-    IReadOnlyList<string>? ExtensionFilter = null);
+    IReadOnlyList<string>? ExtensionFilter = null,
+    string? TargetExtension = null);
 
 /// <summary>
 /// Live progress report for an executing batch job.

@@ -1,0 +1,24 @@
+{
+  "id": "com.nexus3d.formats.rawvox",
+  "name": "RawVox 3D Format Extension",
+  "version": "1.0.0",
+  "author": "NEXUS-3D Core Extension Team",
+  "description": "Adds full import, export, and conversion capabilities for the RawVox 3D text voxel model format.",
+  "assembly": "NEXUS3D.Sample.Plugin.dll",
+  "entryPoint": "NEXUS3D.Sample.Plugin.RawVoxPlugin",
+  "pluginApiVersion": "1.0.0",
+  "minimumHostVersion": "1.0.0",
+  "supportedFormats": [
+    "rawvox",
+    "rvox"
+  ],
+  "dependencies": [],
+  "capabilities": [
+    "FormatParser",
+    "FormatExporter",
+    "FormatDetector",
+    "FormatValidator"
+  ],
+  "license": "MIT",
+  "website": "https://github.com/ManhCuong-Code/NEXUS-3D"
+}

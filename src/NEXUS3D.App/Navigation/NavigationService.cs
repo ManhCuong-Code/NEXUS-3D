@@ -31,6 +31,7 @@ public sealed class NavigationService : INavigationService
             NavigationModule.Voxelization => _serviceProvider.GetRequiredService<VoxelizationViewModel>(),
             NavigationModule.FileManager => _serviceProvider.GetRequiredService<FileManagerViewModel>(),
             NavigationModule.Settings => _serviceProvider.GetRequiredService<SettingsViewModel>(),
+            NavigationModule.ExtensionHub => _serviceProvider.GetRequiredService<ExtensionHubViewModel>(),
             _ => _serviceProvider.GetRequiredService<DashboardViewModel>()
         };
 

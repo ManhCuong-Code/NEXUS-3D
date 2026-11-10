@@ -56,5 +56,17 @@ public interface IFormatRegistry
     IFormatDescriptor? GetByFormatType(ModelFormatType formatType);
     IFormatDescriptor? ResolveByFilePath(string filePath);
     string BuildFileDialogFilter(bool includeAllSupported = true);
+
+    void RegisterDescriptor(IFormatDescriptor descriptor);
+    bool UnregisterDescriptor(string shortCodeOrExtension);
+}
+
+/// <summary>
+/// Provides dynamically discovered or plugin-contributed parsers and exporters to the conversion pipeline.
+/// </summary>
+public interface IDynamicFormatProvider
+{
+    IReadOnlyList<IFormatParser> GetParsers();
+    IReadOnlyList<IFormatExporter> GetExporters();
 }
 
