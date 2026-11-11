@@ -43,6 +43,8 @@ public sealed partial class ConverterViewModel : BaseViewModel
     private readonly IApplicationPathsService _pathsService;
     private readonly IRenderSceneAdapter _renderSceneAdapter;
     private readonly IEnumerable<IFormatParser> _parsers;
+    private readonly IModelLoadingService _modelLoadingService;
+    private readonly IWorkspaceSceneSession _workspaceSession;
 
     [ObservableProperty]
     private RenderScene? _previewScene;
@@ -230,7 +232,9 @@ public sealed partial class ConverterViewModel : BaseViewModel
         INotificationService notificationService,
         IApplicationPathsService pathsService,
         IRenderSceneAdapter renderSceneAdapter,
-        IEnumerable<IFormatParser> parsers)
+        IEnumerable<IFormatParser> parsers,
+        IModelLoadingService modelLoadingService,
+        IWorkspaceSceneSession workspaceSession)
     {
         _converterService = Guard.NotNull(converterService);
         _formatRegistry = Guard.NotNull(formatRegistry);
@@ -245,6 +249,8 @@ public sealed partial class ConverterViewModel : BaseViewModel
         _pathsService = Guard.NotNull(pathsService);
         _renderSceneAdapter = Guard.NotNull(renderSceneAdapter);
         _parsers = Guard.NotNull(parsers);
+        _modelLoadingService = Guard.NotNull(modelLoadingService);
+        _workspaceSession = Guard.NotNull(workspaceSession);
 
         Title = "3D Model Converter Workspace";
         Subtitle = "Universal multi-format conversion via Universal Scene Model (USM).";
@@ -258,6 +264,13 @@ public sealed partial class ConverterViewModel : BaseViewModel
     public override async Task OnNavigatedToAsync(CancellationToken cancellationToken = default)
     {
         await LoadProfilesAsync(cancellationToken);
+
+        // If no file is set in converter, but a model is active in workspace session, sync it!
+        if (string.IsNullOrWhiteSpace(SourceFilePath) && !string.IsNullOrWhiteSpace(_workspaceSession.ActiveFilePath))
+        {
+            SourceFilePath = _workspaceSession.ActiveFilePath;
+            await InspectSelectedFileAsync(cancellationToken);
+        }
     }
 
     partial void OnSelectedProfileChanged(ConversionProfile? value)
@@ -577,33 +590,14 @@ public sealed partial class ConverterViewModel : BaseViewModel
             ClearError();
             StatusMessage = "Generating 3D conversion preview...";
 
-            string ext = Path.GetExtension(SourceFilePath).ToLowerInvariant();
-            var parser = _parsers.FirstOrDefault(p =>
-                (ext is ".schem" or ".schematic" && p.FormatIdentifier.Contains("schematic", StringComparison.OrdinalIgnoreCase)) ||
-                (ext is ".obj" && p.FormatIdentifier.Contains("obj", StringComparison.OrdinalIgnoreCase)) ||
-                (ext is ".json" or ".voxel.json" && p.FormatIdentifier.Contains("voxel", StringComparison.OrdinalIgnoreCase)) ||
-                (ext is ".geo.json" && p.FormatIdentifier.Contains("bedrock", StringComparison.OrdinalIgnoreCase)) ||
-                p.FormatIdentifier.Contains(ext.TrimStart('.'), StringComparison.OrdinalIgnoreCase));
-
-            if (parser is null)
+            var loadResult = await _modelLoadingService.LoadModelAsync(SourceFilePath, cancellationToken);
+            if (loadResult.IsFailure || loadResult.Value is null)
             {
-                ErrorMessage = $"No parser available for previewing format '{ext}'.";
+                ErrorMessage = $"Failed to parse model for preview: {loadResult.ErrorMessage}";
                 return;
             }
 
-            using var stream = File.OpenRead(SourceFilePath);
-            var parseResult = await parser.ParseToSceneAsync(
-                stream,
-                new ParseOptions { StrictValidation = false, PreserveUnknownData = true },
-                cancellationToken);
-
-            if (parseResult.IsFailure || parseResult.Value is null)
-            {
-                ErrorMessage = $"Failed to parse model for preview: {parseResult.Error.Message}";
-                return;
-            }
-
-            var rScene = _renderSceneAdapter.Adapt(parseResult.Value, RenderSettings.Default);
+            var rScene = _renderSceneAdapter.Adapt(loadResult.Value, RenderSettings.Default);
             PreviewScene = rScene;
             IsPreviewStale = false;
             HasPreview = true;

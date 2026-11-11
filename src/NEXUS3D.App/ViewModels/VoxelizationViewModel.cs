@@ -29,7 +29,7 @@ public sealed partial class VoxelizationViewModel : BaseViewModel
     private readonly IVoxelToCuboidConverter _cuboidConverter;
     private readonly IRenderSceneAdapter _renderSceneAdapter;
     private readonly IFormatRegistry _formatRegistry;
-    private readonly IEnumerable<IFormatParser> _parsers;
+    private readonly IWorkspaceSceneSession _workspaceSession;
     private readonly INotificationService _notificationService;
     private readonly ILogger<VoxelizationViewModel> _logger;
 
@@ -145,7 +145,7 @@ public sealed partial class VoxelizationViewModel : BaseViewModel
         IVoxelToCuboidConverter cuboidConverter,
         IRenderSceneAdapter renderSceneAdapter,
         IFormatRegistry formatRegistry,
-        IEnumerable<IFormatParser> parsers,
+        IWorkspaceSceneSession workspaceSession,
         INotificationService notificationService,
         ILogger<VoxelizationViewModel> logger)
     {
@@ -153,12 +153,42 @@ public sealed partial class VoxelizationViewModel : BaseViewModel
         _cuboidConverter = Guard.NotNull(cuboidConverter);
         _renderSceneAdapter = Guard.NotNull(renderSceneAdapter);
         _formatRegistry = Guard.NotNull(formatRegistry);
-        _parsers = Guard.NotNull(parsers);
+        _workspaceSession = Guard.NotNull(workspaceSession);
         _notificationService = Guard.NotNull(notificationService);
         _logger = Guard.NotNull(logger);
 
         Title = "Voxelization Engine Workspace";
         Subtitle = "Universal polygon mesh to discrete voxel converter with SAT rasterization & greedy cuboid optimization.";
+
+        _workspaceSession.SceneChanged += OnWorkspaceSessionSceneChanged;
+    }
+
+    private void OnWorkspaceSessionSceneChanged(object? sender, SceneSessionChangedEventArgs e)
+    {
+        if (e.Scene is not null)
+        {
+            SetLoadedScene(e.Scene, e.FilePath);
+        }
+        else
+        {
+            _loadedScene = null;
+            InputFilePath = string.Empty;
+            MeshSummary = "No 3D mesh loaded. Please browse or select a model.";
+            ViewportScene = null;
+            _currentVoxelGrid = null;
+            HasResult = false;
+            ResultVoxelCount = 0;
+            ResultCuboidCount = 0;
+        }
+    }
+
+    public override Task OnNavigatedToAsync(CancellationToken cancellationToken = default)
+    {
+        if (_workspaceSession.ActiveScene is not null && !ReferenceEquals(_loadedScene, _workspaceSession.ActiveScene))
+        {
+            SetLoadedScene(_workspaceSession.ActiveScene, _workspaceSession.ActiveFilePath);
+        }
+        return Task.CompletedTask;
     }
 
     [RelayCommand]
@@ -187,55 +217,15 @@ public sealed partial class VoxelizationViewModel : BaseViewModel
 
         try
         {
-            var ext = Path.GetExtension(filePath).ToLowerInvariant();
-            var parser = _parsers.FirstOrDefault(p =>
-                (ext is ".schem" or ".schematic" && p.FormatIdentifier.Contains("schematic", StringComparison.OrdinalIgnoreCase)) ||
-                (ext is ".obj" && p.FormatIdentifier.Contains("obj", StringComparison.OrdinalIgnoreCase)) ||
-                (ext is ".json" or ".voxel.json" && p.FormatIdentifier.Contains("voxel", StringComparison.OrdinalIgnoreCase)) ||
-                (ext is ".geo.json" && p.FormatIdentifier.Contains("bedrock", StringComparison.OrdinalIgnoreCase)) ||
-                p.FormatIdentifier.Contains(ext.TrimStart('.'), StringComparison.OrdinalIgnoreCase));
-
-            if (parser is null)
+            var loadResult = await _workspaceSession.LoadFileIntoSessionAsync(filePath);
+            if (loadResult.IsFailure || loadResult.Value is null)
             {
-                MeshSummary = $"Unsupported format: {ext}";
-                _notificationService.Publish("Voxelization", $"No parser available for {ext}", NotificationSeverity.Warning, "Voxelization");
-                return;
-            }
-
-            using var stream = File.OpenRead(filePath);
-            var parseResult = await parser.ParseToSceneAsync(
-                stream,
-                new ParseOptions { StrictValidation = false, PreserveUnknownData = true },
-                CancellationToken.None);
-
-            if (parseResult.IsFailure || parseResult.Value is null)
-            {
-                MeshSummary = $"Failed to parse file: {parseResult.Error.Message}";
+                MeshSummary = $"Failed to parse file: {loadResult.ErrorMessage}";
                 _notificationService.Publish("Voxelization", MeshSummary, NotificationSeverity.Error, "Voxelization");
                 return;
             }
 
-            _loadedScene = parseResult.Value;
-
-            // Compute summary
-            int vertexCount = 0;
-            int faceCount = 0;
-            foreach (var node in _loadedScene.Graph.Traverse())
-            {
-                if (node.Object is { } obj)
-                {
-                    foreach (var m in obj.Meshes)
-                    {
-                        vertexCount += m.Vertices.Count;
-                        faceCount += m.Faces.Count;
-                    }
-                }
-            }
-
-            MeshSummary = $"{Path.GetFileName(filePath)} • {vertexCount:N0} vertices • {faceCount:N0} faces";
-
-            // Render original mesh in Viewport
-            ViewportScene = _renderSceneAdapter.Adapt(_loadedScene, RenderSettings.Default);
+            SetLoadedScene(loadResult.Value, filePath);
             _notificationService.Publish("Voxelization", $"Loaded model '{Path.GetFileName(filePath)}' successfully.", NotificationSeverity.Info, "Voxelization");
         }
         catch (Exception ex)
@@ -249,6 +239,50 @@ public sealed partial class VoxelizationViewModel : BaseViewModel
             IsBusy = false;
             ProgressStatus = "Ready";
         }
+    }
+
+    public void SetLoadedScene(Scene3D scene, string? filePath = null)
+    {
+        ArgumentNullException.ThrowIfNull(scene);
+
+        _loadedScene = scene;
+        InputFilePath = filePath ?? string.Empty;
+
+        int vertexCount = 0;
+        int faceCount = 0;
+        int voxelCount = 0;
+        foreach (var node in scene.Graph.Nodes)
+        {
+            if (node.Object is { } obj)
+            {
+                foreach (var m in obj.Meshes)
+                {
+                    vertexCount += m.Vertices.Count;
+                    faceCount += m.Faces.Count;
+                }
+                foreach (var g in obj.VoxelGrids)
+                {
+                    voxelCount += g.GetVoxelCount();
+                }
+            }
+        }
+
+        string name = !string.IsNullOrWhiteSpace(filePath) ? Path.GetFileName(filePath) : scene.Name;
+        if (vertexCount > 0)
+        {
+            MeshSummary = $"{name} • {vertexCount:N0} vertices • {faceCount:N0} faces";
+        }
+        else if (voxelCount > 0)
+        {
+            MeshSummary = $"{name} • {voxelCount:N0} source voxels (Voxel Grid Ready)";
+        }
+        else
+        {
+            MeshSummary = $"{name} • Scene ready for voxelization";
+        }
+
+        ViewportScene = _renderSceneAdapter.Adapt(scene, RenderSettings.Default);
+        ProgressStatus = "Source model loaded.";
     }
 
     [RelayCommand]

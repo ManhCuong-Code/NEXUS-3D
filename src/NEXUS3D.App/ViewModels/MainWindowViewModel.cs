@@ -27,6 +27,8 @@ public sealed partial class MainWindowViewModel : BaseViewModel
     private readonly INotificationService _notificationService;
     private readonly IApplicationPathsService _pathsService;
     private readonly IKeyboardShortcutService _shortcutService;
+    private readonly IWorkspaceSceneSession _workspaceSession;
+    private readonly NEXUS3D.Formats.Abstractions.IFormatRegistry _formatRegistry;
     private readonly IServiceProvider _serviceProvider;
 
     [ObservableProperty]
@@ -109,12 +111,16 @@ public sealed partial class MainWindowViewModel : BaseViewModel
         INotificationService notificationService,
         IApplicationPathsService pathsService,
         IKeyboardShortcutService shortcutService,
+        IWorkspaceSceneSession workspaceSession,
+        NEXUS3D.Formats.Abstractions.IFormatRegistry formatRegistry,
         IServiceProvider serviceProvider)
     {
         _navigationService = Guard.NotNull(navigationService);
         _notificationService = Guard.NotNull(notificationService);
         _pathsService = Guard.NotNull(pathsService);
         _shortcutService = Guard.NotNull(shortcutService);
+        _workspaceSession = Guard.NotNull(workspaceSession);
+        _formatRegistry = Guard.NotNull(formatRegistry);
         _serviceProvider = Guard.NotNull(serviceProvider);
 
         Title = $"{AppConstants.ApplicationName} – {AppConstants.ApplicationSubtitle}";
@@ -123,8 +129,50 @@ public sealed partial class MainWindowViewModel : BaseViewModel
         _navigationService.Navigated += OnNavigated;
         _notificationService.NotificationPublished += OnNotificationPublished;
         _shortcutService.ShortcutTriggered += OnShortcutTriggered;
+        _workspaceSession.SceneChanged += OnWorkspaceSceneChanged;
 
         SyncNotifications();
+    }
+
+    private void OnWorkspaceSceneChanged(object? sender, SceneSessionChangedEventArgs e)
+    {
+        if (e.Scene is not null)
+        {
+            ActiveDocumentTitle = !string.IsNullOrWhiteSpace(e.FilePath) ? Path.GetFileName(e.FilePath) : e.Scene.Name;
+            ActiveFormatDisplay = e.Format?.ShortCode ?? "USM";
+            IsDirty = false;
+
+            int triCount = 0;
+            int vertCount = 0;
+            int voxCount = 0;
+            foreach (var node in e.Scene.Graph.Nodes)
+            {
+                if (node.Object is { } obj)
+                {
+                    foreach (var m in obj.Meshes)
+                    {
+                        triCount += m.Faces.Count;
+                        vertCount += m.Vertices.Count;
+                    }
+                    foreach (var g in obj.VoxelGrids)
+                    {
+                        voxCount += g.GetVoxelCount();
+                    }
+                }
+            }
+            FaceCount = triCount;
+            VertexCount = vertCount;
+            VoxelCount = voxCount;
+        }
+        else
+        {
+            ActiveDocumentTitle = "No Model Loaded";
+            ActiveFormatDisplay = "USM Ready";
+            FaceCount = 0;
+            VertexCount = 0;
+            VoxelCount = 0;
+            ModelDimensions = "0 × 0 × 0";
+        }
     }
 
     public async Task InitializeShellAsync(CancellationToken cancellationToken = default)
@@ -200,6 +248,7 @@ public sealed partial class MainWindowViewModel : BaseViewModel
     [RelayCommand]
     public async Task NewProjectAsync()
     {
+        _workspaceSession.Clear();
         ActiveDocumentTitle = "Untitled Project";
         IsDirty = false;
         VertexCount = 0;
@@ -218,7 +267,8 @@ public sealed partial class MainWindowViewModel : BaseViewModel
         var dlg = new OpenFileDialog
         {
             Title = "Open 3D Model or Schematic",
-            Filter = "All Supported 3D Formats (*.obj;*.schem;*.schematic;*.geo.json;*.json;*.rawvox)|*.obj;*.schem;*.schematic;*.geo.json;*.json;*.rawvox|Wavefront OBJ (*.obj)|*.obj|Minecraft Schematics (*.schem;*.schematic)|*.schem;*.schematic|Bedrock Geometry (*.geo.json)|*.geo.json|Voxel JSON (*.json)|*.json|All Files (*.*)|*.*"
+            Filter = _formatRegistry.BuildFileDialogFilter(includeAllSupported: true),
+            CheckFileExists = true
         };
 
         if (dlg.ShowDialog() == true)
@@ -231,21 +281,19 @@ public sealed partial class MainWindowViewModel : BaseViewModel
     {
         if (!File.Exists(filePath)) return;
 
-        ActiveDocumentTitle = Path.GetFileName(filePath);
-        IsDirty = false;
-        ActiveFormatDisplay = Path.GetExtension(filePath).ToUpperInvariant().TrimStart('.');
-
         await _navigationService.NavigateToAsync(NavigationModule.Viewport);
 
-        var viewportVm = _serviceProvider.GetRequiredService<ViewportViewModel>();
-        await viewportVm.LoadFileAsync(filePath);
+        var result = await _workspaceSession.LoadFileIntoSessionAsync(filePath);
+        if (result.IsFailure)
+        {
+            _notificationService.Publish("Load Error", result.ErrorMessage ?? "Failed to open model.", NotificationSeverity.Error, "IO");
+            return;
+        }
 
-        // Update live metrics from viewport scene
+        // Update live dimensions from viewport scene
+        var viewportVm = _serviceProvider.GetRequiredService<ViewportViewModel>();
         if (viewportVm.Scene is not null)
         {
-            FaceCount = viewportVm.Scene.TotalTriangles;
-            VoxelCount = viewportVm.Scene.TotalVoxels;
-            VertexCount = viewportVm.Scene.TotalVertices;
             var s = viewportVm.Scene.BoundsSize;
             ModelDimensions = $"{s.X:F1} × {s.Y:F1} × {s.Z:F1}";
         }

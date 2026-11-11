@@ -98,6 +98,10 @@ public sealed class HelixSceneRenderer : IDisposable
         LinesVisual3D linesVisual)
     {
         var nodeGroup = new Model3DGroup();
+        if (!node.WorldTransform.IsIdentity)
+        {
+            nodeGroup.Transform = ToMatrixTransform3D(node.WorldTransform);
+        }
 
         // Meshes
         foreach (var mesh in node.Meshes)
@@ -115,13 +119,13 @@ public sealed class HelixSceneRenderer : IDisposable
             // Wireframe lines
             if (settings.Shading is ShadingMode.Wireframe or ShadingMode.SolidWireframe || settings.ShowWireframe)
             {
-                AddWireframeLines(mesh, linesVisual);
+                AddWireframeLines(mesh, linesVisual, node.WorldTransform);
             }
 
             // Normal lines
             if (settings.ShowNormals)
             {
-                AddNormalLines(mesh, linesVisual, settings.NormalScale);
+                AddNormalLines(mesh, linesVisual, settings.NormalScale, node.WorldTransform);
             }
         }
 
@@ -130,7 +134,7 @@ public sealed class HelixSceneRenderer : IDisposable
         {
             if (chunk.Mesh is not null)
             {
-                var geom = BuildMeshGeometry(chunk.Mesh);
+                var geom = BuildMeshGeometry(chunk.Mesh, chunk.Position);
                 Color chunkColor = Color.FromRgb(180, 185, 195);
                 if (chunk.Mesh.Colors.Length > 0)
                 {
@@ -149,7 +153,7 @@ public sealed class HelixSceneRenderer : IDisposable
 
                 if (settings.Shading is ShadingMode.Wireframe or ShadingMode.SolidWireframe || settings.ShowWireframe)
                 {
-                    AddWireframeLines(chunk.Mesh, linesVisual);
+                    AddWireframeLines(chunk.Mesh, linesVisual, node.WorldTransform, chunk.Position);
                 }
             }
         }
@@ -163,15 +167,16 @@ public sealed class HelixSceneRenderer : IDisposable
         }
     }
 
-    private static MeshGeometry3D BuildMeshGeometry(RenderMesh mesh)
+    private static MeshGeometry3D BuildMeshGeometry(RenderMesh mesh, Vector3? positionOffset = null)
     {
         var geom = new MeshGeometry3D();
+        var offset = positionOffset ?? Vector3.Zero;
 
         var positions = new Point3DCollection(mesh.Positions.Length);
         for (int i = 0; i < mesh.Positions.Length; i++)
         {
             var p = mesh.Positions[i];
-            positions.Add(new Point3D(p.X, p.Y, p.Z));
+            positions.Add(new Point3D(p.X + offset.X, p.Y + offset.Y, p.Z + offset.Z));
         }
         geom.Positions = positions;
 
@@ -292,11 +297,15 @@ public sealed class HelixSceneRenderer : IDisposable
         });
     }
 
-    private static void AddWireframeLines(RenderMesh mesh, LinesVisual3D linesVisual)
+    private static void AddWireframeLines(RenderMesh mesh, LinesVisual3D linesVisual, Matrix4x4? worldTransform = null, Vector3? positionOffset = null)
     {
         if (mesh.WireframeIndices.Length == 0) return;
 
         var points = linesVisual.Points ?? new Point3DCollection();
+        var offset = positionOffset ?? Vector3.Zero;
+        bool hasTransform = worldTransform.HasValue && !worldTransform.Value.IsIdentity;
+        var mat = worldTransform ?? Matrix4x4.Identity;
+
         for (int i = 0; i < mesh.WireframeIndices.Length; i += 2)
         {
             int idx0 = mesh.WireframeIndices[i];
@@ -304,8 +313,15 @@ public sealed class HelixSceneRenderer : IDisposable
 
             if (idx0 < mesh.Positions.Length && idx1 < mesh.Positions.Length)
             {
-                var p0 = mesh.Positions[idx0];
-                var p1 = mesh.Positions[idx1];
+                var p0 = mesh.Positions[idx0] + offset;
+                var p1 = mesh.Positions[idx1] + offset;
+
+                if (hasTransform)
+                {
+                    p0 = Vector3.Transform(p0, mat);
+                    p1 = Vector3.Transform(p1, mat);
+                }
+
                 points.Add(new Point3D(p0.X, p0.Y, p0.Z));
                 points.Add(new Point3D(p1.X, p1.Y, p1.Z));
             }
@@ -313,15 +329,26 @@ public sealed class HelixSceneRenderer : IDisposable
         linesVisual.Points = points;
     }
 
-    private static void AddNormalLines(RenderMesh mesh, LinesVisual3D linesVisual, float scale)
+    private static void AddNormalLines(RenderMesh mesh, LinesVisual3D linesVisual, float scale, Matrix4x4? worldTransform = null)
     {
         if (mesh.Normals.Length != mesh.Positions.Length) return;
 
         var points = linesVisual.Points ?? new Point3DCollection();
+        bool hasTransform = worldTransform.HasValue && !worldTransform.Value.IsIdentity;
+        var mat = worldTransform ?? Matrix4x4.Identity;
+
         for (int i = 0; i < mesh.Positions.Length; i++)
         {
             var p0 = mesh.Positions[i];
-            var p1 = p0 + mesh.Normals[i] * scale;
+            var n = mesh.Normals[i] * scale;
+
+            if (hasTransform)
+            {
+                p0 = Vector3.Transform(p0, mat);
+                n = Vector3.TransformNormal(n, mat);
+            }
+
+            var p1 = p0 + n;
             points.Add(new Point3D(p0.X, p0.Y, p0.Z));
             points.Add(new Point3D(p1.X, p1.Y, p1.Z));
         }
@@ -343,5 +370,17 @@ public sealed class HelixSceneRenderer : IDisposable
         }
 
         linesVisual.Points = points;
+    }
+
+    private static MatrixTransform3D ToMatrixTransform3D(Matrix4x4 m)
+    {
+        var mat = new Matrix3D(
+            m.M11, m.M12, m.M13, m.M14,
+            m.M21, m.M22, m.M23, m.M24,
+            m.M31, m.M32, m.M33, m.M34,
+            m.M41, m.M42, m.M43, m.M44);
+        var transform = new MatrixTransform3D(mat);
+        transform.Freeze();
+        return transform;
     }
 }

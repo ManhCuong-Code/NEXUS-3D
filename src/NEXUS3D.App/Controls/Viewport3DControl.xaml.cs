@@ -322,7 +322,50 @@ public partial class Viewport3DControl : UserControl
     public void FocusScene()
     {
         if (Scene is null) return;
-        HelixViewport.ZoomExtents();
+
+        var min = Scene.BoundsMin;
+        var max = Scene.BoundsMax;
+        var size = max - min;
+        float maxDim = Math.Max(size.X, Math.Max(size.Y, size.Z));
+
+        if (maxDim > 0.001f && !float.IsInfinity(maxDim) && !float.IsNaN(maxDim))
+        {
+            var center = (min + max) * 0.5f;
+            double distance = Math.Max(maxDim * 1.8, 4.0);
+
+            var camPos = new Point3D(center.X + distance * 0.8, center.Y + distance * 0.7, center.Z + distance * 1.1);
+            var lookDir = new System.Windows.Media.Media3D.Vector3D(center.X - camPos.X, center.Y - camPos.Y, center.Z - camPos.Z);
+
+            if (HelixViewport.Camera is PerspectiveCamera pCam)
+            {
+                pCam.Position = camPos;
+                pCam.LookDirection = lookDir;
+                pCam.UpDirection = new System.Windows.Media.Media3D.Vector3D(0, 1, 0);
+                pCam.NearPlaneDistance = Math.Max(0.01, distance * 0.001);
+                pCam.FarPlaneDistance = Math.Max(2000.0, distance * 100.0);
+            }
+            else if (HelixViewport.Camera is OrthographicCamera oCam)
+            {
+                oCam.Position = camPos;
+                oCam.LookDirection = lookDir;
+                oCam.UpDirection = new System.Windows.Media.Media3D.Vector3D(0, 1, 0);
+                oCam.Width = maxDim * 2.0;
+                oCam.NearPlaneDistance = Math.Max(0.01, distance * 0.001);
+                oCam.FarPlaneDistance = Math.Max(2000.0, distance * 100.0);
+            }
+
+            double gridDim = Math.Max(80.0, Math.Ceiling(maxDim * 2.5 / 10.0) * 10.0);
+            GridVisual.Width = gridDim;
+            GridVisual.Length = gridDim;
+            GridVisual.MajorDistance = Math.Max(10.0, Math.Pow(10, Math.Floor(Math.Log10(gridDim))));
+            GridVisual.MinorDistance = Math.Max(1.0, GridVisual.MajorDistance / 10.0);
+        }
+
+        try
+        {
+            HelixViewport.ZoomExtents();
+        }
+        catch { }
     }
 
     public void ApplyCamera(CameraState cam)
