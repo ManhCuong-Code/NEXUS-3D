@@ -6,20 +6,24 @@
              mc:Ignorable="d"
              Height="28">
     <Border Background="{StaticResource Brush.StatusBarBackground}"
-            BorderBrush="{StaticResource Brush.BorderSubtle}"
+            BorderBrush="{StaticResource Brush.BorderStrong}"
             BorderThickness="0,1,0,0"
             Padding="14,0">
         <Grid>
             <Grid.ColumnDefinitions>
+                <!-- System Status & Active File -->
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <!-- 3D Model Telemetry: Vertices, Faces, Voxels, Dimensions -->
                 <ColumnDefinition Width="Auto" />
+                <!-- Storage & Coordinate System -->
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
+            <!-- Status Indicator -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                 <Ellipse Width="7" Height="7"
-                         Fill="{StaticResource Brush.StatusInfo}"
+                         Fill="{StaticResource Brush.StatusSuccess}"
                          VerticalAlignment="Center"
                          Margin="0,0,7,0" />
                 <TextBlock Text="{Binding CurrentViewModel.StatusMessage, FallbackValue='Ready'}"
@@ -28,31 +32,61 @@
                            VerticalAlignment="Center" />
             </StackPanel>
 
-            <TextBlock Grid.Column="1"
-                       Text="{Binding LatestNotificationText}"
-                       FontSize="11"
-                       Foreground="{StaticResource Brush.TextMuted}"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       TextTrimming="CharacterEllipsis"
-                       Margin="20,0" />
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                <TextBlock Text="Storage:"
-                           FontSize="11"
-                           Foreground="{StaticResource Brush.TextMuted}"
-                           Margin="0,0,4,0" />
-                <TextBlock Text="{Binding DatabaseStatusText}"
-                           FontSize="11"
-                           Foreground="{StaticResource Brush.StatusSuccess}" />
+            <!-- Active Document & Format Pill in center -->
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                <Border Style="{StaticResource Style.StatusBadge}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding ActiveFormatDisplay}"
+                                   FontSize="10"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource Brush.SecondaryHover}"
+                                   Margin="0,0,6,0" />
+                        <TextBlock Text="{Binding ActiveDocumentTitle}"
+                                   FontSize="10.5"
+                                   Foreground="{StaticResource Brush.TextSecondary}"
+                                   MaxWidth="260"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Border>
             </StackPanel>
 
-            <TextBlock Grid.Column="3"
-                       Text="UTF-8 • Y-Up Coordinate System"
-                       FontSize="11"
-                       Foreground="{StaticResource Brush.TextMuted}"
-                       VerticalAlignment="Center" />
+            <!-- 3D Geometry Metrics (Vertices, Faces, Voxels, Dimensions) -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                <!-- Vertices -->
+                <TextBlock Text="Verts:" FontSize="10.5" Foreground="{StaticResource Brush.TextMuted}" Margin="0,0,3,0" />
+                <TextBlock Text="{Binding VertexCount, StringFormat='{}{0:N0}'}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Brush.TextPrimary}" Margin="0,0,10,0" />
+
+                <!-- Faces -->
+                <TextBlock Text="Faces:" FontSize="10.5" Foreground="{StaticResource Brush.TextMuted}" Margin="0,0,3,0" />
+                <TextBlock Text="{Binding FaceCount, StringFormat='{}{0:N0}'}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Brush.TextPrimary}" Margin="0,0,10,0" />
+
+                <!-- Voxels -->
+                <TextBlock Text="Voxels:" FontSize="10.5" Foreground="{StaticResource Brush.TextMuted}" Margin="0,0,3,0" />
+                <TextBlock Text="{Binding VoxelCount, StringFormat='{}{0:N0}'}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource Brush.SecondaryHover}" Margin="0,0,10,0" />
+
+                <!-- Dimensions -->
+                <TextBlock Text="Size:" FontSize="10.5" Foreground="{StaticResource Brush.TextMuted}" Margin="0,0,3,0" />
+                <TextBlock Text="{Binding ModelDimensions}" FontSize="10.5" Foreground="{StaticResource Brush.TextPrimary}" />
+            </StackPanel>
+
+            <!-- Coordinate System & Database Status -->
+            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Y-Up"
+                           FontSize="10.5"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource Brush.TextMuted}"
+                           Margin="0,0,10,0" />
+                <Ellipse Width="6" Height="6"
+                         Fill="{StaticResource Brush.StatusSuccess}"
+                         VerticalAlignment="Center"
+                         Margin="0,0,5,0" />
+                <TextBlock Text="{Binding DatabaseStatusText}"
+                           FontSize="10.5"
+                           Foreground="{StaticResource Brush.TextSecondary}" />
+            </StackPanel>
         </Grid>
     </Border>
 </UserControl>
-

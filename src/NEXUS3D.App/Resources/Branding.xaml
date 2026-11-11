@@ -1,0 +1,236 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ========================================================================= -->
+    <!-- NEXUS-3D VECTOR BRAND IDENTITIES & LOGO DRAWINGS                         -->
+    <!-- Renders razor-sharp at 100%, 125%, 150%, 200%, and 4K DPI scalings       -->
+    <!-- ========================================================================= -->
+
+    <!-- Linear Gradients for 3D Cube Facets -->
+    <LinearGradientBrush x:Key="Brush.Brand.MeshFacet" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#8471FA" Offset="0" />
+        <GradientStop Color="#6750F5" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="Brush.Brand.VoxelFacet" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#22D3BE" Offset="0" />
+        <GradientStop Color="#18B6A4" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="Brush.Brand.GeometryFacet" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#6BB5FF" Offset="0" />
+        <GradientStop Color="#49A6FF" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Master Vector Symbol DrawingImage -->
+    <DrawingImage x:Key="Brand.Logo.Symbol">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <!-- Surrounding Multi-format Network Orbits -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#6BB5FF" Thickness="2" DashStyle="{x:Static DashStyles.Dash}" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <LineGeometry StartPoint="256,70" EndPoint="256,128" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#8471FA" Thickness="2" DashStyle="{x:Static DashStyles.Dash}" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <LineGeometry StartPoint="432,172" EndPoint="384,200" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#22D3BE" Thickness="2" DashStyle="{x:Static DashStyles.Dash}" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <LineGeometry StartPoint="432,340" EndPoint="384,312" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#18B6A4" Thickness="2" DashStyle="{x:Static DashStyles.Dash}" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <LineGeometry StartPoint="256,442" EndPoint="256,384" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#49A6FF" Thickness="2" DashStyle="{x:Static DashStyles.Dash}" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <LineGeometry StartPoint="80,340" EndPoint="128,312" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#6750F5" Thickness="2" DashStyle="{x:Static DashStyles.Dash}" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <LineGeometry StartPoint="80,172" EndPoint="128,200" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- Orbital Nodes -->
+                <GeometryDrawing Brush="#6BB5FF">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="256,62" RadiusX="7" RadiusY="7" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <GeometryDrawing Brush="#8471FA">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="438,168" RadiusX="6" RadiusY="6" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <GeometryDrawing Brush="#22D3BE">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="438,344" RadiusX="6.5" RadiusY="6.5" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <GeometryDrawing Brush="#18B6A4">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="256,450" RadiusX="7" RadiusY="7" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <GeometryDrawing Brush="#49A6FF">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="74,344" RadiusX="6.5" RadiusY="6.5" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <GeometryDrawing Brush="#6750F5">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="74,168" RadiusX="6" RadiusY="6" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- 1. Top Face: Mesh -->
+                <GeometryDrawing Brush="{StaticResource Brush.Brand.MeshFacet}">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#9B8BFA" Thickness="2" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <PathGeometry Figures="M 256,128 L 384,202 L 256,276 L 128,202 Z" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- Top Mesh Lines -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#C2B7FF" Thickness="1.5" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <LineGeometry StartPoint="192,165" EndPoint="320,239" />
+                            <LineGeometry StartPoint="256,128" EndPoint="256,276" />
+                            <LineGeometry StartPoint="192,239" EndPoint="320,165" />
+                            <LineGeometry StartPoint="128,202" EndPoint="384,202" />
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- Top Mesh Nodes -->
+                <GeometryDrawing Brush="#FFFFFF">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="256,202" RadiusX="3.5" RadiusY="3.5" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- 2. Left Face: Voxel -->
+                <GeometryDrawing Brush="{StaticResource Brush.Brand.VoxelFacet}">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#3BE1CE" Thickness="2" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <PathGeometry Figures="M 128,202 L 256,276 L 256,384 L 128,310 Z" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- Left Voxel Grid Lines -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#22D3BE" Thickness="1.5" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <LineGeometry StartPoint="192,239" EndPoint="192,347" />
+                            <LineGeometry StartPoint="128,256" EndPoint="256,330" />
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- Left Voxel Sub-cube Block -->
+                <GeometryDrawing Brush="#20C4B1">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#4EF1DF" Thickness="1.2" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <PathGeometry Figures="M 160,256 L 192,274 L 192,311 L 160,293 Z" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- 3. Right Face: Geometry / Bones -->
+                <GeometryDrawing Brush="{StaticResource Brush.Brand.GeometryFacet}">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#75BFFF" Thickness="2" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <PathGeometry Figures="M 256,276 L 384,202 L 384,310 L 256,384 Z" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- Right Face Bone Segments -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#A8D5FF" Thickness="2" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                            <LineGeometry StartPoint="288,294" EndPoint="352,257" />
+                            <LineGeometry StartPoint="288,365" EndPoint="352,328" />
+                            <LineGeometry StartPoint="320,239" EndPoint="320,347" />
+                        </GeometryGroup>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- Right Joint Node -->
+                <GeometryDrawing Brush="#FFFFFF">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#2478CC" Thickness="1.5" />
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="320,293" RadiusX="5" RadiusY="5" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- Central Nexus Core Connector -->
+                <GeometryDrawing Brush="#FFFFFF">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="256,276" RadiusX="8" RadiusY="8" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#6750F5">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="256,276" RadiusX="4" RadiusY="4" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+</ResourceDictionary>
+

@@ -1,0 +1,131 @@
+<Window x:Class="NEXUS3D.App.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="About NEXUS-3D"
+        Width="580"
+        Height="460"
+        MinWidth="520"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource Brush.WindowBackground}"
+        Foreground="{StaticResource Brush.TextPrimary}">
+
+    <Border Background="{StaticResource Brush.WindowBackground}" Padding="28">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Brand Header -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Image Source="{StaticResource Brand.Logo.Symbol}"
+                           Width="56" Height="56"
+                           Margin="0,0,16,0"
+                           VerticalAlignment="Center" />
+                    <StackPanel VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="NEXUS"
+                                       FontSize="26"
+                                       FontWeight="Black"
+                                       Foreground="{StaticResource Brush.TextPrimary}" />
+                            <TextBlock Text="-3D"
+                                       FontSize="26"
+                                       FontWeight="Black"
+                                       Foreground="{StaticResource Brush.SecondaryHover}" />
+                            <Border Style="{StaticResource Style.StatusBadge}" Margin="10,0,0,0">
+                                <TextBlock Text="v1.0.0"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource Brush.AccentHover}" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="UNIVERSAL 3D &amp; SCHEMATIC CONVERTER"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource Brush.TextSecondary}" />
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Details Card -->
+            <Border Grid.Row="1"
+                    Style="{StaticResource Style.CardBorder}"
+                    Margin="0,0,0,20">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Overview" Style="{StaticResource Text.SectionHeader}" Margin="0,0,0,6" />
+                        <TextBlock Text="NEXUS-3D is an enterprise-grade 3D model conversion, voxelization, and editing suite powered by .NET 10 LTS and the Universal Scene Model (USM). It seamlessly bridges traditional polygonal 3D graphics (Wavefront OBJ/MTL) with Minecraft game formats (Sponge Schematics v1/v2/v3, MCEdit Schematics) and JSON definitions (Bedrock Geometry, Voxel JSON)."
+                                   FontSize="12"
+                                   LineHeight="18"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource Brush.TextSecondary}"
+                                   Margin="0,0,0,14" />
+
+                        <TextBlock Text="Core Technology Stack" Style="{StaticResource Text.SectionHeader}" Margin="0,0,0,6" />
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="24" />
+                                <RowDefinition Height="24" />
+                                <RowDefinition Height="24" />
+                                <RowDefinition Height="24" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Framework:" Foreground="{StaticResource Brush.TextMuted}" FontSize="11.5" />
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text=".NET 10.0 LTS (C# 14, 64-bit)" Foreground="{StaticResource Brush.TextPrimary}" FontSize="11.5" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="3D Viewport:" Foreground="{StaticResource Brush.TextMuted}" FontSize="11.5" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="DirectX 11 / HelixToolkit.Wpf" Foreground="{StaticResource Brush.TextPrimary}" FontSize="11.5" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Architecture:" Foreground="{StaticResource Brush.TextMuted}" FontSize="11.5" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Clean Architecture + USM Intermediate Pipeline" Foreground="{StaticResource Brush.TextPrimary}" FontSize="11.5" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Plugin Runtime:" Foreground="{StaticResource Brush.TextMuted}" FontSize="11.5" />
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="Isolated AssemblyLoadContext Runtime Host" Foreground="{StaticResource Brush.TextPrimary}" FontSize="11.5" />
+                        </Grid>
+
+                        <Separator Background="{StaticResource Brush.BorderSubtle}" Margin="0,6,0,12" />
+
+                        <TextBlock Text="Open Source &amp; Licensing" Style="{StaticResource Text.SectionHeader}" Margin="0,0,0,6" />
+                        <TextBlock Text="Licensed under the MIT License. Copyright © 2026 ManhCuong-Code &amp; Contributors."
+                                   FontSize="11.5"
+                                   Foreground="{StaticResource Brush.TextSecondary}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Actions Footer -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0"
+                        Style="{StaticResource Style.SecondaryButton}"
+                        HorizontalAlignment="Left"
+                        Click="OnOpenRepositoryClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="GitHub Repository" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBlock Text="↗" FontSize="13" VerticalAlignment="Center" Foreground="{StaticResource Brush.AccentHover}" />
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="1"
+                        Style="{StaticResource Style.PrimaryButton}"
+                        Content="Close"
+                        Width="100"
+                        Click="OnCloseClick" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

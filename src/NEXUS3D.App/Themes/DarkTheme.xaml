@@ -1,34 +1,52 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- NEXUS 3D Professional Dark Technical Color Palette -->
-    <Color x:Key="Color.WindowBackground">#0D1117</Color>
-    <Color x:Key="Color.SidebarBackground">#111722</Color>
-    <Color x:Key="Color.TopbarBackground">#131A26</Color>
-    <Color x:Key="Color.StatusBarBackground">#0B0F17</Color>
-    <Color x:Key="Color.SurfacePrimary">#161F2E</Color>
-    <Color x:Key="Color.SurfaceSecondary">#1C2739</Color>
-    <Color x:Key="Color.SurfaceElevated">#223046</Color>
-    <Color x:Key="Color.ViewportCanvas">#090D13</Color>
+    <!-- ========================================================================= -->
+    <!-- NEXUS-3D OFFICIAL BRAND DARK TECHNICAL THEME                             -->
+    <!-- Primary: #6750F5 • Secondary: #18B6A4 • Accent: #49A6FF • Background: #111318 -->
+    <!-- ========================================================================= -->
 
-    <Color x:Key="Color.BorderSubtle">#263347</Color>
-    <Color x:Key="Color.BorderStrong">#354660</Color>
-    <Color x:Key="Color.BorderAccent">#3B82F6</Color>
+    <!-- Core Brand Color Palette -->
+    <Color x:Key="Color.Brand.Primary">#6750F5</Color>
+    <Color x:Key="Color.Brand.Secondary">#18B6A4</Color>
+    <Color x:Key="Color.Brand.Accent">#49A6FF</Color>
 
-    <Color x:Key="Color.AccentPrimary">#3B82F6</Color>
-    <Color x:Key="Color.AccentHover">#60A5FA</Color>
-    <Color x:Key="Color.AccentPressed">#2563EB</Color>
-    <Color x:Key="Color.AccentMuted">#1D355E</Color>
+    <!-- Surfaces & Backgrounds -->
+    <Color x:Key="Color.WindowBackground">#111318</Color>
+    <Color x:Key="Color.SidebarBackground">#14171E</Color>
+    <Color x:Key="Color.TopbarBackground">#161922</Color>
+    <Color x:Key="Color.StatusBarBackground">#0F1116</Color>
+    <Color x:Key="Color.SurfacePrimary">#191C23</Color>
+    <Color x:Key="Color.SurfaceSecondary">#1F232D</Color>
+    <Color x:Key="Color.SurfaceElevated">#222630</Color>
+    <Color x:Key="Color.ViewportCanvas">#0E1015</Color>
 
-    <Color x:Key="Color.TextPrimary">#F1F5F9</Color>
-    <Color x:Key="Color.TextSecondary">#94A3B8</Color>
-    <Color x:Key="Color.TextMuted">#64748B</Color>
-    <Color x:Key="Color.TextDisabled">#475569</Color>
+    <!-- Borders -->
+    <Color x:Key="Color.BorderSubtle">#262B35</Color>
+    <Color x:Key="Color.BorderStrong">#303643</Color>
+    <Color x:Key="Color.BorderAccent">#6750F5</Color>
 
-    <Color x:Key="Color.StatusSuccess">#10B981</Color>
-    <Color x:Key="Color.StatusWarning">#F59E0B</Color>
-    <Color x:Key="Color.StatusDanger">#EF4444</Color>
-    <Color x:Key="Color.StatusInfo">#38BDF8</Color>
+    <!-- Accents & Interactivity -->
+    <Color x:Key="Color.AccentPrimary">#6750F5</Color>
+    <Color x:Key="Color.AccentHover">#7F6DF7</Color>
+    <Color x:Key="Color.AccentPressed">#523DE0</Color>
+    <Color x:Key="Color.AccentMuted">#2B245E</Color>
+
+    <Color x:Key="Color.SecondaryPrimary">#18B6A4</Color>
+    <Color x:Key="Color.SecondaryHover">#2ED9C5</Color>
+    <Color x:Key="Color.SecondaryMuted">#10403A</Color>
+
+    <!-- Typography Text Colors -->
+    <Color x:Key="Color.TextPrimary">#F3F4F8</Color>
+    <Color x:Key="Color.TextSecondary">#A5ADBD</Color>
+    <Color x:Key="Color.TextMuted">#6B7280</Color>
+    <Color x:Key="Color.TextDisabled">#4B5563</Color>
+
+    <!-- Status Indicators -->
+    <Color x:Key="Color.StatusSuccess">#35C98B</Color>
+    <Color x:Key="Color.StatusWarning">#F4B740</Color>
+    <Color x:Key="Color.StatusDanger">#EF6262</Color>
+    <Color x:Key="Color.StatusInfo">#49A6FF</Color>
 
     <!-- SolidColorBrushes -->
     <SolidColorBrush x:Key="Brush.WindowBackground" Color="{StaticResource Color.WindowBackground}" />
@@ -49,6 +67,10 @@
     <SolidColorBrush x:Key="Brush.AccentPressed" Color="{StaticResource Color.AccentPressed}" />
     <SolidColorBrush x:Key="Brush.AccentMuted" Color="{StaticResource Color.AccentMuted}" />
 
+    <SolidColorBrush x:Key="Brush.SecondaryPrimary" Color="{StaticResource Color.SecondaryPrimary}" />
+    <SolidColorBrush x:Key="Brush.SecondaryHover" Color="{StaticResource Color.SecondaryHover}" />
+    <SolidColorBrush x:Key="Brush.SecondaryMuted" Color="{StaticResource Color.SecondaryMuted}" />
+
     <SolidColorBrush x:Key="Brush.TextPrimary" Color="{StaticResource Color.TextPrimary}" />
     <SolidColorBrush x:Key="Brush.TextSecondary" Color="{StaticResource Color.TextSecondary}" />
     <SolidColorBrush x:Key="Brush.TextMuted" Color="{StaticResource Color.TextMuted}" />
@@ -60,4 +82,3 @@
     <SolidColorBrush x:Key="Brush.StatusInfo" Color="{StaticResource Color.StatusInfo}" />
 
 </ResourceDictionary>
-

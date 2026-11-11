@@ -13,7 +13,9 @@ public enum NavigationModule
     Settings = 3,
     Viewport = 4,
     Voxelization = 5,
-    ExtensionHub = 6
+    ExtensionHub = 6,
+    BatchProcessing = 7,
+    Import = 8
 }
 
 /// <summary>

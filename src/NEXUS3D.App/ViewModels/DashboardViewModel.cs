@@ -1,7 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 using NEXUS3D.App.Navigation;
 using NEXUS3D.Application.Interfaces;
 using NEXUS3D.Application.Models;
@@ -21,6 +24,8 @@ public sealed partial class DashboardViewModel : BaseViewModel
     private readonly INavigationService _navigationService;
     private readonly INotificationService _notificationService;
     private readonly IApplicationPathsService _pathsService;
+    private readonly IFileManagerService _fileManagerService;
+    private readonly IServiceProvider _serviceProvider;
 
     [ObservableProperty]
     private int _totalConversionsCount;
@@ -54,27 +59,28 @@ public sealed partial class DashboardViewModel : BaseViewModel
         IDashboardService dashboardService,
         INavigationService navigationService,
         INotificationService notificationService,
-        IApplicationPathsService pathsService)
+        IApplicationPathsService pathsService,
+        IFileManagerService fileManagerService,
+        IServiceProvider serviceProvider)
     {
         _dashboardService = Guard.NotNull(dashboardService);
         _navigationService = Guard.NotNull(navigationService);
         _notificationService = Guard.NotNull(notificationService);
         _pathsService = Guard.NotNull(pathsService);
+        _fileManagerService = Guard.NotNull(fileManagerService);
+        _serviceProvider = Guard.NotNull(serviceProvider);
 
-        Title = "Dashboard Overview";
-        Subtitle = "Real-time workspace telemetry, active 3D format adapters, and quick operations.";
+        Title = "Home Dashboard";
+        Subtitle = "Universal 3D Model & Schematic Workspace Overview.";
     }
 
     public override Task OnNavigatedToAsync(CancellationToken cancellationToken = default) =>
         RefreshDashboardAsync(cancellationToken);
 
     [RelayCommand]
-    private async Task RefreshDashboardAsync(CancellationToken cancellationToken = default)
+    public async Task RefreshDashboardAsync(CancellationToken cancellationToken = default)
     {
-        if (IsBusy)
-        {
-            return;
-        }
+        if (IsBusy) return;
 
         try
         {
@@ -126,20 +132,96 @@ public sealed partial class DashboardViewModel : BaseViewModel
         }
     }
 
+    // --- Quick Actions ---
     [RelayCommand]
-    private Task OpenConverterWorkspaceAsync() =>
+    public async Task ImportModelAsync()
+    {
+        var dlg = new OpenFileDialog
+        {
+            Title = "Import 3D Model or Schematic",
+            Filter = "All Supported 3D Formats (*.obj;*.schem;*.schematic;*.geo.json;*.json;*.rawvox)|*.obj;*.schem;*.schematic;*.geo.json;*.json;*.rawvox|Wavefront OBJ (*.obj)|*.obj|Minecraft Schematics (*.schem;*.schematic)|*.schem;*.schematic|Bedrock Geometry (*.geo.json)|*.geo.json|Voxel JSON (*.json)|*.json|All Files (*.*)|*.*"
+        };
+
+        if (dlg.ShowDialog() == true)
+        {
+            await OpenFilePathAsync(dlg.FileName);
+        }
+    }
+
+    [RelayCommand]
+    public async Task NewProjectAsync()
+    {
+        await _navigationService.NavigateToAsync(NavigationModule.Viewport);
+        var shell = _serviceProvider.GetRequiredService<MainWindowViewModel>();
+        await shell.NewProjectAsync();
+    }
+
+    [RelayCommand]
+    public Task ConvertModelAsync() =>
         _navigationService.NavigateToAsync(NavigationModule.Converter);
 
     [RelayCommand]
-    private Task OpenFileManagerAsync() =>
+    public Task BatchConvertAsync() =>
+        _navigationService.NavigateToAsync(NavigationModule.BatchProcessing);
+
+    [RelayCommand]
+    public async Task OpenSchematicAsync()
+    {
+        var dlg = new OpenFileDialog
+        {
+            Title = "Open Minecraft Schematic",
+            Filter = "Minecraft Schematics (*.schem;*.schematic)|*.schem;*.schematic|Sponge v2/v3 (*.schem)|*.schem|Legacy MCEdit (*.schematic)|*.schematic"
+        };
+
+        if (dlg.ShowDialog() == true)
+        {
+            await OpenFilePathAsync(dlg.FileName);
+        }
+    }
+
+    [RelayCommand]
+    public async Task OpenRecentFileAsync(RecentFileEntry? entry)
+    {
+        if (entry is null || !File.Exists(entry.FilePath))
+        {
+            _notificationService.Publish("File Not Found", "The selected file no longer exists on disk.", NotificationSeverity.Warning, "RecentFiles");
+            return;
+        }
+
+        await OpenFilePathAsync(entry.FilePath);
+    }
+
+    [RelayCommand]
+    public async Task RemoveRecentFileAsync(RecentFileEntry? entry)
+    {
+        if (entry is null) return;
+
+        // Removes from index only; DOES NOT delete from disk!
+        var res = await _fileManagerService.RemoveRecentFileAsync(entry.Id);
+        if (res.IsSuccess)
+        {
+            RecentFiles.Remove(entry);
+            RecentFilesCount = RecentFiles.Count;
+            _notificationService.Publish("Removed from Recents", $"Removed '{entry.FileName}' from recent list.", NotificationSeverity.Info, "RecentFiles");
+        }
+    }
+
+    private async Task OpenFilePathAsync(string filePath)
+    {
+        var shell = _serviceProvider.GetRequiredService<MainWindowViewModel>();
+        await shell.LoadModelFileAsync(filePath);
+    }
+
+    [RelayCommand]
+    public Task OpenFileManagerAsync() =>
         _navigationService.NavigateToAsync(NavigationModule.FileManager);
 
     [RelayCommand]
-    private Task OpenSettingsAsync() =>
+    public Task OpenSettingsAsync() =>
         _navigationService.NavigateToAsync(NavigationModule.Settings);
 
     [RelayCommand]
-    private void OpenAppDataFolder()
+    public void OpenAppDataFolder()
     {
         try
         {
@@ -161,4 +243,3 @@ public sealed partial class DashboardViewModel : BaseViewModel
         }
     }
 }
-

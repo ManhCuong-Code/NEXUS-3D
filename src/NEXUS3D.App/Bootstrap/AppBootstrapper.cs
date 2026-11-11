@@ -23,13 +23,23 @@ public sealed class AppBootstrapper : IDisposable
 
     public async Task InitializeAndStartAsync(System.Windows.Application wpfApp)
     {
+        SplashScreenWindow? splash = null;
+        try
+        {
+            splash = new SplashScreenWindow();
+            splash.Show();
+            splash.UpdateStatus("Initializing services & Dependency Injection...");
+        }
+        catch { }
+
         _serviceProvider = ServiceRegistration.BuildNexusServiceProvider();
 
         RegisterGlobalExceptionHandlers(wpfApp);
 
         var logger = _serviceProvider.GetRequiredService<ILogger<AppBootstrapper>>();
-        logger.LogInformation("Starting NEXUS 3D Foundation bootstrapper...");
+        logger.LogInformation("Starting NEXUS-3D Foundation bootstrapper...");
 
+        splash?.UpdateStatus("Connecting SQLite database & migrating schema...");
         var dbInitializer = _serviceProvider.GetRequiredService<IDatabaseInitializer>();
         var initResult = await dbInitializer.InitializeAsync();
         if (initResult.IsFailure)
@@ -42,6 +52,7 @@ public sealed class AppBootstrapper : IDisposable
                 "SQLite");
         }
 
+        splash?.UpdateStatus("Discovering and loading dynamic plugins...");
         try
         {
             var pluginManager = _serviceProvider.GetRequiredService<NEXUS3D.PluginSystem.Services.IPluginManager>();
@@ -54,14 +65,28 @@ public sealed class AppBootstrapper : IDisposable
             logger.LogWarning(ex, "Failed to initialize some plugins during startup.");
         }
 
+        splash?.UpdateStatus("Loading keyboard shortcuts & configurations...");
+        try
+        {
+            var shortcutService = _serviceProvider.GetRequiredService<NEXUS3D.App.Services.Shortcuts.IKeyboardShortcutService>();
+            await shortcutService.LoadSettingsAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to load keyboard shortcuts.");
+        }
+
+        splash?.UpdateStatus("Launching NEXUS-3D Desktop Workspace...");
         var shellViewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.DataContext = shellViewModel;
         wpfApp.MainWindow = mainWindow;
         mainWindow.Show();
 
+        splash?.Close();
+
         await shellViewModel.InitializeShellAsync();
-        logger.LogInformation("NEXUS 3D main window initialized and displayed.");
+        logger.LogInformation("NEXUS-3D main window initialized and displayed.");
     }
 
     private void RegisterGlobalExceptionHandlers(System.Windows.Application wpfApp)
