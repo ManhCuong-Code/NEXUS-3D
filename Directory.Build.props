@@ -12,5 +12,6 @@
     <RepositoryUrl>https://github.com/ManhCuong-Code/NEXUS-3D.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <NeutralLanguage>en-US</NeutralLanguage>
+    <RollForward>LatestMajor</RollForward>
   </PropertyGroup>
 </Project>

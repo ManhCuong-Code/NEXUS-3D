@@ -236,6 +236,11 @@
                                         </Grid>
                                         <Grid Margin="0,2">
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Type:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.SelectedBlockTransparency}" Foreground="#FDCB6E" FontWeight="SemiBold" FontSize="10" />
+                                        </Grid>
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                             <TextBlock Text="Total:" Foreground="#888898" FontSize="10" />
                                             <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.TotalBlocks, StringFormat='{}{0:N0} blocks'}" Foreground="#55EFC4" FontSize="10" />
                                         </Grid>
@@ -554,6 +559,7 @@
                                             ActiveTool="{Binding ActiveTool}"
                                             TransformSpace="{Binding ActiveSpace}"
                                             SelectedNodeId="{Binding SelectedNodeId}"
+                                            HighlightedBlockId="{Binding HighlightedBlockId}"
                                             TransformService="{Binding TransformService}"
                                             UndoRedoService="{Binding UndoRedoService}"
                                             PivotService="{Binding PivotService}" />
@@ -609,10 +615,13 @@
 
                             <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
 
-                            <!-- Alignment Tools -->
+                            <!-- Alignment & Transform Tools -->
                             <Button Content="⤓ Floor" Command="{Binding MoveModelToFloorCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#55EFC4" BorderThickness="0" ToolTip="Align Model Base to Floor (Min Y = 0)" />
                             <Button Content="⊕ Center" Command="{Binding CenterModelCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#55EFC4" BorderThickness="0" ToolTip="Center Model at (0, 0) Origin" />
                             <Button Content="↺ Reset Pos" Command="{Binding ResetModelPositionCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#E17055" BorderThickness="0" ToolTip="Reset Model Position to Identity" />
+                            <Button Content="↻ 90° Y" Command="{Binding RotateSelected90Command}" CommandParameter="Y" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FDCB6E" BorderThickness="0" ToolTip="Rotate 90° around Y axis" />
+                            <Button Content="↻ 90° X" Command="{Binding RotateSelected90Command}" CommandParameter="X" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FDCB6E" BorderThickness="0" ToolTip="Rotate 90° around X axis" />
+                            <Button Content="⇄ Flip X" Command="{Binding FlipSelectedCommand}" CommandParameter="X" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#74B9FF" BorderThickness="0" ToolTip="Mirror / Flip horizontally along X" />
 
                             <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
 

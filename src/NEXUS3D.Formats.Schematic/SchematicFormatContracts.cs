@@ -9,14 +9,14 @@ namespace NEXUS3D.Formats.Schematic;
 public sealed class SchematicFormatDescriptor : IFormatDescriptor
 {
     public ModelFormatType FormatType => ModelFormatType.Schematic;
-    public string DisplayName => "Minecraft Schematic";
+    public string DisplayName => "Minecraft Java Edition (.schem)";
     public string ShortCode => "SCHEM";
     public string PrimaryExtension => ".schem";
     public IReadOnlyList<string> SupportedExtensions { get; } = [".schem", ".schematic", ".litematic"];
     public GeometryKind NativeGeometryKind => GeometryKind.VoxelGrid;
     public bool SupportsImport => true;
     public bool SupportsExport => true;
-    public string Description => "Voxel block grid structure used by WorldEdit, Sponge, and Litematica.";
+    public string Description => "Voxel block grid structure used by Minecraft Java Edition, WorldEdit, Sponge, and Litematica.";
 
     public bool CanHandleExtension(string filePathOrExtension)
     {

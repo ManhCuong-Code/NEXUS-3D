@@ -9,14 +9,14 @@ namespace NEXUS3D.Formats.BedrockGeometry;
 public sealed class BedrockGeometryFormatDescriptor : IFormatDescriptor
 {
     public ModelFormatType FormatType => ModelFormatType.BedrockGeometry;
-    public string DisplayName => "Bedrock Geometry JSON";
+    public string DisplayName => "Minecraft Bedrock Edition (.geo.json / .mcpack)";
     public string ShortCode => "GEO";
     public string PrimaryExtension => ".geo.json";
-    public IReadOnlyList<string> SupportedExtensions { get; } = [".geo.json"];
+    public IReadOnlyList<string> SupportedExtensions { get; } = [".geo.json", ".mcpack"];
     public GeometryKind NativeGeometryKind => GeometryKind.CuboidHierarchy;
     public bool SupportsImport => true;
     public bool SupportsExport => true;
-    public string Description => "Hierarchical bone, pivot, and cube geometry specification for Bedrock Engine.";
+    public string Description => "Hierarchical bone, pivot, and cube geometry specification for Bedrock Engine and Resource Packs.";
 
     public bool CanHandleExtension(string filePathOrExtension)
     {

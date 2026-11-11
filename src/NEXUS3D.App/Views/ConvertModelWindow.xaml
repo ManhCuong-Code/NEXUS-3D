@@ -146,19 +146,43 @@
             </Border>
         </Grid>
 
-        <!-- 4. Destination File Path -->
-        <Border Grid.Row="3" Background="#181822" BorderBrush="#2A2A38" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="Output:" FontSize="11" Foreground="#A0A0B0" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <TextBox Grid.Column="1" Text="{Binding DestinationFilePath, UpdateSourceTrigger=PropertyChanged}" Background="#20202E" Foreground="#FFFFFF" BorderBrush="#3D3D52" Padding="6,4" FontSize="11" FontFamily="Consolas" />
-                <Button Grid.Column="2" Content="Browse..." Command="{Binding BrowseDestinationCommand}" Background="#2E2E40" Foreground="#FFFFFF" BorderThickness="0" Padding="12,4" Margin="6,0,0,0" Cursor="Hand" />
-            </Grid>
-        </Border>
+        <!-- 4. Destination File Path & Target Options -->
+        <StackPanel Grid.Row="3" Margin="0,0,0,10">
+            <!-- Bedrock Edition Special Options -->
+            <Border Background="#1C1C28" BorderBrush="#2F2F44" BorderThickness="1" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                    Visibility="{Binding IsBedrockTarget, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}">
+                <DockPanel>
+                    <TextBlock Text="🎮 Bedrock Options:" FontSize="11" FontWeight="Bold" Foreground="#00CEC9" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <CheckBox Content="Export as Bedrock Resource Pack (.mcpack with manifest.json &amp; texture atlas)"
+                              IsChecked="{Binding ExportAsResourcePack}"
+                              Foreground="#FFFFFF" FontSize="11" VerticalAlignment="Center" Cursor="Hand" />
+                </DockPanel>
+            </Border>
+
+            <!-- Java Edition Special Options -->
+            <Border Background="#1C1C28" BorderBrush="#2F2F44" BorderThickness="1" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                    Visibility="{Binding IsJavaSchematicTarget, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}">
+                <DockPanel>
+                    <TextBlock Text="☕ Java Edition:" FontSize="11" FontWeight="Bold" Foreground="#FDCB6E" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBlock Text="Target: Sponge Schematic (.schem) with full Block State fidelity &amp; VarInt encoding"
+                               Foreground="#D0D0E0" FontSize="11" VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+
+            <!-- Output Path Picker -->
+            <Border Background="#181822" BorderBrush="#2A2A38" BorderThickness="1" CornerRadius="6" Padding="8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Output:" FontSize="11" Foreground="#A0A0B0" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBox Grid.Column="1" Text="{Binding DestinationFilePath, UpdateSourceTrigger=PropertyChanged}" Background="#20202E" Foreground="#FFFFFF" BorderBrush="#3D3D52" Padding="6,4" FontSize="11" FontFamily="Consolas" />
+                    <Button Grid.Column="2" Content="Browse..." Command="{Binding BrowseDestinationCommand}" Background="#2E2E40" Foreground="#FFFFFF" BorderThickness="0" Padding="12,4" Margin="6,0,0,0" Cursor="Hand" />
+                </Grid>
+            </Border>
+        </StackPanel>
 
         <!-- 5. Progress & Status -->
         <StackPanel Grid.Row="4" Margin="0,0,0,10">

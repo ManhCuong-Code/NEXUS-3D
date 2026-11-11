@@ -13,6 +13,8 @@ public sealed partial class BlockPaletteItemViewModel : ObservableObject
     public required string DisplayName { get; init; }
     public required int Count { get; init; }
     public required string ColorHex { get; init; }
+    public BlockTransparencyKind Transparency { get; init; } = BlockTransparencyKind.Opaque;
+    public string TransparencyBadge => Transparency.ToString();
 
     [ObservableProperty]
     private bool _isVisible = true;
@@ -48,6 +50,9 @@ public sealed partial class BlockWorkspaceViewModel : ObservableObject
     private string _selectedBlockColorHex = "#808080";
 
     [ObservableProperty]
+    private string _selectedBlockTransparency = "Opaque";
+
+    [ObservableProperty]
     private bool _showChunkBoundaries;
 
     [ObservableProperty]
@@ -57,6 +62,7 @@ public sealed partial class BlockWorkspaceViewModel : ObservableObject
     public ObservableCollection<BlockPaletteItemViewModel> FilteredPaletteItems { get; } = [];
 
     public event EventHandler<string>? BlockFilterChanged;
+    public event EventHandler<string?>? BlockHighlightRequested;
 
     public void LoadFromScene(Scene3D scene)
     {
@@ -95,6 +101,7 @@ public sealed partial class BlockWorkspaceViewModel : ObservableObject
                 DisplayName = info.DisplayName,
                 Count = count,
                 ColorHex = hex,
+                Transparency = info.Transparency,
                 IsVisible = true
             };
             PaletteItems.Add(item);
@@ -135,12 +142,15 @@ public sealed partial class BlockWorkspaceViewModel : ObservableObject
         if (item is null)
         {
             SelectedBlockInfo = "No block selected";
+            BlockHighlightRequested?.Invoke(this, null);
             return;
         }
 
         SelectedBlockInfo = $"{item.DisplayName} ({item.Count:N0} instances)";
         SelectedBlockState = item.BlockId;
         SelectedBlockColorHex = item.ColorHex;
+        SelectedBlockTransparency = item.TransparencyBadge;
+        BlockHighlightRequested?.Invoke(this, item.BlockId);
     }
 
     [RelayCommand]

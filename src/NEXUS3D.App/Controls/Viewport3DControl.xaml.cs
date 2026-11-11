@@ -19,6 +19,7 @@ public partial class Viewport3DControl : UserControl
 {
     private readonly HelixSceneRenderer _sceneRenderer = new();
     private readonly TransformGizmoVisual3D _gizmoVisual = new();
+    private readonly BoundingBoxWireFrameVisual3D _blockHighlightVisual = new() { Color = Colors.LimeGreen, Thickness = 2.0 };
     private ModelVisual3D? _currentSceneVisual;
     private LinesVisual3D? _currentLinesVisual;
     private BoundingBoxWireFrameVisual3D? _currentBoundsVisual;
@@ -77,6 +78,13 @@ public partial class Viewport3DControl : UserControl
             typeof(string),
             typeof(Viewport3DControl),
             new PropertyMetadata(null, OnSelectedNodeIdChanged));
+
+    public static readonly DependencyProperty HighlightedBlockIdProperty =
+        DependencyProperty.Register(
+            nameof(HighlightedBlockId),
+            typeof(string),
+            typeof(Viewport3DControl),
+            new PropertyMetadata(null, (d, e) => ((Viewport3DControl)d).UpdateBlockHighlight()));
 
     public static readonly DependencyProperty TransformServiceProperty =
         DependencyProperty.Register(
@@ -141,6 +149,12 @@ public partial class Viewport3DControl : UserControl
     {
         get => (string?)GetValue(SelectedNodeIdProperty);
         set => SetValue(SelectedNodeIdProperty, value);
+    }
+
+    public string? HighlightedBlockId
+    {
+        get => (string?)GetValue(HighlightedBlockIdProperty);
+        set => SetValue(HighlightedBlockIdProperty, value);
     }
 
     public ITransformService? TransformService
@@ -417,16 +431,31 @@ public partial class Viewport3DControl : UserControl
 
     private void UpdateGizmoDisplay()
     {
-        if (string.IsNullOrEmpty(SelectedNodeId) || ActiveTool is EditorToolType.None or EditorToolType.Select)
+        var targetNodeId = SelectedNodeId;
+        if (string.IsNullOrEmpty(targetNodeId))
+        {
+            if (RawUsmScene?.Graph.Root.Children.FirstOrDefault() is { } firstUsmNode)
+            {
+                targetNodeId = firstUsmNode.Id.ToString();
+            }
+            else if (Scene?.RootNodes.Count > 0)
+            {
+                targetNodeId = Scene.RootNodes[0].Id;
+            }
+        }
+
+        if (string.IsNullOrEmpty(targetNodeId) || ActiveTool == EditorToolType.None)
         {
             _gizmoVisual.Hide();
             return;
         }
 
+        var effectiveTool = ActiveTool == EditorToolType.Select ? EditorToolType.Translate : ActiveTool;
+
         Point3D gizmoPos = new(0, 0, 0);
         System.Windows.Media.Media3D.Quaternion gizmoRot = System.Windows.Media.Media3D.Quaternion.Identity;
 
-        if (RawUsmScene is not null && Guid.TryParse(SelectedNodeId, out var guid))
+        if (RawUsmScene is not null && Guid.TryParse(targetNodeId, out var guid))
         {
             var node = RawUsmScene.Graph.FindNode(guid);
             if (node is not null)
@@ -446,7 +475,7 @@ public partial class Viewport3DControl : UserControl
         }
         else if (Scene is not null)
         {
-            var rNode = FindNodeMatchingId(Scene.RootNodes, SelectedNodeId);
+            var rNode = FindNodeMatchingId(Scene.RootNodes, targetNodeId);
             if (rNode is not null)
             {
                 var center = (rNode.BoundsMin + rNode.BoundsMax) * 0.5f;
@@ -460,7 +489,7 @@ public partial class Viewport3DControl : UserControl
             camDist = (pCam.Position - gizmoPos).Length;
         }
 
-        _gizmoVisual.UpdateGizmo(ActiveTool, gizmoPos, gizmoRot, camDist);
+        _gizmoVisual.UpdateGizmo(effectiveTool, gizmoPos, gizmoRot, camDist);
     }
 
     private void OnViewportMouseDown(object sender, MouseButtonEventArgs e)
@@ -483,7 +512,13 @@ public partial class Viewport3DControl : UserControl
                     HelixViewport.IsRotationEnabled = false;
                     HelixViewport.IsPanEnabled = false;
 
-                    if (RawUsmScene is not null && Guid.TryParse(SelectedNodeId, out var guid))
+                    var targetId = SelectedNodeId;
+                    if (string.IsNullOrEmpty(targetId) && RawUsmScene?.Graph.Root.Children.FirstOrDefault() is { } firstChild)
+                    {
+                        targetId = firstChild.Id.ToString();
+                    }
+
+                    if (RawUsmScene is not null && !string.IsNullOrEmpty(targetId) && Guid.TryParse(targetId, out var guid))
                     {
                         _draggedNode = RawUsmScene.Graph.FindNode(guid);
                         _initialNodeTransform = _draggedNode?.LocalTransform.DeepClone();
@@ -513,7 +548,8 @@ public partial class Viewport3DControl : UserControl
 
             double speed = Math.Max(0.005, camDist * 0.002);
 
-            switch (ActiveTool)
+            var tool = ActiveTool == EditorToolType.Select ? EditorToolType.Translate : ActiveTool;
+            switch (tool)
             {
                 case EditorToolType.Translate:
                     var delta = _activeHandle switch
@@ -564,6 +600,23 @@ public partial class Viewport3DControl : UserControl
                     break;
             }
 
+            // Real-time synchronization: Update visual transform of dragged node
+            if (_draggedNode is not null)
+            {
+                var world = _draggedNode.GetWorldMatrix();
+                var m4x4 = new System.Numerics.Matrix4x4(
+                    (float)world.M11, (float)world.M12, (float)world.M13, (float)world.M14,
+                    (float)world.M21, (float)world.M22, (float)world.M23, (float)world.M24,
+                    (float)world.M31, (float)world.M32, (float)world.M33, (float)world.M34,
+                    (float)world.M41, (float)world.M42, (float)world.M43, (float)world.M44);
+
+                if (_sceneRenderer.NodeVisualGroups.TryGetValue(_draggedNode.Name, out var group) ||
+                    _sceneRenderer.NodeVisualGroups.TryGetValue(_draggedNode.Id.ToString(), out group))
+                {
+                    group.Transform = HelixSceneRenderer.ToMatrixTransform3D(m4x4);
+                }
+            }
+
             UpdateGizmoDisplay();
             e.Handled = true;
         }
@@ -596,6 +649,7 @@ public partial class Viewport3DControl : UserControl
             _draggedNode = null;
             _initialNodeTransform = null;
             _activeHandle = GizmoHandle.None;
+            RebuildSceneVisuals();
             e.Handled = true;
             return;
         }
@@ -658,5 +712,58 @@ public partial class Viewport3DControl : UserControl
             if (c is not null) return c;
         }
         return null;
+    }
+
+    private void UpdateBlockHighlight()
+    {
+        if (string.IsNullOrEmpty(HighlightedBlockId) || RawUsmScene is null)
+        {
+            if (HelixViewport.Children.Contains(_blockHighlightVisual))
+            {
+                HelixViewport.Children.Remove(_blockHighlightVisual);
+            }
+            return;
+        }
+
+        double minX = double.MaxValue, minY = double.MaxValue, minZ = double.MaxValue;
+        double maxX = double.MinValue, maxY = double.MinValue, maxZ = double.MinValue;
+        bool found = false;
+
+        foreach (var node in RawUsmScene.Graph.Nodes)
+        {
+            if (node.Object is not { } obj) continue;
+            foreach (var grid in obj.VoxelGrids)
+            {
+                foreach (var voxel in grid.Voxels)
+                {
+                    string id = voxel.State?.GetFullIdentifier() ?? "minecraft:stone";
+                    if (string.Equals(id, HighlightedBlockId, StringComparison.OrdinalIgnoreCase) ||
+                        id.Contains(HighlightedBlockId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var p = voxel.Position + grid.Origin;
+                        minX = Math.Min(minX, p.X);
+                        minY = Math.Min(minY, p.Y);
+                        minZ = Math.Min(minZ, p.Z);
+                        maxX = Math.Max(maxX, p.X + 1);
+                        maxY = Math.Max(maxY, p.Y + 1);
+                        maxZ = Math.Max(maxZ, p.Z + 1);
+                        found = true;
+                    }
+                }
+            }
+        }
+
+        if (found)
+        {
+            _blockHighlightVisual.BoundingBox = new Rect3D(minX, minY, minZ, Math.Max(1, maxX - minX), Math.Max(1, maxY - minY), Math.Max(1, maxZ - minZ));
+            if (!HelixViewport.Children.Contains(_blockHighlightVisual))
+            {
+                HelixViewport.Children.Add(_blockHighlightVisual);
+            }
+        }
+        else if (HelixViewport.Children.Contains(_blockHighlightVisual))
+        {
+            HelixViewport.Children.Remove(_blockHighlightVisual);
+        }
     }
 }

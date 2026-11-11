@@ -124,21 +124,52 @@ public sealed class MaterialRenderAdapter : IMaterialRenderAdapter
             }
         }
 
-        // Fallback: Check if there's an adjacent texture file in baseDirectory
+        // Fallback: Check if there's an adjacent or companion texture file in baseDirectory
         if (string.IsNullOrEmpty(diffusePath) && !string.IsNullOrEmpty(baseDirectory) && Directory.Exists(baseDirectory))
         {
-            string candidate = Path.Combine(baseDirectory, $"{material.Name}.png");
-            if (File.Exists(candidate))
+            var candidates = new List<string>
             {
-                diffusePath = candidate;
+                Path.Combine(baseDirectory, $"{material.Name}.png"),
+                Path.Combine(baseDirectory, "textures", $"{material.Name}.png"),
+                Path.Combine(baseDirectory, "textures", "entity", $"{material.Name}.png")
+            };
+
+            // If material name has geometry prefix (e.g., geometry.fantastic_material -> fantastic)
+            string cleanMat = material.Name;
+            if (cleanMat.StartsWith("geometry.", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanMat = cleanMat[9..];
             }
-            else
+            if (cleanMat.EndsWith("_material", StringComparison.OrdinalIgnoreCase))
             {
-                candidate = Path.Combine(baseDirectory, "textures", $"{material.Name}.png");
-                if (File.Exists(candidate))
+                cleanMat = cleanMat[..^9];
+            }
+
+            candidates.Add(Path.Combine(baseDirectory, $"{cleanMat}.png"));
+            candidates.Add(Path.Combine(baseDirectory, "textures", $"{cleanMat}.png"));
+            candidates.Add(Path.Combine(baseDirectory, "textures", "entity", $"{cleanMat}.png"));
+
+            foreach (var cand in candidates)
+            {
+                if (File.Exists(cand))
                 {
-                    diffusePath = candidate;
+                    diffusePath = cand;
+                    break;
                 }
+            }
+
+            // If still not found, check if there is an unambiguous single PNG in the directory
+            if (string.IsNullOrEmpty(diffusePath))
+            {
+                try
+                {
+                    var pngs = Directory.GetFiles(baseDirectory, "*.png", SearchOption.TopDirectoryOnly);
+                    if (pngs.Length == 1)
+                    {
+                        diffusePath = pngs[0];
+                    }
+                }
+                catch { }
             }
         }
 

@@ -75,6 +75,9 @@ public sealed partial class ViewportViewModel : BaseViewModel
     [ObservableProperty]
     private string? _selectedNodeId;
 
+    [ObservableProperty]
+    private string? _highlightedBlockId;
+
     public ITransformService TransformService => _transformService;
     public ISelectionService SelectionService => _selectionService;
     public IUndoRedoService UndoRedoService => _undoRedoService;
@@ -131,6 +134,7 @@ public sealed partial class ViewportViewModel : BaseViewModel
 
         _selectionService.SelectionChanged += OnSelectionServiceChanged;
         _workspaceSession.SceneChanged += OnWorkspaceSessionSceneChanged;
+        BlockWorkspace.BlockHighlightRequested += (s, blockId) => HighlightedBlockId = blockId;
     }
 
     partial void OnActiveTabChanged(WorkspaceDocumentTab? oldValue, WorkspaceDocumentTab? newValue)
@@ -561,6 +565,53 @@ public sealed partial class ViewportViewModel : BaseViewModel
         if (RawUsmScene is null) return;
         RawUsmScene.Graph.Root.LocalTransform = Transform3D.Identity();
 
+        await LoadSceneModelAsync(RawUsmScene, LoadedFilePath);
+    }
+
+    [RelayCommand]
+    public async Task RotateSelected90Async(string axis)
+    {
+        if (RawUsmScene is null) return;
+        SceneNode? targetNode = null;
+        if (!string.IsNullOrEmpty(SelectedNodeId) && Guid.TryParse(SelectedNodeId, out var guid))
+        {
+            targetNode = RawUsmScene.Graph.FindNode(guid);
+        }
+        targetNode ??= RawUsmScene.Graph.Root;
+
+        var rotQuat = axis?.ToUpperInvariant() switch
+        {
+            "X" => QuaternionD.FromAxisAngle(Vector3D.UnitX, MathUtilities.DegreesToRadians(90)),
+            "Z" => QuaternionD.FromAxisAngle(Vector3D.UnitZ, MathUtilities.DegreesToRadians(90)),
+            _ => QuaternionD.FromAxisAngle(Vector3D.UnitY, MathUtilities.DegreesToRadians(90))
+        };
+
+        var pivot = targetNode.GetWorldMatrix().Translation;
+        _transformService.Rotate([targetNode], rotQuat, pivot, ActiveSpace);
+        await LoadSceneModelAsync(RawUsmScene, LoadedFilePath);
+    }
+
+    [RelayCommand]
+    public async Task FlipSelectedAsync(string axis)
+    {
+        if (RawUsmScene is null) return;
+        SceneNode? targetNode = null;
+        if (!string.IsNullOrEmpty(SelectedNodeId) && Guid.TryParse(SelectedNodeId, out var guid))
+        {
+            targetNode = RawUsmScene.Graph.FindNode(guid);
+        }
+        targetNode ??= RawUsmScene.Graph.Root;
+
+        var scale = axis?.ToUpperInvariant() switch
+        {
+            "X" => new Vector3D(-1, 1, 1),
+            "Y" => new Vector3D(1, -1, 1),
+            "Z" => new Vector3D(1, 1, -1),
+            _ => Vector3D.One
+        };
+
+        var pivot = targetNode.GetWorldMatrix().Translation;
+        _transformService.Scale([targetNode], scale, pivot);
         await LoadSceneModelAsync(RawUsmScene, LoadedFilePath);
     }
 

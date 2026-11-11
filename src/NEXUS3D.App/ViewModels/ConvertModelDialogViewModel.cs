@@ -40,6 +40,17 @@ public sealed partial class ConvertModelDialogViewModel : ObservableObject
     private string _destinationFilePath = string.Empty;
 
     [ObservableProperty]
+    private bool _exportAsResourcePack;
+
+    partial void OnExportAsResourcePackChanged(bool value)
+    {
+        UpdateDefaultDestinationPath();
+    }
+
+    public bool IsBedrockTarget => SelectedTarget?.FormatType == ModelFormatType.BedrockGeometry;
+    public bool IsJavaSchematicTarget => SelectedTarget?.FormatType == ModelFormatType.Schematic;
+
+    [ObservableProperty]
     private bool _isConverting;
 
     public bool CanConvert => !IsConverting;
@@ -131,6 +142,8 @@ public sealed partial class ConvertModelDialogViewModel : ObservableObject
 
     partial void OnSelectedTargetChanged(TargetFormatCompatibility? value)
     {
+        OnPropertyChanged(nameof(IsBedrockTarget));
+        OnPropertyChanged(nameof(IsJavaSchematicTarget));
         UpdateDefaultDestinationPath();
     }
 
@@ -142,7 +155,10 @@ public sealed partial class ConvertModelDialogViewModel : ObservableObject
             : Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
 
         string baseName = Path.GetFileNameWithoutExtension(string.IsNullOrWhiteSpace(SourceFilePath) ? SourceModelName : SourceFilePath);
-        string ext = SelectedTarget.PrimaryExtension;
+        string ext = (IsBedrockTarget && ExportAsResourcePack)
+            ? ".mcpack"
+            : SelectedTarget.PrimaryExtension;
+
         DestinationFilePath = Path.Combine(dir, $"{baseName}_converted{ext}");
     }
 
@@ -151,17 +167,37 @@ public sealed partial class ConvertModelDialogViewModel : ObservableObject
     {
         if (SelectedTarget is null) return;
 
+        string filter;
+        if (IsBedrockTarget)
+        {
+            filter = ExportAsResourcePack
+                ? "Minecraft Bedrock Resource Pack (*.mcpack)|*.mcpack|Bedrock Geometry (*.geo.json)|*.geo.json|All Files (*.*)|*.*"
+                : "Bedrock Geometry (*.geo.json)|*.geo.json|Minecraft Bedrock Resource Pack (*.mcpack)|*.mcpack|All Files (*.*)|*.*";
+        }
+        else if (IsJavaSchematicTarget)
+        {
+            filter = "Minecraft Java Schematic (*.schem)|*.schem|Legacy Schematic (*.schematic)|*.schematic|All Files (*.*)|*.*";
+        }
+        else
+        {
+            filter = $"{SelectedTarget.DisplayName} (*{SelectedTarget.PrimaryExtension})|*{SelectedTarget.PrimaryExtension}|All Files (*.*)|*.*";
+        }
+
         var sfd = new SaveFileDialog
         {
             Title = "Select Destination Path",
             FileName = Path.GetFileName(DestinationFilePath),
-            Filter = $"{SelectedTarget.DisplayName} (*{SelectedTarget.PrimaryExtension})|*{SelectedTarget.PrimaryExtension}|All Files (*.*)|*.*",
+            Filter = filter,
             InitialDirectory = Path.GetDirectoryName(DestinationFilePath)
         };
 
         if (sfd.ShowDialog() == true)
         {
             DestinationFilePath = sfd.FileName;
+            if (sfd.FileName.EndsWith(".mcpack", StringComparison.OrdinalIgnoreCase))
+            {
+                ExportAsResourcePack = true;
+            }
         }
     }
 

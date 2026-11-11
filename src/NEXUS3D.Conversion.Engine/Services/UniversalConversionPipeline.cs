@@ -187,26 +187,39 @@ public sealed class UniversalConversionPipeline : IUniversalConversionPipeline
             Directory.CreateDirectory(targetDir);
 
             long targetBytesWritten;
-            await using (var targetStream = new FileStream(
-                request.TargetFilePath,
-                FileMode.Create,
-                FileAccess.ReadWrite,
-                FileShare.None,
-                bufferSize: 65536,
-                useAsync: true))
+
+            // Handle Bedrock Resource Pack packaging (.mcpack archive)
+            if (request.TargetFormat == ModelFormatType.BedrockGeometry && request.TargetFilePath.EndsWith(".mcpack", StringComparison.OrdinalIgnoreCase))
             {
-                FormatExportReport exportReport = await exporter.ExportSceneAsync(
-                    scene,
-                    targetStream,
-                    new ExportOptions { StrictMapping = false, PreserveUnknownData = true },
-                    cancellationToken).ConfigureAwait(false);
-
-                if (!exportReport.IsSuccess)
+                context.Log("Packaging Bedrock Resource Pack archive (.mcpack) with manifest.json, models, and textures...");
+                var packExporter = new NEXUS3D.Formats.BedrockGeometry.Exporting.BedrockResourcePackExporter();
+                await packExporter.ExportResourcePackAsync(scene, request.TargetFilePath, createMcPackZip: true, cancellationToken).ConfigureAwait(false);
+                targetBytesWritten = new FileInfo(request.TargetFilePath).Length;
+                context.Log($"Generated Bedrock Resource Pack: {targetBytesWritten:N0} bytes.");
+            }
+            else
+            {
+                await using (var targetStream = new FileStream(
+                    request.TargetFilePath,
+                    FileMode.Create,
+                    FileAccess.ReadWrite,
+                    FileShare.None,
+                    bufferSize: 65536,
+                    useAsync: true))
                 {
-                    return Fail(context, exportReport.Error?.Code ?? "EXPORT_FAILED", exportReport.Error?.Message ?? "Export failed.");
-                }
+                    FormatExportReport exportReport = await exporter.ExportSceneAsync(
+                        scene,
+                        targetStream,
+                        new ExportOptions { StrictMapping = false, PreserveUnknownData = true },
+                        cancellationToken).ConfigureAwait(false);
 
-                targetBytesWritten = exportReport.BytesWritten > 0 ? exportReport.BytesWritten : targetStream.Length;
+                    if (!exportReport.IsSuccess)
+                    {
+                        return Fail(context, exportReport.Error?.Code ?? "EXPORT_FAILED", exportReport.Error?.Message ?? "Export failed.");
+                    }
+
+                    targetBytesWritten = exportReport.BytesWritten > 0 ? exportReport.BytesWritten : targetStream.Length;
+                }
             }
 
             progress?.Report(1.0);

@@ -5,6 +5,17 @@ using NEXUS3D.Domain.Voxels;
 namespace NEXUS3D.Rendering.Services;
 
 /// <summary>
+/// Transparency classification for Minecraft and voxel blocks.
+/// </summary>
+public enum BlockTransparencyKind
+{
+    Opaque = 0,
+    Transparent = 1,
+    Translucent = 2,
+    Cutout = 3
+}
+
+/// <summary>
 /// Detailed material attributes for a recognized voxel block.
 /// </summary>
 public sealed record BlockMaterialInfo(
@@ -15,7 +26,8 @@ public sealed record BlockMaterialInfo(
     float Roughness = 0.8f,
     float Metallic = 0.0f,
     bool IsTransparent = false,
-    bool IsEmissive = false);
+    bool IsEmissive = false,
+    BlockTransparencyKind Transparency = BlockTransparencyKind.Opaque);
 
 /// <summary>
 /// Authoritative registry mapping standard Minecraft block types and custom voxel identifiers
@@ -73,23 +85,23 @@ public static class BlockMaterialRegistry
         Register("minecraft:crimson_planks", "Crimson Planks", new Vector4(0.40f, 0.19f, 0.27f, 1.0f), roughness: 0.75f);
         Register("minecraft:warped_planks", "Warped Planks", new Vector4(0.17f, 0.41f, 0.39f, 1.0f), roughness: 0.75f);
 
-        // 3. Foliage & Leaves
-        Register("minecraft:oak_leaves", "Oak Leaves", new Vector4(0.23f, 0.43f, 0.14f, 1.0f), roughness: 0.9f);
-        Register("minecraft:leaves", "Leaves", new Vector4(0.23f, 0.43f, 0.14f, 1.0f), roughness: 0.9f);
-        Register("minecraft:birch_leaves", "Birch Leaves", new Vector4(0.50f, 0.64f, 0.34f, 1.0f), roughness: 0.9f);
-        Register("minecraft:spruce_leaves", "Spruce Leaves", new Vector4(0.24f, 0.37f, 0.24f, 1.0f), roughness: 0.9f);
-        Register("minecraft:jungle_leaves", "Jungle Leaves", new Vector4(0.19f, 0.47f, 0.11f, 1.0f), roughness: 0.9f);
-        Register("minecraft:acacia_leaves", "Acacia Leaves", new Vector4(0.29f, 0.46f, 0.11f, 1.0f), roughness: 0.9f);
-        Register("minecraft:dark_oak_leaves", "Dark Oak Leaves", new Vector4(0.16f, 0.31f, 0.08f, 1.0f), roughness: 0.9f);
-        Register("minecraft:cherry_leaves", "Cherry Leaves", new Vector4(0.94f, 0.71f, 0.76f, 1.0f), roughness: 0.9f);
-        Register("minecraft:azalea_leaves", "Azalea Leaves", new Vector4(0.35f, 0.47f, 0.18f, 1.0f), roughness: 0.9f);
+        // 3. Foliage & Leaves (Cutout transparency)
+        Register("minecraft:oak_leaves", "Oak Leaves", new Vector4(0.23f, 0.43f, 0.14f, 1.0f), roughness: 0.9f, transparency: BlockTransparencyKind.Cutout);
+        Register("minecraft:leaves", "Leaves", new Vector4(0.23f, 0.43f, 0.14f, 1.0f), roughness: 0.9f, transparency: BlockTransparencyKind.Cutout);
+        Register("minecraft:birch_leaves", "Birch Leaves", new Vector4(0.50f, 0.64f, 0.34f, 1.0f), roughness: 0.9f, transparency: BlockTransparencyKind.Cutout);
+        Register("minecraft:spruce_leaves", "Spruce Leaves", new Vector4(0.24f, 0.37f, 0.24f, 1.0f), roughness: 0.9f, transparency: BlockTransparencyKind.Cutout);
+        Register("minecraft:jungle_leaves", "Jungle Leaves", new Vector4(0.19f, 0.47f, 0.11f, 1.0f), roughness: 0.9f, transparency: BlockTransparencyKind.Cutout);
+        Register("minecraft:acacia_leaves", "Acacia Leaves", new Vector4(0.29f, 0.46f, 0.11f, 1.0f), roughness: 0.9f, transparency: BlockTransparencyKind.Cutout);
+        Register("minecraft:dark_oak_leaves", "Dark Oak Leaves", new Vector4(0.16f, 0.31f, 0.08f, 1.0f), roughness: 0.9f, transparency: BlockTransparencyKind.Cutout);
+        Register("minecraft:cherry_leaves", "Cherry Leaves", new Vector4(0.94f, 0.71f, 0.76f, 1.0f), roughness: 0.9f, transparency: BlockTransparencyKind.Cutout);
+        Register("minecraft:azalea_leaves", "Azalea Leaves", new Vector4(0.35f, 0.47f, 0.18f, 1.0f), roughness: 0.9f, transparency: BlockTransparencyKind.Cutout);
 
         // 4. Transparent & Fluid Blocks
-        Register("minecraft:glass", "Glass", new Vector4(0.78f, 0.90f, 0.96f, 0.45f), opacity: 0.45f, roughness: 0.1f, isTransparent: true);
-        Register("minecraft:tinted_glass", "Tinted Glass", new Vector4(0.27f, 0.24f, 0.29f, 0.70f), opacity: 0.70f, roughness: 0.1f, isTransparent: true);
-        Register("minecraft:water", "Water", new Vector4(0.17f, 0.38f, 0.86f, 0.65f), opacity: 0.65f, roughness: 0.05f, isTransparent: true);
+        Register("minecraft:glass", "Glass", new Vector4(0.78f, 0.90f, 0.96f, 0.45f), opacity: 0.45f, roughness: 0.1f, isTransparent: true, transparency: BlockTransparencyKind.Transparent);
+        Register("minecraft:tinted_glass", "Tinted Glass", new Vector4(0.27f, 0.24f, 0.29f, 0.70f), opacity: 0.70f, roughness: 0.1f, isTransparent: true, transparency: BlockTransparencyKind.Transparent);
+        Register("minecraft:water", "Water", new Vector4(0.17f, 0.38f, 0.86f, 0.65f), opacity: 0.65f, roughness: 0.05f, isTransparent: true, transparency: BlockTransparencyKind.Translucent);
         Register("minecraft:lava", "Lava", new Vector4(0.92f, 0.39f, 0.05f, 1.0f), roughness: 0.2f, isEmissive: true);
-        Register("minecraft:ice", "Ice", new Vector4(0.57f, 0.73f, 0.96f, 0.70f), opacity: 0.70f, roughness: 0.1f, isTransparent: true);
+        Register("minecraft:ice", "Ice", new Vector4(0.57f, 0.73f, 0.96f, 0.70f), opacity: 0.70f, roughness: 0.1f, isTransparent: true, transparency: BlockTransparencyKind.Translucent);
         Register("minecraft:packed_ice", "Packed Ice", new Vector4(0.55f, 0.71f, 0.96f, 1.0f), roughness: 0.15f);
         Register("minecraft:blue_ice", "Blue Ice", new Vector4(0.45f, 0.65f, 0.99f, 1.0f), roughness: 0.1f);
 
@@ -154,9 +166,14 @@ public static class BlockMaterialRegistry
         float roughness = 0.8f,
         float metallic = 0.0f,
         bool isTransparent = false,
-        bool isEmissive = false)
+        bool isEmissive = false,
+        BlockTransparencyKind? transparency = null)
     {
-        var info = new BlockMaterialInfo(id, name, color, opacity, roughness, metallic, isTransparent, isEmissive);
+        var transKind = transparency ?? (opacity < 0.99f
+            ? (isTransparent ? BlockTransparencyKind.Transparent : BlockTransparencyKind.Translucent)
+            : BlockTransparencyKind.Opaque);
+
+        var info = new BlockMaterialInfo(id, name, color, opacity, roughness, metallic, isTransparent, isEmissive, transKind);
         Registry[id] = info;
 
         string simpleName = id.Contains(':') ? id[(id.IndexOf(':') + 1)..] : id;
@@ -210,19 +227,19 @@ public static class BlockMaterialRegistry
 
         if (lower.Contains("leaves") || lower.Contains("vine") || lower.Contains("grass") || lower.Contains("foliage") || lower.Contains("sprout") || lower.Contains("bush"))
         {
-            return new BlockMaterialInfo(cleanId, Capitalize(simple), new Vector4(0.25f, 0.46f, 0.15f, 1.0f), Roughness: 0.9f);
+            return new BlockMaterialInfo(cleanId, Capitalize(simple), new Vector4(0.25f, 0.46f, 0.15f, 1.0f), Roughness: 0.9f, Transparency: BlockTransparencyKind.Cutout);
         }
         if (lower.Contains("wood") || lower.Contains("plank") || lower.Contains("log") || lower.Contains("stem") || lower.Contains("bark") || lower.Contains("fence") || lower.Contains("door") || lower.Contains("slab") && lower.Contains("oak"))
         {
-            return new BlockMaterialInfo(cleanId, Capitalize(simple), new Vector4(0.58f, 0.44f, 0.26f, 1.0f), Roughness: 0.8f);
+            return new BlockMaterialInfo(cleanId, Capitalize(simple), new Vector4(0.58f, 0.44f, 0.26f, 1.0f), Roughness: 0.8f, Transparency: BlockTransparencyKind.Opaque);
         }
         if (lower.Contains("glass"))
         {
-            return new BlockMaterialInfo(cleanId, Capitalize(simple), new Vector4(0.75f, 0.88f, 0.95f, 0.45f), Opacity: 0.45f, Roughness: 0.1f, IsTransparent: true);
+            return new BlockMaterialInfo(cleanId, Capitalize(simple), new Vector4(0.75f, 0.88f, 0.95f, 0.45f), Opacity: 0.45f, Roughness: 0.1f, IsTransparent: true, Transparency: BlockTransparencyKind.Transparent);
         }
         if (lower.Contains("water") || lower.Contains("ocean"))
         {
-            return new BlockMaterialInfo(cleanId, Capitalize(simple), new Vector4(0.17f, 0.38f, 0.86f, 0.65f), Opacity: 0.65f, Roughness: 0.05f, IsTransparent: true);
+            return new BlockMaterialInfo(cleanId, Capitalize(simple), new Vector4(0.17f, 0.38f, 0.86f, 0.65f), Opacity: 0.65f, Roughness: 0.05f, IsTransparent: true, Transparency: BlockTransparencyKind.Translucent);
         }
         if (lower.Contains("lava") || lower.Contains("fire"))
         {

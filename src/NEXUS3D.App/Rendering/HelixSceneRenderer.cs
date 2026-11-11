@@ -18,11 +18,13 @@ namespace NEXUS3D.App.Rendering;
 public sealed class HelixSceneRenderer : IDisposable
 {
     private readonly ConcurrentDictionary<string, ImageBrush> _textureBrushCache = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, Model3DGroup> NodeVisualGroups { get; } = new(StringComparer.OrdinalIgnoreCase);
     private bool _isDisposed;
 
     public void ClearCache()
     {
         _textureBrushCache.Clear();
+        NodeVisualGroups.Clear();
     }
 
     public void Dispose()
@@ -36,6 +38,7 @@ public sealed class HelixSceneRenderer : IDisposable
 
     public ModelVisual3D BuildSceneVisual(RenderScene scene, RenderSettings settings, out LinesVisual3D linesVisual, out BoundingBoxWireFrameVisual3D boundsVisual)
     {
+        NodeVisualGroups.Clear();
         var rootModelGroup = new Model3DGroup();
         var rootVisual = new ModelVisual3D { Content = rootModelGroup };
 
@@ -103,6 +106,15 @@ public sealed class HelixSceneRenderer : IDisposable
         if (!node.WorldTransform.IsIdentity)
         {
             nodeGroup.Transform = ToMatrixTransform3D(node.WorldTransform);
+        }
+
+        if (!string.IsNullOrEmpty(node.Name))
+        {
+            NodeVisualGroups[node.Name] = nodeGroup;
+        }
+        if (!string.IsNullOrEmpty(node.Id))
+        {
+            NodeVisualGroups[node.Id] = nodeGroup;
         }
 
         // 1. Meshes
@@ -375,7 +387,7 @@ public sealed class HelixSceneRenderer : IDisposable
         linesVisual.Points = points;
     }
 
-    private static MatrixTransform3D ToMatrixTransform3D(Matrix4x4 m)
+    public static MatrixTransform3D ToMatrixTransform3D(Matrix4x4 m)
     {
         var mat = new Matrix3D(
             m.M11, m.M12, m.M13, m.M14,
