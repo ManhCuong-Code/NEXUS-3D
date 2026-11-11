@@ -1,6 +1,6 @@
-﻿# ==============================================================================
-# NEXUS-3D – Windows User Installation Script
-# Installs NEXUS-3D Desktop GUI & CLI, creates Desktop and Start Menu shortcuts,
+# ==============================================================================
+# NEXUS-3D - Windows User Installation Script
+# Installs NEXUS-3D Desktop GUI and CLI, creates Desktop and Start Menu shortcuts,
 # configures User PATH, and generates uninstaller.
 # ==============================================================================
 
@@ -15,13 +15,13 @@ $ErrorActionPreference = "Stop"
 $rootDir = (Get-Item $PSScriptRoot).Parent.FullName
 
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "       NEXUS-3D – Universal 3D & Schematic Converter Installer        " -ForegroundColor Cyan
+Write-Host "       NEXUS-3D - Universal 3D and Schematic Converter Installer      " -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host "Installation target: $InstallDir" -ForegroundColor Gray
 
 # 1. Publish latest binaries if not skipped
 if (-not $SkipPublish) {
-    Write-Host "`n[1/5] Building & Publishing latest Release binaries..." -ForegroundColor Green
+    Write-Host "`n[1/5] Building and Publishing latest Release binaries..." -ForegroundColor Green
     $wpfProj = Join-Path $rootDir "src\NEXUS3D.App\NEXUS3D.App.csproj"
     $cliProj = Join-Path $rootDir "src\Nexus3D.CLI\Nexus3D.CLI.csproj"
 
@@ -69,7 +69,7 @@ if (-not (Test-Path $targetIcon)) {
 Write-Host "  -> Copying CLI binaries..." -ForegroundColor Gray
 Copy-Item (Join-Path $publishCli "*") -Destination $cliDir -Recurse -Force
 
-Write-Host "  -> Copying Sample Plugins & Documentation..." -ForegroundColor Gray
+Write-Host "  -> Copying Sample Plugins and Documentation..." -ForegroundColor Gray
 $samplePluginBuild = Join-Path $rootDir "plugins\NEXUS3D.Sample.Plugin\bin\Release\net10.0"
 if (Test-Path $samplePluginBuild) {
     $sampleDest = Join-Path $pluginsDir "NEXUS3D.Sample.Plugin"
@@ -83,7 +83,7 @@ if (Test-Path (Join-Path $rootDir "README.md")) { Copy-Item (Join-Path $rootDir 
 if (Test-Path (Join-Path $rootDir "RELEASE_NOTES.md")) { Copy-Item (Join-Path $rootDir "RELEASE_NOTES.md") -Destination $docsDir -Force }
 if (Test-Path (Join-Path $rootDir "LICENSE")) { Copy-Item (Join-Path $rootDir "LICENSE") -Destination $InstallDir -Force }
 
-# 3. Create Windows Shortcuts (Desktop & Start Menu)
+# 3. Create Windows Shortcuts (Desktop and Start Menu)
 Write-Host "`n[3/5] Creating Windows Shortcuts..." -ForegroundColor Green
 $desktopPath = [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory)
 $startMenuPrograms = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::Programs)) "NEXUS-3D"
@@ -102,7 +102,7 @@ $sc.TargetPath = $appExe
 $sc.WorkingDirectory = $appDir
 $sc.IconLocation = "$targetIcon,0"
 $sc.WindowStyle = 1
-$sc.Description = "NEXUS-3D – Universal 3D & Schematic Converter"
+$sc.Description = "NEXUS-3D - Universal 3D and Schematic Converter"
 $sc.Save()
 
 # B. Start Menu Shortcuts
@@ -113,7 +113,7 @@ $scApp.TargetPath = $appExe
 $scApp.WorkingDirectory = $appDir
 $scApp.IconLocation = "$targetIcon,0"
 $scApp.WindowStyle = 1
-$scApp.Description = "NEXUS-3D – Universal 3D & Schematic Converter"
+$scApp.Description = "NEXUS-3D - Universal 3D and Schematic Converter"
 $scApp.Save()
 
 $smCliShortcutPath = Join-Path $startMenuPrograms "NEXUS-3D CLI.lnk"
@@ -180,4 +180,3 @@ if ($LaunchAfterInstall) {
     Write-Host "Launching NEXUS-3D..." -ForegroundColor Cyan
     Start-Process -FilePath $appExe -WorkingDirectory $appDir
 }
-

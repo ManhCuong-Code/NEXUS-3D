@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using NEXUS3D.Domain.Mathematics;
 using NEXUS3D.Domain.Meshes;
 using NEXUS3D.Domain.Scene;
 using NEXUS3D.Domain.Voxels;
@@ -85,7 +86,88 @@ public sealed class VoxelizationEngine : IVoxelizationEngine
             }
         }
 
+        // If no polygon meshes exist, check if scene contains VoxelGrids and synthesize polygon meshes from voxels
+        if (combinedMesh.Vertices.Count == 0)
+        {
+            foreach (var node in scene.Graph.Nodes)
+            {
+                if (node.Object?.VoxelGrids.Count > 0)
+                {
+                    var worldMat = node.GetWorldMatrix();
+                    foreach (var grid in node.Object.VoxelGrids)
+                    {
+                        AppendVoxelGridToMesh(grid, worldMat, combinedMesh, ref vertexOffset);
+                    }
+                }
+            }
+        }
+
         return await VoxelizeMeshAsync(combinedMesh, scene, settings, progress, cancellationToken);
+    }
+
+    private static void AppendVoxelGridToMesh(VoxelGrid grid, Matrix4x4D worldMat, MeshData targetMesh, ref int vertexOffset)
+    {
+        double vx = grid.VoxelSize.X > 0 ? grid.VoxelSize.X : 1.0;
+        double vy = grid.VoxelSize.Y > 0 ? grid.VoxelSize.Y : 1.0;
+        double vz = grid.VoxelSize.Z > 0 ? grid.VoxelSize.Z : 1.0;
+
+        foreach (var voxel in grid.Voxels)
+        {
+            double x0 = voxel.Position.X * vx;
+            double y0 = voxel.Position.Y * vy;
+            double z0 = voxel.Position.Z * vz;
+            double x1 = x0 + vx;
+            double y1 = y0 + vy;
+            double z1 = z0 + vz;
+
+            var c0 = worldMat.TransformPoint(new Vector3D(x0, y0, z0));
+            var c1 = worldMat.TransformPoint(new Vector3D(x1, y0, z0));
+            var c2 = worldMat.TransformPoint(new Vector3D(x1, y1, z0));
+            var c3 = worldMat.TransformPoint(new Vector3D(x0, y1, z0));
+            var c4 = worldMat.TransformPoint(new Vector3D(x0, y0, z1));
+            var c5 = worldMat.TransformPoint(new Vector3D(x1, y0, z1));
+            var c6 = worldMat.TransformPoint(new Vector3D(x1, y1, z1));
+            var c7 = worldMat.TransformPoint(new Vector3D(x0, y1, z1));
+
+            int baseIdx = targetMesh.Vertices.Count;
+            targetMesh.Vertices.Add(new Vertex(c0));
+            targetMesh.Vertices.Add(new Vertex(c1));
+            targetMesh.Vertices.Add(new Vertex(c2));
+            targetMesh.Vertices.Add(new Vertex(c3));
+            targetMesh.Vertices.Add(new Vertex(c4));
+            targetMesh.Vertices.Add(new Vertex(c5));
+            targetMesh.Vertices.Add(new Vertex(c6));
+            targetMesh.Vertices.Add(new Vertex(c7));
+
+            int[][] cubeTriangles =
+            [
+                // Front (-Z)
+                [baseIdx + 0, baseIdx + 2, baseIdx + 1],
+                [baseIdx + 0, baseIdx + 3, baseIdx + 2],
+                // Back (+Z)
+                [baseIdx + 5, baseIdx + 7, baseIdx + 4],
+                [baseIdx + 5, baseIdx + 6, baseIdx + 7],
+                // Top (+Y)
+                [baseIdx + 3, baseIdx + 6, baseIdx + 2],
+                [baseIdx + 3, baseIdx + 7, baseIdx + 6],
+                // Bottom (-Y)
+                [baseIdx + 4, baseIdx + 1, baseIdx + 5],
+                [baseIdx + 4, baseIdx + 0, baseIdx + 1],
+                // Right (+X)
+                [baseIdx + 1, baseIdx + 6, baseIdx + 5],
+                [baseIdx + 1, baseIdx + 2, baseIdx + 6],
+                // Left (-X)
+                [baseIdx + 4, baseIdx + 3, baseIdx + 0],
+                [baseIdx + 4, baseIdx + 7, baseIdx + 3]
+            ];
+
+            foreach (var tri in cubeTriangles)
+            {
+                targetMesh.Faces.Add(new Face(tri));
+            }
+        }
+
+        vertexOffset = targetMesh.Vertices.Count;
     }
 
     public async Task<VoxelizationResult> VoxelizeMeshAsync(

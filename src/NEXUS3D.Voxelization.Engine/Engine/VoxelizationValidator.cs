@@ -29,19 +29,24 @@ public sealed class VoxelizationValidator : IVoxelizationValidator
             return (false, settingsResult.ErrorMessage, warnings);
         }
 
-        // Count meshes in scene
+        // Count meshes and voxel grids in scene
         int meshCount = 0;
+        int voxelGridCount = 0;
         foreach (var node in scene.Graph.Nodes)
         {
             if (node.Object?.Meshes.Count > 0)
             {
                 meshCount += node.Object.Meshes.Count;
             }
+            if (node.Object?.VoxelGrids.Count > 0)
+            {
+                voxelGridCount += node.Object.VoxelGrids.Count;
+            }
         }
 
-        if (meshCount == 0)
+        if (meshCount == 0 && voxelGridCount == 0)
         {
-            return (false, "Scene does not contain any polygon mesh objects to voxelize.", warnings);
+            return (false, "Scene does not contain any 3D polygon meshes or voxel grids to voxelize.", warnings);
         }
 
         return (true, null, warnings);

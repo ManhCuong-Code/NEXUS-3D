@@ -19,7 +19,7 @@ namespace NEXUS3D.App.ViewModels;
 public sealed partial class ViewportViewModel : BaseViewModel
 {
     private readonly IRenderService _renderService;
-    private readonly IEnumerable<IFormatParser> _parsers;
+    private readonly IWorkspaceSceneSession _workspaceSession;
     private readonly ITransformService _transformService;
     private readonly ISelectionService _selectionService;
     private readonly IUndoRedoService _undoRedoService;
@@ -64,7 +64,7 @@ public sealed partial class ViewportViewModel : BaseViewModel
 
     public ViewportViewModel(
         IRenderService renderService,
-        IEnumerable<IFormatParser> parsers,
+        IWorkspaceSceneSession workspaceSession,
         ITransformService transformService,
         ISelectionService selectionService,
         IUndoRedoService undoRedoService,
@@ -77,7 +77,7 @@ public sealed partial class ViewportViewModel : BaseViewModel
         ILogger<ViewportViewModel> logger)
     {
         _renderService = renderService;
-        _parsers = parsers;
+        _workspaceSession = workspaceSession;
         _transformService = transformService;
         _selectionService = selectionService;
         _undoRedoService = undoRedoService;
@@ -97,6 +97,26 @@ public sealed partial class ViewportViewModel : BaseViewModel
         Settings.SettingsChanged += OnSettingsChanged;
 
         _selectionService.SelectionChanged += OnSelectionServiceChanged;
+        _workspaceSession.SceneChanged += OnWorkspaceSessionSceneChanged;
+    }
+
+    private async void OnWorkspaceSessionSceneChanged(object? sender, SceneSessionChangedEventArgs e)
+    {
+        if (e.Scene is not null && !ReferenceEquals(e.Scene, RawUsmScene))
+        {
+            await LoadSceneModelAsync(e.Scene, e.FilePath);
+        }
+        else if (e.Scene is null)
+        {
+            RawUsmScene = null;
+            Scene = null;
+            LoadedModelName = "No Model Loaded";
+            LoadedFilePath = string.Empty;
+            Hierarchy.RootNodes.Clear();
+            Skeletons.RootBones.Clear();
+            _selectionService.ClearSelection();
+            Inspector.Clear();
+        }
     }
 
     public async Task LoadSceneModelAsync(Scene3D sceneModel, string? sourcePath = null, CancellationToken cancellationToken = default)
@@ -146,33 +166,17 @@ public sealed partial class ViewportViewModel : BaseViewModel
             ClearError();
             StatusMessage = $"Reading model '{Path.GetFileName(filePath)}'...";
 
-            string ext = Path.GetExtension(filePath).ToLowerInvariant();
-            var parser = _parsers.FirstOrDefault(p =>
-                (ext is ".schem" or ".schematic" && p.FormatIdentifier.Contains("schematic", StringComparison.OrdinalIgnoreCase)) ||
-                (ext is ".obj" && p.FormatIdentifier.Contains("obj", StringComparison.OrdinalIgnoreCase)) ||
-                (ext is ".json" or ".voxel.json" && p.FormatIdentifier.Contains("voxel", StringComparison.OrdinalIgnoreCase)) ||
-                (ext is ".geo.json" && p.FormatIdentifier.Contains("bedrock", StringComparison.OrdinalIgnoreCase)) ||
-                p.FormatIdentifier.Contains(ext.TrimStart('.'), StringComparison.OrdinalIgnoreCase));
-
-            if (parser is null)
+            var loadResult = await _workspaceSession.LoadFileIntoSessionAsync(filePath, cancellationToken);
+            if (loadResult.IsFailure || loadResult.Value is null)
             {
-                ErrorMessage = $"Unsupported 3D file format: '{ext}'.";
+                ErrorMessage = loadResult.ErrorMessage ?? "Failed to parse model.";
                 return;
             }
 
-            using var stream = File.OpenRead(filePath);
-            var parseResult = await parser.ParseToSceneAsync(
-                stream,
-                new ParseOptions { StrictValidation = false, PreserveUnknownData = true },
-                cancellationToken);
-
-            if (parseResult.IsFailure || parseResult.Value is null)
+            if (!ReferenceEquals(RawUsmScene, loadResult.Value))
             {
-                ErrorMessage = $"Failed to parse model: {parseResult.Error.Message}";
-                return;
+                await LoadSceneModelAsync(loadResult.Value, filePath, cancellationToken);
             }
-
-            await LoadSceneModelAsync(parseResult.Value, filePath, cancellationToken);
         }
         catch (Exception ex)
         {

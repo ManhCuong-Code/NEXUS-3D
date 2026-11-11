@@ -45,6 +45,8 @@ public static class ApplicationServiceRegistration
         services.AddSingleton<IValidator<Scene3D>>(sp => sp.GetRequiredService<SceneValidator>());
 
         services.AddSingleton<ISceneService, SceneService>();
+        services.AddSingleton<NEXUS3D.Application.Interfaces.IModelLoadingService, NEXUS3D.Application.UseCases.ModelLoadingService>();
+        services.AddSingleton<NEXUS3D.Application.Interfaces.IWorkspaceSceneSession, NEXUS3D.Application.UseCases.WorkspaceSceneSession>();
         return services;
     }
 }
