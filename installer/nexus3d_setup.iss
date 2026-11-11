@@ -78,7 +78,7 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\Application\{#MyAppExeName}"; Com
 Name: "{group}\{#MyAppName} CLI"; Filename: "{app}\CLI\{#MyCliExeName}"; Components: cli
 Name: "{group}\Documentation"; Filename: "{app}\Documentation\README.md"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Application\{#MyAppExeName}"; Tasks: desktopicon; Components: app
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Application\{#MyAppExeName}"; WorkingDir: "{app}\Application"; IconFilename: "{app}\Application\Resources\app.ico"; Tasks: desktopicon; Components: app
 
 [Registry]
 ; File Associations (Optional inspection in NEXUS-3D)

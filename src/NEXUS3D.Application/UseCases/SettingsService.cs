@@ -80,6 +80,9 @@ public sealed class SettingsService : ISettingsService
                 precision = Math.Clamp(parsedPrec, 1, 10);
             }
 
+            bool createDesktopShortcut = map.TryGetValue("Workspace.CreateDesktopShortcut", out string? shortcutStr) &&
+                                         bool.TryParse(shortcutStr, out bool parsedShortcut) && parsedShortcut;
+
             var dto = new ApplicationPreferencesDto(
                 ThemeMode: themeMode,
                 DefaultOutputDirectory: defaultOutputDir,
@@ -88,7 +91,8 @@ public sealed class SettingsService : ISettingsService
                 AutoOptimizeMesh: autoOptimize,
                 EnableDetailedFileLogging: detailedLog,
                 MaxRecentFiles: maxRecent,
-                DecimalPrecision: precision);
+                DecimalPrecision: precision,
+                CreateDesktopShortcut: createDesktopShortcut);
 
             return OperationResult<ApplicationPreferencesDto>.Success(dto);
         }
@@ -115,6 +119,7 @@ public sealed class SettingsService : ISettingsService
             await _settingRepository.SetValueAsync("Logging.DetailedFileLog", preferences.EnableDetailedFileLogging.ToString(), "Logging", "Write detailed diagnostic logs to disk", cancellationToken).ConfigureAwait(false);
             await _settingRepository.SetValueAsync("Workspace.MaxRecentFiles", Math.Clamp(preferences.MaxRecentFiles, 5, 100).ToString(), "Workspace", "Maximum recent files tracked", cancellationToken).ConfigureAwait(false);
             await _settingRepository.SetValueAsync("Export.DecimalPrecision", Math.Clamp(preferences.DecimalPrecision, 1, 10).ToString(), "Export", "Floating-point precision for exported geometry", cancellationToken).ConfigureAwait(false);
+            await _settingRepository.SetValueAsync("Workspace.CreateDesktopShortcut", preferences.CreateDesktopShortcut.ToString(), "Workspace", "Automatically maintain desktop shortcut", cancellationToken).ConfigureAwait(false);
 
             var existingExport = await _exportConfigRepository.GetDefaultAsync(cancellationToken).ConfigureAwait(false);
             var updatedExport = new ExportConfiguration(
@@ -152,7 +157,8 @@ public sealed class SettingsService : ISettingsService
             AutoOptimizeMesh: true,
             EnableDetailedFileLogging: true,
             MaxRecentFiles: 25,
-            DecimalPrecision: 4);
+            DecimalPrecision: 4,
+            CreateDesktopShortcut: false);
 
         var saveResult = await SavePreferencesAsync(defaults, cancellationToken).ConfigureAwait(false);
         return saveResult.IsSuccess

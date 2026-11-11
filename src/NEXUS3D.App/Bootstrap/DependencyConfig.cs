@@ -30,6 +30,7 @@ using NEXUS3D.Infrastructure.Formats;
 using NEXUS3D.Infrastructure.Logging;
 using NEXUS3D.Infrastructure.Persistence;
 using NEXUS3D.Infrastructure.Persistence.Repositories;
+using NEXUS3D.Infrastructure.Windows;
 using NEXUS3D.PluginSystem.Contracts;
 using NEXUS3D.PluginSystem.Services;
 using NEXUS3D.Rendering.Contracts;
@@ -94,6 +95,7 @@ public static class DependencyConfig
         services.AddSingleton<IPluginRegistrationRepository, SqlitePluginRegistrationRepository>();
         services.AddSingleton<IBatchJobRepository, SqliteBatchJobRepository>();
         services.AddSingleton<IDatabaseInitializer, DatabaseInitializer>();
+        services.AddSingleton<IDesktopShortcutService, DesktopShortcutService>();
         services.AddUsmInfrastructureServices();
     }
 

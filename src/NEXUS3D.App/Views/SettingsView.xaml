@@ -52,61 +52,192 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
-                        <!-- Left Column: General Configuration -->
-                        <Border Grid.Column="0" Style="{StaticResource Style.CardBorder}">
-                            <StackPanel>
-                                <TextBlock Text="Application &amp; Export Configuration" Style="{StaticResource Text.SectionHeader}" />
-                                <TextBlock Text="Persisted in SQLite AppSettings and ExportConfigurations tables."
-                                           Style="{StaticResource Text.MutedCaption}"
-                                           Margin="0,2,0,14" />
+                        <!-- Left Column: General Configuration & Desktop Shortcut -->
+                        <StackPanel Grid.Column="0">
+                            <!-- Application & Export Configuration -->
+                            <Border Style="{StaticResource Style.CardBorder}">
+                                <StackPanel>
+                                    <TextBlock Text="Application &amp; Export Configuration" Style="{StaticResource Text.SectionHeader}" />
+                                    <TextBlock Text="Persisted in SQLite AppSettings and ExportConfigurations tables."
+                                               Style="{StaticResource Text.MutedCaption}"
+                                               Margin="0,2,0,14" />
 
-                                <TextBlock Text="Visual Theme Preset:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                                <ComboBox ItemsSource="{Binding AvailableThemes}"
-                                          SelectedItem="{Binding ThemeMode}"
-                                          Padding="8,6"
-                                          Margin="0,0,0,12" />
+                                    <TextBlock Text="Visual Theme Preset:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                    <ComboBox ItemsSource="{Binding AvailableThemes}"
+                                              SelectedItem="{Binding ThemeMode}"
+                                              Padding="8,6"
+                                              Margin="0,0,0,12" />
 
-                                <TextBlock Text="Default Export Output Directory:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                                <TextBox Style="{StaticResource Style.InputTextBox}"
-                                         Text="{Binding DefaultOutputDirectory, UpdateSourceTrigger=PropertyChanged}"
-                                         Margin="0,0,0,12" />
+                                    <TextBlock Text="Default Export Output Directory:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                    <TextBox Style="{StaticResource Style.InputTextBox}"
+                                             Text="{Binding DefaultOutputDirectory, UpdateSourceTrigger=PropertyChanged}"
+                                             Margin="0,0,0,12" />
 
-                                <UniformGrid Columns="2" Margin="0,0,0,12">
-                                    <StackPanel Margin="0,0,6,0">
-                                        <TextBlock Text="Default Target Format:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                                        <ComboBox ItemsSource="{Binding AvailableTargetFormats}"
-                                                  SelectedItem="{Binding DefaultTargetFormat}"
-                                                  Padding="8,6" />
-                                    </StackPanel>
-                                    <StackPanel Margin="6,0,0,0">
-                                        <TextBlock Text="Coordinate Up-Axis:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                                        <ComboBox ItemsSource="{Binding AvailableAxisConventions}"
-                                                  SelectedItem="{Binding DefaultAxisUp}"
-                                                  Padding="8,6" />
-                                    </StackPanel>
-                                </UniformGrid>
+                                    <UniformGrid Columns="2" Margin="0,0,0,12">
+                                        <StackPanel Margin="0,0,6,0">
+                                            <TextBlock Text="Default Target Format:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                            <ComboBox ItemsSource="{Binding AvailableTargetFormats}"
+                                                      SelectedItem="{Binding DefaultTargetFormat}"
+                                                      Padding="8,6" />
+                                        </StackPanel>
+                                        <StackPanel Margin="6,0,0,0">
+                                            <TextBlock Text="Coordinate Up-Axis:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                            <ComboBox ItemsSource="{Binding AvailableAxisConventions}"
+                                                      SelectedItem="{Binding DefaultAxisUp}"
+                                                      Padding="8,6" />
+                                        </StackPanel>
+                                    </UniformGrid>
 
-                                <UniformGrid Columns="2" Margin="0,0,0,14">
-                                    <StackPanel Margin="0,0,6,0">
-                                        <TextBlock Text="Max Recent Files (5-100):" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                                        <TextBox Style="{StaticResource Style.InputTextBox}"
-                                                 Text="{Binding MaxRecentFiles, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                    <StackPanel Margin="6,0,0,0">
-                                        <TextBlock Text="Export Decimal Precision (1-10):" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                                        <TextBox Style="{StaticResource Style.InputTextBox}"
-                                                 Text="{Binding DecimalPrecision, UpdateSourceTrigger=PropertyChanged}" />
-                                    </StackPanel>
-                                </UniformGrid>
+                                    <UniformGrid Columns="2" Margin="0,0,0,14">
+                                        <StackPanel Margin="0,0,6,0">
+                                            <TextBlock Text="Max Recent Files (5-100):" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                            <TextBox Style="{StaticResource Style.InputTextBox}"
+                                                     Text="{Binding MaxRecentFiles, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                        <StackPanel Margin="6,0,0,0">
+                                            <TextBlock Text="Export Decimal Precision (1-10):" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                            <TextBox Style="{StaticResource Style.InputTextBox}"
+                                                     Text="{Binding DecimalPrecision, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </UniformGrid>
 
-                                <CheckBox Style="{StaticResource Style.ModernCheckBox}"
-                                          Content="Automatically Optimize Mesh Geometry on Export"
-                                          IsChecked="{Binding AutoOptimizeMesh}" />
-                                <CheckBox Style="{StaticResource Style.ModernCheckBox}"
-                                          Content="Enable Detailed Diagnostic File Logging"
-                                          IsChecked="{Binding EnableDetailedFileLogging}" />
-                            </StackPanel>
-                        </Border>
+                                    <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                              Content="Automatically Optimize Mesh Geometry on Export"
+                                              IsChecked="{Binding AutoOptimizeMesh}" />
+                                    <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                              Content="Enable Detailed Diagnostic File Logging"
+                                              IsChecked="{Binding EnableDetailedFileLogging}" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Desktop Shortcut Integration Card -->
+                            <Border Style="{StaticResource Style.CardBorder}" Margin="0,14,0,0">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="Windows Desktop Shortcut" Style="{StaticResource Text.SectionHeader}" />
+                                            <TextBlock Text="Manage desktop launcher, icon branding, and installation directory."
+                                                       Style="{StaticResource Text.MutedCaption}"
+                                                       Margin="0,2,0,0" />
+                                        </StackPanel>
+                                        <!-- Status Badge -->
+                                        <Border Grid.Column="1"
+                                                CornerRadius="12"
+                                                Padding="10,4"
+                                                VerticalAlignment="Center">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#252A36" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsDesktopShortcutCreated}" Value="True">
+                                                            <Setter Property="Background" Value="#1E382B" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock FontWeight="SemiBold" FontSize="11.5">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="Shortcut Missing" />
+                                                        <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsDesktopShortcutCreated}" Value="True">
+                                                                <Setter Property="Text" Value="✔ Active on Desktop" />
+                                                                <Setter Property="Foreground" Value="{StaticResource Brush.Success}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Status text -->
+                                    <TextBlock Text="{Binding DesktopShortcutStatusText}"
+                                               Style="{StaticResource Text.MutedCaption}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,0,0,10" />
+
+                                    <!-- Path info rows -->
+                                    <Border Background="{StaticResource Brush.SurfaceSecondary}"
+                                            BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="10"
+                                            Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="Shortcut Path:" FontSize="11" Foreground="{StaticResource Brush.TextSecondary}" />
+                                            <TextBlock Text="{Binding DesktopShortcutPath}" Style="{StaticResource Text.Monospace}" FontSize="11" Margin="0,1,0,6" TextWrapping="Wrap" />
+
+                                            <TextBlock Text="Working Directory:" FontSize="11" Foreground="{StaticResource Brush.TextSecondary}" />
+                                            <TextBlock Text="{Binding InstallationDirectoryPath}" Style="{StaticResource Text.Monospace}" FontSize="11" Margin="0,1,0,0" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Dev warning banner if applicable -->
+                                    <Border Background="#2C2416"
+                                            BorderBrush="{StaticResource Brush.Warning}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="10,8"
+                                            Margin="0,0,0,12">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsDevelopmentBuildWarning}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Data="{StaticResource Icon.Warning}"
+                                                  Fill="{StaticResource Brush.Warning}"
+                                                  Width="14" Height="14"
+                                                  Stretch="Uniform"
+                                                  VerticalAlignment="Center"
+                                                  Margin="0,0,8,0" />
+                                            <TextBlock Text="Development build detected (bin\Debug or bin\Release). Official installer places shortcuts pointing to the installed program files."
+                                                       Foreground="{StaticResource Brush.Warning}"
+                                                       FontSize="11.5"
+                                                       TextWrapping="Wrap"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Checkbox auto maintain -->
+                                    <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                              Content="Create &amp; Maintain Desktop Shortcut on Startup"
+                                              IsChecked="{Binding CreateDesktopShortcut}"
+                                              Margin="0,0,0,12" />
+
+                                    <!-- Action Buttons -->
+                                    <WrapPanel Orientation="Horizontal">
+                                        <Button Style="{StaticResource Style.PrimaryButton}"
+                                                Content="Create Shortcut Now"
+                                                Command="{Binding CreateDesktopShortcutNowCommand}"
+                                                Margin="0,0,8,6" />
+                                        <Button Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Recreate Shortcut"
+                                                Command="{Binding RecreateDesktopShortcutCommand}"
+                                                Margin="0,0,8,6" />
+                                        <Button Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Remove Shortcut"
+                                                Command="{Binding RemoveDesktopShortcutCommand}"
+                                                Margin="0,0,8,6" />
+                                        <Button Style="{StaticResource Style.SecondaryButton}"
+                                                Content="Open Installation Folder"
+                                                Command="{Binding OpenInstallationFolderCommand}"
+                                                Margin="0,0,0,6" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
 
                         <!-- Right Column: Registered Format Plugins -->
                         <Border Grid.Column="2" Style="{StaticResource Style.CardBorder}">

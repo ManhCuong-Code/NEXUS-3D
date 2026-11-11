@@ -74,5 +74,6 @@ public sealed record ApplicationPreferencesDto(
     bool AutoOptimizeMesh,
     bool EnableDetailedFileLogging,
     int MaxRecentFiles,
-    int DecimalPrecision);
+    int DecimalPrecision,
+    bool CreateDesktopShortcut = false);
 
