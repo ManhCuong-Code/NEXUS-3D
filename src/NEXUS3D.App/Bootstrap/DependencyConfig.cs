@@ -152,6 +152,9 @@ public static class DependencyConfig
         services.AddSingleton<SceneHierarchyViewModel>();
         services.AddSingleton<ObjectInspectorViewModel>();
         services.AddSingleton<BoneHierarchyViewModel>();
+        services.AddSingleton<BlockWorkspaceViewModel>();
+        services.AddSingleton<VoxelWorkspaceViewModel>();
+        services.AddSingleton<BedrockWorkspaceViewModel>();
         services.AddSingleton<ViewportViewModel>();
         services.AddSingleton<VoxelizationViewModel>();
         services.AddSingleton<DashboardViewModel>();

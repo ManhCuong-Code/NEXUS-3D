@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
+    <ProjectReference Include="..\NEXUS3D.Conversion.Abstractions\NEXUS3D.Conversion.Abstractions.csproj" />
     <ProjectReference Include="..\NEXUS3D.Formats.Abstractions\NEXUS3D.Formats.Abstractions.csproj" />
     <ProjectReference Include="..\NEXUS3D.Engine\NEXUS3D.Engine.csproj" />
     <ProjectReference Include="..\NEXUS3D.Rendering\NEXUS3D.Rendering.csproj" />

@@ -47,6 +47,8 @@ public static class ApplicationServiceRegistration
         services.AddSingleton<ISceneService, SceneService>();
         services.AddSingleton<NEXUS3D.Application.Interfaces.IModelLoadingService, NEXUS3D.Application.UseCases.ModelLoadingService>();
         services.AddSingleton<NEXUS3D.Application.Interfaces.IWorkspaceSceneSession, NEXUS3D.Application.UseCases.WorkspaceSceneSession>();
+        services.AddSingleton<NEXUS3D.Application.Interfaces.IFileClassificationService, NEXUS3D.Application.UseCases.FileClassificationService>();
+        services.AddSingleton<NEXUS3D.Application.Interfaces.IConversionCompatibilityService, NEXUS3D.Application.UseCases.ConversionCompatibilityService>();
         return services;
     }
 }

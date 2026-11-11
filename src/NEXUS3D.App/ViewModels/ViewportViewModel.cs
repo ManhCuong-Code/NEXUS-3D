@@ -1,20 +1,26 @@
+using System.Collections.ObjectModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using NEXUS3D.Application.Interfaces;
+using NEXUS3D.Application.Models;
+using NEXUS3D.Conversion.Abstractions.Interfaces;
+using NEXUS3D.Domain.Enums;
 using NEXUS3D.Domain.Mathematics;
 using NEXUS3D.Domain.Scene;
 using NEXUS3D.Editor.Abstractions;
 using NEXUS3D.Formats.Abstractions;
 using NEXUS3D.Rendering.Contracts;
 using NEXUS3D.Rendering.Domain;
+using NEXUS3D.Rendering.Profiles;
 
 namespace NEXUS3D.App.ViewModels;
 
 /// <summary>
-/// Primary Workspace ViewModel coordinating the 3D Viewport, Camera, RenderSettings, Hierarchy,
-/// Object Inspector, and Interactive 3D Editor Tools.
+/// Primary Workspace ViewModel coordinating the 3D Viewport, Multi-Tab documents,
+/// Camera, Specialized Workspaces (Mesh, Block, Voxel, Bedrock), and Conversion Assistant.
 /// </summary>
 public sealed partial class ViewportViewModel : BaseViewModel
 {
@@ -24,6 +30,9 @@ public sealed partial class ViewportViewModel : BaseViewModel
     private readonly ISelectionService _selectionService;
     private readonly IUndoRedoService _undoRedoService;
     private readonly IPivotService _pivotService;
+    private readonly IFileClassificationService _fileClassificationService;
+    private readonly IConversionCompatibilityService _compatibilityService;
+    private readonly IConversionExecutor _conversionExecutor;
     private readonly ILogger<ViewportViewModel> _logger;
 
     public CameraViewModel Camera { get; }
@@ -31,6 +40,15 @@ public sealed partial class ViewportViewModel : BaseViewModel
     public SceneHierarchyViewModel Hierarchy { get; }
     public ObjectInspectorViewModel Inspector { get; }
     public BoneHierarchyViewModel Skeletons { get; }
+
+    public BlockWorkspaceViewModel BlockWorkspace { get; }
+    public VoxelWorkspaceViewModel VoxelWorkspace { get; }
+    public BedrockWorkspaceViewModel BedrockWorkspace { get; }
+
+    public ObservableCollection<WorkspaceDocumentTab> Tabs { get; } = [];
+
+    [ObservableProperty]
+    private WorkspaceDocumentTab? _activeTab;
 
     [ObservableProperty]
     private RenderScene? _scene;
@@ -69,11 +87,17 @@ public sealed partial class ViewportViewModel : BaseViewModel
         ISelectionService selectionService,
         IUndoRedoService undoRedoService,
         IPivotService pivotService,
+        IFileClassificationService fileClassificationService,
+        IConversionCompatibilityService compatibilityService,
+        IConversionExecutor conversionExecutor,
         CameraViewModel camera,
         RenderSettingsViewModel settings,
         SceneHierarchyViewModel hierarchy,
         ObjectInspectorViewModel inspector,
         BoneHierarchyViewModel skeletons,
+        BlockWorkspaceViewModel blockWorkspace,
+        VoxelWorkspaceViewModel voxelWorkspace,
+        BedrockWorkspaceViewModel bedrockWorkspace,
         ILogger<ViewportViewModel> logger)
     {
         _renderService = renderService;
@@ -82,15 +106,24 @@ public sealed partial class ViewportViewModel : BaseViewModel
         _selectionService = selectionService;
         _undoRedoService = undoRedoService;
         _pivotService = pivotService;
+        _fileClassificationService = fileClassificationService;
+        _compatibilityService = compatibilityService;
+        _conversionExecutor = conversionExecutor;
+
         Camera = camera;
         Settings = settings;
         Hierarchy = hierarchy;
         Inspector = inspector;
         Skeletons = skeletons;
+
+        BlockWorkspace = blockWorkspace;
+        VoxelWorkspace = voxelWorkspace;
+        BedrockWorkspace = bedrockWorkspace;
+
         _logger = logger;
 
         Title = "3D Viewport Workspace";
-        Subtitle = "Universal real-time rendering, inspection, and interactive 3D editing engine.";
+        Subtitle = "Universal real-time rendering, multi-format inspection, and interactive 3D editing engine.";
 
         Hierarchy.NodeSelected += OnHierarchyNodeSelected;
         Skeletons.BoneSelected += OnSkeletonBoneSelected;
@@ -100,13 +133,73 @@ public sealed partial class ViewportViewModel : BaseViewModel
         _workspaceSession.SceneChanged += OnWorkspaceSessionSceneChanged;
     }
 
+    partial void OnActiveTabChanged(WorkspaceDocumentTab? oldValue, WorkspaceDocumentTab? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.CameraState = Camera.CurrentCamera;
+            oldValue.Settings = Settings.CurrentSettings;
+        }
+
+        if (newValue is null)
+        {
+            RawUsmScene = null;
+            Scene = null;
+            LoadedModelName = "No Model Loaded";
+            LoadedFilePath = string.Empty;
+            Hierarchy.RootNodes.Clear();
+            Skeletons.RootBones.Clear();
+            _selectionService.ClearSelection();
+            Inspector.Clear();
+            return;
+        }
+
+        RawUsmScene = newValue.RawUsmScene;
+        Scene = newValue.RenderScene;
+        LoadedModelName = newValue.Title;
+        LoadedFilePath = newValue.FilePath;
+
+        if (newValue.CameraState != default)
+        {
+            Camera.CurrentCamera = newValue.CameraState;
+        }
+
+        if (newValue.RenderScene is not null)
+        {
+            Hierarchy.LoadScene(newValue.RenderScene);
+            Skeletons.LoadSkeletons(newValue.RenderScene.Skeletons);
+        }
+
+        // Activate specialized workspace based on document category
+        if (newValue.RawUsmScene is not null)
+        {
+            switch (newValue.Category)
+            {
+                case FormatCategory.MinecraftSchematic:
+                    BlockWorkspace.LoadFromScene(newValue.RawUsmScene);
+                    break;
+                case FormatCategory.VoxelModel:
+                    VoxelWorkspace.LoadFromScene(newValue.RawUsmScene);
+                    break;
+                case FormatCategory.BedrockGeometry:
+                    BedrockWorkspace.LoadFromScene(newValue.RawUsmScene);
+                    break;
+            }
+
+            _workspaceSession.SetActiveScene(newValue.RawUsmScene, newValue.FilePath, newValue.FormatDescriptor);
+        }
+
+        _selectionService.ClearSelection();
+        Inspector.Clear();
+    }
+
     private async void OnWorkspaceSessionSceneChanged(object? sender, SceneSessionChangedEventArgs e)
     {
         if (e.Scene is not null && !ReferenceEquals(e.Scene, RawUsmScene))
         {
             await LoadSceneModelAsync(e.Scene, e.FilePath);
         }
-        else if (e.Scene is null)
+        else if (e.Scene is null && Tabs.Count == 0)
         {
             RawUsmScene = null;
             Scene = null;
@@ -138,6 +231,43 @@ public sealed partial class ViewportViewModel : BaseViewModel
             Skeletons.LoadSkeletons(rScene.Skeletons);
             _selectionService.ClearSelection();
             Inspector.Clear();
+
+            // Resolve or update tab
+            var existingTab = Tabs.FirstOrDefault(t => !string.IsNullOrEmpty(sourcePath) && string.Equals(t.FilePath, sourcePath, StringComparison.OrdinalIgnoreCase));
+            if (existingTab is null)
+            {
+                var category = ResolveCategoryForScene(sceneModel, sourcePath);
+                var profileType = category switch
+                {
+                    FormatCategory.PolygonMesh => ViewerProfileType.Mesh,
+                    FormatCategory.MinecraftSchematic => ViewerProfileType.Block,
+                    FormatCategory.VoxelModel => ViewerProfileType.Voxel,
+                    FormatCategory.BedrockGeometry => ViewerProfileType.BedrockGeometry,
+                    _ => ViewerProfileType.Generic
+                };
+                var profile = ViewerProfileRegistry.GetProfile(profileType);
+                var tab = new WorkspaceDocumentTab
+                {
+                    Title = string.IsNullOrWhiteSpace(sceneModel.Name) ? (Path.GetFileName(sourcePath) ?? "Model") : sceneModel.Name,
+                    FilePath = sourcePath ?? string.Empty,
+                    Category = category,
+                    ViewerProfile = profile,
+                    RawUsmScene = sceneModel,
+                    RenderScene = rScene,
+                    CameraState = Camera.CurrentCamera,
+                    Settings = Settings.CurrentSettings
+                };
+                tab.UpdateStats(rScene);
+                Tabs.Add(tab);
+                ActiveTab = tab;
+            }
+            else
+            {
+                existingTab.RawUsmScene = sceneModel;
+                existingTab.RenderScene = rScene;
+                existingTab.UpdateStats(rScene);
+                ActiveTab = existingTab;
+            }
 
             FocusModel();
 
@@ -175,10 +305,7 @@ public sealed partial class ViewportViewModel : BaseViewModel
                 return;
             }
 
-            if (!ReferenceEquals(RawUsmScene, loadResult.Value))
-            {
-                await LoadSceneModelAsync(loadResult.Value, filePath, cancellationToken);
-            }
+            await LoadSceneModelAsync(loadResult.Value, filePath, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -189,6 +316,128 @@ public sealed partial class ViewportViewModel : BaseViewModel
         {
             IsBusy = false;
         }
+    }
+
+    public async Task InspectAndOpenFileAsync(string filePath, bool showInspectionDialog = true)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) return;
+
+        var report = _fileClassificationService.ClassifyFile(filePath);
+
+        if (showInspectionDialog)
+        {
+            var inspectionVm = new FileOpenInspectionViewModel(report);
+            var window = new Views.FileOpenInspectionWindow(inspectionVm)
+            {
+                Owner = System.Windows.Application.Current.MainWindow
+            };
+
+            bool? dialogResult = window.ShowDialog();
+            if (dialogResult != true) return;
+        }
+
+        await LoadFileAsync(filePath);
+    }
+
+    [RelayCommand]
+    public async Task OpenNewTabAsync()
+    {
+        var ofd = new OpenFileDialog
+        {
+            Title = "Open 3D Model in New Tab",
+            Filter = "All Supported 3D Models (*.obj;*.schem;*.schematic;*.voxel.json;*.geo.json)|*.obj;*.schem;*.schematic;*.voxel.json;*.geo.json|Wavefront OBJ (*.obj)|*.obj|Minecraft Schematic (*.schem;*.schematic)|*.schem;*.schematic|Voxel JSON (*.voxel.json)|*.voxel.json|Bedrock Geometry (*.geo.json)|*.geo.json|All Files (*.*)|*.*"
+        };
+
+        if (ofd.ShowDialog() == true)
+        {
+            await InspectAndOpenFileAsync(ofd.FileName, showInspectionDialog: true);
+        }
+    }
+
+    [RelayCommand]
+    public void SelectTab(WorkspaceDocumentTab? tab)
+    {
+        if (tab is not null)
+        {
+            ActiveTab = tab;
+        }
+    }
+
+    [RelayCommand]
+    public void CloseTab(WorkspaceDocumentTab? tab)
+    {
+        if (tab is null) return;
+
+        int index = Tabs.IndexOf(tab);
+        Tabs.Remove(tab);
+
+        if (ActiveTab == tab)
+        {
+            if (Tabs.Count > 0)
+            {
+                int newIndex = Math.Clamp(index, 0, Tabs.Count - 1);
+                ActiveTab = Tabs[newIndex];
+            }
+            else
+            {
+                ActiveTab = null;
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void ConvertActiveModel()
+    {
+        if (RawUsmScene is null)
+        {
+            ErrorMessage = "Please load a 3D model first before opening the Conversion Assistant.";
+            return;
+        }
+
+        var sourceFormat = ActiveTab?.FormatType ?? ModelFormatType.Unknown;
+        if (sourceFormat == ModelFormatType.Unknown && !string.IsNullOrEmpty(LoadedFilePath))
+        {
+            var rep = _fileClassificationService.ClassifyFile(LoadedFilePath);
+            sourceFormat = rep.FormatType;
+        }
+
+        var convertVm = new ConvertModelDialogViewModel(
+            RawUsmScene,
+            LoadedFilePath,
+            sourceFormat,
+            _compatibilityService,
+            _conversionExecutor);
+
+        convertVm.OpenConvertedFileRequested += async (s, path) =>
+        {
+            await InspectAndOpenFileAsync(path, showInspectionDialog: false);
+        };
+
+        var window = new Views.ConvertModelWindow(convertVm)
+        {
+            Owner = System.Windows.Application.Current.MainWindow
+        };
+
+        window.ShowDialog();
+    }
+
+    private FormatCategory ResolveCategoryForScene(Scene3D scene, string? path)
+    {
+        if (!string.IsNullOrEmpty(path))
+        {
+            var report = _fileClassificationService.ClassifyFile(path);
+            if (report.Category != FormatCategory.Unknown) return report.Category;
+        }
+
+        bool hasVoxels = scene.Graph.Nodes.Any(n => n.Object?.VoxelGrids.Count > 0);
+        bool hasBones = scene.Skeletons.Count > 0 || scene.Graph.Nodes.Any(n => n.Object?.SkeletonId is not null);
+        bool hasMeshes = scene.Graph.Nodes.Any(n => n.Object?.Meshes.Count > 0);
+
+        if (hasBones) return FormatCategory.BedrockGeometry;
+        if (hasVoxels) return FormatCategory.MinecraftSchematic;
+        if (hasMeshes) return FormatCategory.PolygonMesh;
+
+        return FormatCategory.Unknown;
     }
 
     [RelayCommand]
@@ -334,7 +583,10 @@ public sealed partial class ViewportViewModel : BaseViewModel
 
     private void OnSettingsChanged(object? sender, RenderSettings settings)
     {
-        // Viewport control automatically observes settings changes
+        if (ActiveTab is not null)
+        {
+            ActiveTab.Settings = settings;
+        }
     }
 
     private void OnSelectionServiceChanged(object? sender, EventArgs e)

@@ -2,6 +2,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using NEXUS3D.App.ViewModels;
 using NEXUS3D.Editor.Abstractions;
+using NEXUS3D.Rendering.Contracts;
 
 namespace NEXUS3D.App.Views;
 
@@ -52,6 +53,12 @@ public partial class ViewportWorkspaceView : UserControl
                 e.Handled = true;
                 return;
             }
+            if (e.Key == Key.O)
+            {
+                _ = vm.OpenNewTabAsync();
+                e.Handled = true;
+                return;
+            }
         }
 
         switch (e.Key)
@@ -78,6 +85,37 @@ public partial class ViewportWorkspaceView : UserControl
                 break;
             case Key.F:
                 Viewport3D.FocusScene();
+                vm.FocusModel();
+                e.Handled = true;
+                break;
+            case Key.Home:
+                Viewport3D.FocusScene();
+                vm.FocusModel();
+                e.Handled = true;
+                break;
+            case Key.D0:
+            case Key.NumPad0:
+                vm.Camera.ResetCameraCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case Key.D1:
+            case Key.NumPad1:
+                vm.Camera.SetPreset(CameraPresetView.Front);
+                e.Handled = true;
+                break;
+            case Key.D3:
+            case Key.NumPad3:
+                vm.Camera.SetPreset(CameraPresetView.Right);
+                e.Handled = true;
+                break;
+            case Key.D7:
+            case Key.NumPad7:
+                vm.Camera.SetPreset(CameraPresetView.Top);
+                e.Handled = true;
+                break;
+            case Key.D5:
+            case Key.NumPad5:
+                vm.Camera.ToggleProjectionCommand.Execute(null);
                 e.Handled = true;
                 break;
             case Key.Escape:

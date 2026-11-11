@@ -6,303 +6,633 @@
              xmlns:controls="clr-namespace:NEXUS3D.App.Controls"
              xmlns:contracts="clr-namespace:NEXUS3D.Rendering.Contracts;assembly=NEXUS3D.Rendering"
              xmlns:editor="clr-namespace:NEXUS3D.Editor.Abstractions;assembly=NEXUS3D.Editor.Abstractions"
+             xmlns:models="clr-namespace:NEXUS3D.Application.Models;assembly=NEXUS3D.Application"
              mc:Ignorable="d" 
-             d:DesignHeight="750" d:DesignWidth="1100"
+             d:DesignHeight="800" d:DesignWidth="1200"
              Focusable="True">
     <Grid Background="#141419">
-        <Grid.ColumnDefinitions>
-            <!-- Left Sidepane: Hierarchy, Bones, Inspector -->
-            <ColumnDefinition Width="320" MinWidth="260" MaxWidth="450" />
-            <ColumnDefinition Width="4" />
-            <!-- Center/Right: 3D Viewport + Floating Toolbar -->
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <!-- Row 0: Document Tabs Bar -->
+            <RowDefinition Height="Auto" />
+            <!-- Row 1: Main Workspace Split (Left Panel | Viewport) -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-        <!-- LEFT PANEL -->
-        <Border Grid.Column="0" Background="#1A1A22" BorderBrush="#2A2A36" BorderThickness="0,0,1,0">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="180" MinHeight="100" />
-                    <RowDefinition Height="4" />
-                    <RowDefinition Height="*" MinHeight="260" />
-                </Grid.RowDefinitions>
-
-                <!-- Header -->
-                <Border Grid.Row="0" Background="#141419" Padding="12,10" BorderBrush="#2A2A36" BorderThickness="0,0,0,1">
-                    <StackPanel>
-                        <TextBlock Text="SCENE EXPLORER &amp; EDITOR" FontSize="13" FontWeight="Bold" Foreground="#6C5CE7" />
-                        <TextBlock Text="{Binding LoadedModelName}" FontSize="12" Foreground="#E0E0E0" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
-                    </StackPanel>
-                </Border>
-
-                <!-- Hierarchy & Bones Tabs -->
-                <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
-                    <TabItem Header="Hierarchy" Foreground="#E0E0E0">
-                        <TreeView ItemsSource="{Binding Hierarchy.RootNodes}"
-                                  Background="Transparent"
-                                  BorderThickness="0"
-                                  Foreground="#E0E0E0"
-                                  Padding="4">
-                            <TreeView.ItemTemplate>
-                                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                                    <StackPanel Orientation="Horizontal" Margin="2">
-                                        <TextBlock Text="📦 " FontSize="12" />
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#F0F0F0" />
-                                        <TextBlock Text="{Binding TriangleCount, StringFormat=' ({0} tris)'}" FontSize="10" Foreground="#888888" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </HierarchicalDataTemplate>
-                            </TreeView.ItemTemplate>
-                        </TreeView>
-                    </TabItem>
-
-                    <TabItem Header="Bones" Foreground="#E0E0E0">
-                        <TreeView ItemsSource="{Binding Skeletons.RootBones}"
-                                  Background="Transparent"
-                                  BorderThickness="0"
-                                  Foreground="#E0E0E0"
-                                  Padding="4">
-                            <TreeView.ItemTemplate>
-                                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                                    <StackPanel Orientation="Horizontal" Margin="2">
-                                        <TextBlock Text="🦴 " FontSize="12" />
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#FF7675" />
-                                    </StackPanel>
-                                </HierarchicalDataTemplate>
-                            </TreeView.ItemTemplate>
-                        </TreeView>
-                    </TabItem>
-                </TabControl>
-
-                <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#2A2A36" />
-
-                <!-- Multi-Section Inspector -->
-                <Border Grid.Row="3" Background="#16161E" BorderBrush="#2A2A36" BorderThickness="0,1,0,0" Padding="10,8">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <!-- Object Header Info -->
-                            <TextBlock Text="OBJECT PROPERTIES" FontSize="12" FontWeight="Bold" Foreground="#00CEC9" Margin="0,0,0,6" />
-
-                            <Grid Margin="0,2">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="80" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Name:" Foreground="#888888" FontSize="11" />
-                                <TextBlock Grid.Column="1" Text="{Binding Inspector.ElementName}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" TextTrimming="CharacterEllipsis" />
-                            </Grid>
-                            <Grid Margin="0,2">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="80" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Type:" Foreground="#888888" FontSize="11" />
-                                <TextBlock Grid.Column="1" Text="{Binding Inspector.ElementType}" Foreground="#A29BFE" FontSize="11" />
-                            </Grid>
-                            <Grid Margin="0,2">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="80" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Stats:" Foreground="#888888" FontSize="11" />
-                                <TextBlock Grid.Column="1" Text="{Binding Inspector.TriangleCount, StringFormat='{}{0:N0} tris'}" Foreground="#55EFC4" FontSize="11" />
-                            </Grid>
-
-                            <Separator Background="#2A2A36" Margin="0,8" />
-
-                            <!-- Transform Section -->
-                            <StackPanel Margin="0,0,0,4">
-                                <DockPanel Margin="0,0,0,4">
-                                    <TextBlock Text="TRANSFORM" FontSize="11" FontWeight="Bold" Foreground="#FDCB6E" VerticalAlignment="Center" />
-                                    <Button Content="{Binding Inspector.ActiveSpace}" Command="{Binding Inspector.ToggleTransformSpaceCommand}" HorizontalAlignment="Right" Padding="6,2" Background="#282834" Foreground="#74B9FF" BorderThickness="0" FontSize="10" ToolTip="Toggle World/Local transform space" />
-                                </DockPanel>
-
-                                <!-- Position X, Y, Z -->
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="50" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Pos:" Foreground="#888888" FontSize="11" VerticalAlignment="Center" />
-                                    <TextBox Grid.Column="1" Text="{Binding Inspector.PosX, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                    <TextBox Grid.Column="2" Text="{Binding Inspector.PosY, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                    <TextBox Grid.Column="3" Text="{Binding Inspector.PosZ, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                </Grid>
-
-                                <!-- Rotation X, Y, Z -->
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="50" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Rot°:" Foreground="#888888" FontSize="11" VerticalAlignment="Center" />
-                                    <TextBox Grid.Column="1" Text="{Binding Inspector.RotX, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                    <TextBox Grid.Column="2" Text="{Binding Inspector.RotY, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                    <TextBox Grid.Column="3" Text="{Binding Inspector.RotZ, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                </Grid>
-
-                                <!-- Scale X, Y, Z -->
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="50" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Scale:" Foreground="#888888" FontSize="11" VerticalAlignment="Center" />
-                                    <TextBox Grid.Column="1" Text="{Binding Inspector.ScaleX, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                    <TextBox Grid.Column="2" Text="{Binding Inspector.ScaleY, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                    <TextBox Grid.Column="3" Text="{Binding Inspector.ScaleZ, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                </Grid>
-
-                                <!-- Transform Actions -->
-                                <UniformGrid Columns="3" Margin="0,4">
-                                    <Button Content="Update" Command="{Binding Inspector.ApplyNumericTransformCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#55EFC4" BorderThickness="0" FontSize="10" />
-                                    <Button Content="Reset" Command="{Binding Inspector.ResetTransformCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFAAA7" BorderThickness="0" FontSize="10" ToolTip="Reset Pos/Rot/Scale to Identity" />
-                                    <Button Content="Bake / Apply" Command="{Binding Inspector.ApplyBakeTransformCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FDCB6E" BorderThickness="0" FontSize="10" ToolTip="Bake transform into geometry vertices" />
-                                </UniformGrid>
-                            </StackPanel>
-
-                            <Separator Background="#2A2A36" Margin="0,8" />
-
-                            <!-- Pivot Editing Section -->
-                            <StackPanel Margin="0,0,0,4">
-                                <TextBlock Text="PIVOT EDITING" FontSize="11" FontWeight="Bold" Foreground="#E17055" Margin="0,0,0,4" />
-                                <UniformGrid Columns="3" Margin="0,2">
-                                    <Button Content="Center Pivot" Command="{Binding Inspector.CenterPivotCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
-                                    <Button Content="Origin (0,0,0)" Command="{Binding Inspector.PivotToOriginCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
-                                    <Button Content="Bounds Center" Command="{Binding Inspector.PivotToBoundsCenterCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
-                                </UniformGrid>
-                            </StackPanel>
-
-                            <Separator Background="#2A2A36" Margin="0,8" />
-
-                            <!-- Texture & UV Section -->
-                            <StackPanel Margin="0,0,0,4">
-                                <TextBlock Text="TEXTURE &amp; UV EDITING" FontSize="11" FontWeight="Bold" Foreground="#A29BFE" Margin="0,0,0,4" />
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                    <TextBlock Text="Material:" Foreground="#888888" FontSize="11" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Inspector.MaterialName}" Foreground="#FFFFFF" FontSize="11" TextTrimming="CharacterEllipsis" />
-                                </Grid>
-
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                    <TextBlock Text="Offset UV:" Foreground="#888888" FontSize="11" VerticalAlignment="Center" />
-                                    <TextBox Grid.Column="1" Text="{Binding Inspector.UvOffsetX, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                    <TextBox Grid.Column="2" Text="{Binding Inspector.UvOffsetY, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                </Grid>
-
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                    <TextBlock Text="Scale UV:" Foreground="#888888" FontSize="11" VerticalAlignment="Center" />
-                                    <TextBox Grid.Column="1" Text="{Binding Inspector.UvScaleX, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                    <TextBox Grid.Column="2" Text="{Binding Inspector.UvScaleY, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="11" FontFamily="Consolas" />
-                                </Grid>
-
-                                <UniformGrid Columns="3" Margin="0,4">
-                                    <Button Content="Apply UV" Command="{Binding Inspector.ApplyUVTransformCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#00CEC9" BorderThickness="0" FontSize="10" />
-                                    <Button Content="Flip U" Command="{Binding Inspector.FlipUVHorizontalCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
-                                    <Button Content="Flip V" Command="{Binding Inspector.FlipUVVerticalCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
-                                </UniformGrid>
-                            </StackPanel>
-
-                            <Separator Background="#2A2A36" Margin="0,8" />
-
-                            <!-- History / Undo-Redo Section -->
-                            <StackPanel Margin="0,0,0,4">
-                                <TextBlock Text="HISTORY" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,4" />
-                                <UniformGrid Columns="2">
-                                    <Button Content="{Binding Inspector.UndoCount, StringFormat='↶ Undo ({0})'}" Command="{Binding Inspector.UndoCommand}" IsEnabled="{Binding Inspector.CanUndo}" Margin="1" Padding="4,4" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="11" />
-                                    <Button Content="{Binding Inspector.RedoCount, StringFormat='↷ Redo ({0})'}" Command="{Binding Inspector.RedoCommand}" IsEnabled="{Binding Inspector.CanRedo}" Margin="1" Padding="4,4" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="11" />
-                                </UniformGrid>
-                            </StackPanel>
+        <!-- ========================================================================= -->
+        <!-- ROW 0: MULTI-DOCUMENT TAB BAR & QUICK ACTIONS                             -->
+        <!-- ========================================================================= -->
+        <Border Grid.Row="0" Background="#111116" BorderBrush="#252532" BorderThickness="0,0,0,1" Padding="8,4">
+            <DockPanel>
+                <!-- Right Side Quick Actions: "Convert This Model" & Open New -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Command="{Binding ConvertActiveModelCommand}"
+                            Padding="12,5"
+                            Background="#20202C"
+                            Foreground="#00CEC9"
+                            BorderBrush="#00CEC9"
+                            BorderThickness="1"
+                            FontSize="11"
+                            FontWeight="Bold"
+                            Cursor="Hand"
+                            ToolTip="Open Smart Conversion Assistant (Loss Diagnostics &amp; Multi-Format Export)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚡ " Foreground="#00CEC9" />
+                            <TextBlock Text="Convert This Model..." />
                         </StackPanel>
-                    </ScrollViewer>
-                </Border>
-            </Grid>
+                    </Button>
+
+                    <Button Command="{Binding OpenNewTabCommand}"
+                            Padding="10,5"
+                            Margin="6,0,0,0"
+                            Background="#6C5CE7"
+                            Foreground="#FFFFFF"
+                            BorderThickness="0"
+                            FontSize="11"
+                            FontWeight="Bold"
+                            Cursor="Hand"
+                            ToolTip="Open 3D Model with Pre-Flight Inspection in New Tab">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="+ Open Model" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Document Tabs Strip -->
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Tabs}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="2,0"
+                                        Padding="10,5"
+                                        CornerRadius="4"
+                                        BorderThickness="1"
+                                        Cursor="Hand">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="#181822" />
+                                            <Setter Property="BorderBrush" Value="#2A2A3A" />
+                                            <Style.Triggers>
+                                                <DataTrigger Value="True">
+                                                    <DataTrigger.Binding>
+                                                        <MultiBinding Converter="{x:Null}">
+                                                            <!-- Handled in trigger or active highlight -->
+                                                        </MultiBinding>
+                                                    </DataTrigger.Binding>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Border.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick"
+                                                      Command="{Binding DataContext.SelectTabCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      CommandParameter="{Binding}" />
+                                    </Border.InputBindings>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <!-- Format Badge -->
+                                        <Border Background="{Binding FormatColor}" CornerRadius="2" Padding="4,1" Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding FormatBadge}" FontSize="9" FontWeight="Bold" Foreground="#141419" />
+                                        </Border>
+
+                                        <!-- Title -->
+                                        <TextBlock Text="{Binding Title}" FontSize="11" FontWeight="SemiBold" Foreground="#FFFFFF" MaxWidth="150" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+
+                                        <!-- Close Button -->
+                                        <Button Content="×"
+                                                Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Margin="8,0,0,0"
+                                                Padding="4,0"
+                                                Background="Transparent"
+                                                Foreground="#888898"
+                                                BorderThickness="0"
+                                                FontSize="13"
+                                                FontWeight="Bold"
+                                                Cursor="Hand"
+                                                ToolTip="Close this document tab" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
         </Border>
 
-        <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="#2A2A36" />
+        <!-- ========================================================================= -->
+        <!-- ROW 1: SPECIALIZED WORKSPACE PANELS & 3D VIEWPORT                         -->
+        <!-- ========================================================================= -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <!-- Left Sidepane: Specialized workspace toolsets -->
+                <ColumnDefinition Width="330" MinWidth="260" MaxWidth="480" />
+                <ColumnDefinition Width="4" />
+                <!-- Center/Right: 3D Viewport + Floating Toolbar + Gizmo -->
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <!-- RIGHT VIEWPORT AREA -->
-        <Grid Grid.Column="2">
-            <!-- 3D Viewport Control -->
-            <controls:Viewport3DControl x:Name="Viewport3D"
-                                        Scene="{Binding Scene}"
-                                        RawUsmScene="{Binding RawUsmScene}"
-                                        Settings="{Binding Settings.CurrentSettings}"
-                                        CameraState="{Binding Camera.CurrentCamera}"
-                                        ActiveTool="{Binding ActiveTool}"
-                                        TransformSpace="{Binding ActiveSpace}"
-                                        SelectedNodeId="{Binding SelectedNodeId}"
-                                        TransformService="{Binding TransformService}"
-                                        UndoRedoService="{Binding UndoRedoService}"
-                                        PivotService="{Binding PivotService}" />
+            <!-- ===================================================================== -->
+            <!-- LEFT PANEL: SPECIALIZED WORKSPACES                                    -->
+            <!-- ===================================================================== -->
+            <Border Grid.Column="0" Background="#1A1A22" BorderBrush="#2A2A36" BorderThickness="0,0,1,0">
+                <Grid>
+                    <!-- Header with Model Title and Category Badge -->
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-            <!-- Floating Topbar Overlay: 3D Tools & View Presets -->
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="16">
-                <!-- Row 1: Interactive 3D Editor Tools -->
-                <Border Background="#DD181820" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="6,4" Margin="0,0,0,4">
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="Select (Q)" Command="{Binding SetToolCommand}" CommandParameter="{x:Static editor:EditorToolType.Select}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Select Tool (Q)" />
-                        <Button Content="Move (W)" Command="{Binding SetToolCommand}" CommandParameter="{x:Static editor:EditorToolType.Translate}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#FF7675" BorderThickness="0" ToolTip="Translate Tool (W)" />
-                        <Button Content="Rotate (E)" Command="{Binding SetToolCommand}" CommandParameter="{x:Static editor:EditorToolType.Rotate}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#55EFC4" BorderThickness="0" ToolTip="Rotate Tool (E)" />
-                        <Button Content="Scale (R)" Command="{Binding SetToolCommand}" CommandParameter="{x:Static editor:EditorToolType.Scale}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#74B9FF" BorderThickness="0" ToolTip="Scale Tool (R)" />
-                        <Button Content="Pivot (T)" Command="{Binding SetToolCommand}" CommandParameter="{x:Static editor:EditorToolType.Pivot}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#FDCB6E" BorderThickness="0" ToolTip="Edit Pivot (T)" />
+                    <Border Grid.Row="0" Background="#141419" Padding="12,10" BorderBrush="#2A2A36" BorderThickness="0,0,0,1">
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBlock Text="SPECIALIZED 3D WORKSPACE" FontSize="11" FontWeight="Bold" Foreground="#6C5CE7" />
+                                <Border Background="{Binding ActiveTab.FormatColor}" CornerRadius="2" Padding="4,1" HorizontalAlignment="Right">
+                                    <TextBlock Text="{Binding ActiveTab.Category}" FontSize="9" FontWeight="Bold" Foreground="#141419" />
+                                </Border>
+                            </DockPanel>
+                            <TextBlock Text="{Binding LoadedModelName}" FontSize="13" FontWeight="Bold" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis" Margin="0,3,0,0" />
+                            <TextBlock Text="{Binding ActiveTab.FormattedStats}" FontSize="10" Foreground="#55EFC4" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </Border>
 
-                        <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+                    <!-- Workspace Switcher Container -->
+                    <Grid Grid.Row="1">
+                        <!-- WORKSPACE A: MINECRAFT SCHEMATIC BLOCK WORKSPACE -->
+                        <Grid x:Name="SchematicWorkspacePanel" Background="#16161E">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveTab.Category}" Value="{x:Static models:FormatCategory.MinecraftSchematic}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
 
-                        <!-- Coordinate Reference Space -->
-                        <Button Content="{Binding ActiveSpace}" Command="{Binding ToggleSpaceCommand}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#A29BFE" BorderThickness="0" ToolTip="Toggle World vs Local space" />
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="240" MinHeight="140" />
+                                <RowDefinition Height="4" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
 
-                        <!-- Snapping -->
-                        <ToggleButton Content="Snap" IsChecked="{Binding SnappingEnabled}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Toggle Grid/Angle Snapping" />
+                            <!-- Block Search & Stats -->
+                            <StackPanel Grid.Row="0" Margin="10,8">
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="BLOCK PALETTE &amp; EXPLORER" FontSize="11" FontWeight="Bold" Foreground="#55EFC4" />
+                                    <TextBlock Text="{Binding BlockWorkspace.UniqueBlockTypes, StringFormat='{}{0} types'}" FontSize="10" Foreground="#888898" HorizontalAlignment="Right" />
+                                </DockPanel>
+                                <TextBox Text="{Binding BlockWorkspace.SearchFilter, UpdateSourceTrigger=PropertyChanged}"
+                                         Background="#20202C" Foreground="#FFFFFF" BorderBrush="#3A3A4C" Padding="6,4" FontSize="11" />
+                            </StackPanel>
 
-                        <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+                            <!-- Palette Items List with Counts and Color Swatches -->
+                            <ListBox Grid.Row="1"
+                                     ItemsSource="{Binding BlockWorkspace.FilteredPaletteItems}"
+                                     SelectedItem="{Binding BlockWorkspace.SelectedPaletteItem}"
+                                     Background="Transparent" BorderThickness="0" Margin="6,0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,2">
+                                            <!-- Color Swatch -->
+                                            <Border Width="16" Height="16" Background="{Binding ColorHex}" CornerRadius="2" Margin="0,0,8,0" VerticalAlignment="Center" BorderBrush="#55FFFFFF" BorderThickness="0.5" />
+                                            <!-- Block Count Badge -->
+                                            <Border DockPanel.Dock="Right" Background="#282838" CornerRadius="3" Padding="5,1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Count, StringFormat='{}{0:N0}'}" FontSize="10" Foreground="#55EFC4" />
+                                            </Border>
+                                            <!-- Visibility Toggle -->
+                                            <ToggleButton DockPanel.Dock="Right"
+                                                          IsChecked="{Binding IsVisible}"
+                                                          Content="👁"
+                                                          Padding="4,0"
+                                                          Margin="0,0,4,0"
+                                                          Background="Transparent"
+                                                          Foreground="#A0A0B0"
+                                                          BorderThickness="0"
+                                                          Cursor="Hand" />
+                                            <!-- Block Name -->
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="11" Foreground="#F0F0F0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
 
-                        <!-- History Shortcuts -->
-                        <Button Content="↶ Undo" Command="{Binding UndoCommand}" Margin="2,0" Padding="6,4" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Undo (Ctrl+Z)" />
-                        <Button Content="↷ Redo" Command="{Binding RedoCommand}" Margin="2,0" Padding="6,4" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Redo (Ctrl+Y)" />
-                    </StackPanel>
-                </Border>
+                            <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#2A2A36" />
 
-                <!-- Row 2: Camera & Rendering Presets & Model Alignment -->
-                <Border Background="#CC181820" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="6,3">
-                    <StackPanel Orientation="Horizontal">
-                        <!-- Presets -->
-                        <Button Content="Reset" Command="{Binding Camera.ResetCameraCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Reset Camera View" />
-                        <Button Content="⌖ Focus" Command="{Binding FocusModelCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#74B9FF" BorderThickness="0" ToolTip="Frame &amp; Focus Model" />
-                        <Button Content="Front" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Front}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Front View (1)" />
-                        <Button Content="Right" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Right}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Right View (4)" />
-                        <Button Content="Top" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Top}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Top View (5)" />
-                        <Button Content="Iso" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Isometric}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Isometric View" />
+                            <!-- Block Inspector & Tools -->
+                            <Border Grid.Row="3" Background="#14141A" Padding="12,10">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel>
+                                        <TextBlock Text="BLOCK DETAILS &amp; CHUNKS" FontSize="11" FontWeight="Bold" Foreground="#00CEC9" Margin="0,0,0,6" />
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Block State:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.SelectedBlockState}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="10" TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Total:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.TotalBlocks, StringFormat='{}{0:N0} blocks'}" Foreground="#55EFC4" FontSize="10" />
+                                        </Grid>
 
-                        <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+                                        <Separator Background="#2A2A38" Margin="0,8" />
 
-                        <!-- Projection -->
-                        <Button Content="Ortho / Persp" Command="{Binding Camera.ToggleProjectionCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#6C5CE7" BorderThickness="0" ToolTip="Toggle Perspective / Orthographic projection" />
+                                        <TextBlock Text="BLOCK VISIBILITY TOOLS" FontSize="10" FontWeight="Bold" Foreground="#A29BFE" Margin="0,0,0,4" />
+                                        <UniformGrid Columns="2" Margin="0,4">
+                                            <Button Content="Show All" Command="{Binding BlockWorkspace.ShowAllBlocksCommand}" Margin="2" Padding="6,4" Background="#282838" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
+                                            <Button Content="Hide Unselected" Command="{Binding BlockWorkspace.HideUnselectedBlocksCommand}" Margin="2" Padding="6,4" Background="#282838" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
+                                        </UniformGrid>
 
-                        <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+                                        <CheckBox Content="Show Chunk Boundaries (16×16)" IsChecked="{Binding BlockWorkspace.ShowChunkBoundaries}" Foreground="#E0E0E0" FontSize="10" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
 
-                        <!-- Alignment Tools -->
-                        <Button Content="⤓ Floor" Command="{Binding MoveModelToFloorCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#55EFC4" BorderThickness="0" ToolTip="Align Model Base to Floor (Min Y = 0)" />
-                        <Button Content="⊕ Center" Command="{Binding CenterModelCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#55EFC4" BorderThickness="0" ToolTip="Center Model at (0, 0) Origin" />
-                        <Button Content="↺ Reset Pos" Command="{Binding ResetModelPositionCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#E17055" BorderThickness="0" ToolTip="Reset Model Position to Identity" />
+                        <!-- WORKSPACE B: VOXEL WORKSPACE (MagicaVoxel / Voxel JSON) -->
+                        <Grid x:Name="VoxelWorkspacePanel" Background="#16161E">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveTab.Category}" Value="{x:Static models:FormatCategory.VoxelModel}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
 
-                        <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="200" MinHeight="120" />
+                                <RowDefinition Height="4" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
 
-                        <!-- Shading Presets -->
-                        <Button Content="Studio" Command="{Binding Settings.ApplyPresetStudioCommand}" Margin="2,0" Padding="5,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" />
-                        <Button Content="Solid" Command="{Binding Settings.ApplyPresetNeutralCommand}" Margin="2,0" Padding="5,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" />
-                        <Button Content="Wire" Command="{Binding Settings.ApplyPresetWireframeCommand}" Margin="2,0" Padding="5,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" />
+                            <StackPanel Grid.Row="0" Margin="10,8">
+                                <TextBlock Text="VOXEL COLOR PALETTE" FontSize="11" FontWeight="Bold" Foreground="#FDCB6E" />
+                                <TextBlock Text="{Binding VoxelWorkspace.VoxelDimensions, StringFormat='Dimensions: {0}'}" FontSize="10" Foreground="#888898" Margin="0,2,0,0" />
+                            </StackPanel>
 
-                        <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+                            <!-- Voxel Swatch Palette -->
+                            <ListBox Grid.Row="1" ItemsSource="{Binding VoxelWorkspace.Swatches}" Background="Transparent" BorderThickness="0" Margin="6,0">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="24" Height="24" Background="{Binding ColorHex}" CornerRadius="3" Margin="2" ToolTip="{Binding Label}" BorderBrush="#55FFFFFF" BorderThickness="0.5" Cursor="Hand" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
 
-                        <!-- Toggles -->
-                        <CheckBox Content="Grid" IsChecked="{Binding Settings.ShowGrid}" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="3,0" />
-                        <CheckBox Content="Axes" IsChecked="{Binding Settings.ShowAxes}" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="3,0" />
-                        <CheckBox Content="Bounds" IsChecked="{Binding Settings.ShowBoundingBox}" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="3,0" />
-                        <CheckBox Content="Normals" IsChecked="{Binding Settings.ShowNormals}" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="3,0" />
-                        <CheckBox Content="Bones" IsChecked="{Binding Settings.ShowBones}" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="3,0" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+                            <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#2A2A36" />
+
+                            <!-- Voxel Meshing & Optimization -->
+                            <Border Grid.Row="3" Background="#14141A" Padding="12,10">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel>
+                                        <TextBlock Text="VOXEL OPTIMIZATION" FontSize="11" FontWeight="Bold" Foreground="#00CEC9" Margin="0,0,0,6" />
+                                        <CheckBox Content="Greedy Meshing (Combine Collinear Faces)" IsChecked="{Binding VoxelWorkspace.EnableGreedyMeshing}" Foreground="#E0E0E0" FontSize="10" Margin="0,4" />
+                                        <Button Content="Optimize to Cuboids" Command="{Binding VoxelWorkspace.OptimizeToCuboidsCommand}" Margin="0,6,0,0" Padding="8,5" Background="#282838" Foreground="#55EFC4" BorderThickness="0" FontSize="10" />
+
+                                        <Separator Background="#2A2A38" Margin="0,10" />
+
+                                        <TextBlock Text="VOXEL STATS" FontSize="11" FontWeight="Bold" Foreground="#A29BFE" Margin="0,0,0,4" />
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="80" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Total Voxels:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding VoxelWorkspace.TotalVoxels, StringFormat='{}{0:N0}'}" Foreground="#FFFFFF" FontSize="10" />
+                                        </Grid>
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="80" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Chunks:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding VoxelWorkspace.ChunkCount}" Foreground="#FFFFFF" FontSize="10" />
+                                        </Grid>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+
+                        <!-- WORKSPACE C: BEDROCK GEOMETRY WORKSPACE (.geo.json) -->
+                        <Grid x:Name="BedrockWorkspacePanel" Background="#16161E">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveTab.Category}" Value="{x:Static models:FormatCategory.BedrockGeometry}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="220" MinHeight="140" />
+                                <RowDefinition Height="4" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Margin="10,8">
+                                <DockPanel>
+                                    <TextBlock Text="BEDROCK BONE HIERARCHY" FontSize="11" FontWeight="Bold" Foreground="#FF7675" />
+                                    <TextBlock Text="{Binding BedrockWorkspace.BoneCount, StringFormat='{}{0} bones'}" FontSize="10" Foreground="#888898" HorizontalAlignment="Right" />
+                                </DockPanel>
+                            </StackPanel>
+
+                            <!-- Bone Outliner Tree -->
+                            <TreeView Grid.Row="1" ItemsSource="{Binding BedrockWorkspace.RootBones}" Background="Transparent" BorderThickness="0" Margin="4,0">
+                                <TreeView.ItemTemplate>
+                                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                        <StackPanel Orientation="Horizontal" Margin="1">
+                                            <TextBlock Text="🦴 " FontSize="11" />
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="11" Foreground="#FF7675" />
+                                            <TextBlock Text="{Binding Cubes.Count, StringFormat=' ({0} cubes)'}" FontSize="9" Foreground="#888898" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </HierarchicalDataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
+
+                            <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#2A2A36" />
+
+                            <!-- Cuboid Inspector -->
+                            <Border Grid.Row="3" Background="#14141A" Padding="12,10">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel>
+                                        <TextBlock Text="SELECTED BONE CUBOIDS" FontSize="11" FontWeight="Bold" Foreground="#00CEC9" Margin="0,0,0,6" />
+                                        <ListBox ItemsSource="{Binding BedrockWorkspace.SelectedBone.Cubes}"
+                                                 SelectedItem="{Binding BedrockWorkspace.SelectedCube}"
+                                                 Background="Transparent" BorderThickness="0" MaxHeight="120">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Name}" FontSize="10" Foreground="#FFFFFF" />
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+
+                                        <Separator Background="#2A2A38" Margin="0,8" />
+
+                                        <TextBlock Text="CUBE PROPERTIES" FontSize="10" FontWeight="Bold" Foreground="#FDCB6E" Margin="0,0,0,4" />
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Origin:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Origin}" Foreground="#FFFFFF" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Size:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Size}" Foreground="#FFFFFF" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Pivot:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Pivot}" Foreground="#FFFFFF" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="UV:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Uv}" Foreground="#55EFC4" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+
+                        <!-- WORKSPACE D: POLYGON MESH WORKSPACE (Default / Wavefront OBJ / Blender-like) -->
+                        <Grid x:Name="MeshWorkspacePanel">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveTab.Category}" Value="{x:Static models:FormatCategory.MinecraftSchematic}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ActiveTab.Category}" Value="{x:Static models:FormatCategory.VoxelModel}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ActiveTab.Category}" Value="{x:Static models:FormatCategory.BedrockGeometry}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="180" MinHeight="100" />
+                                <RowDefinition Height="4" />
+                                <RowDefinition Height="*" MinHeight="260" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Hierarchy & Bones Tabs -->
+                            <TabControl Grid.Row="0" Background="Transparent" BorderThickness="0">
+                                <TabItem Header="Hierarchy" Foreground="#E0E0E0">
+                                    <TreeView ItemsSource="{Binding Hierarchy.RootNodes}" Background="Transparent" BorderThickness="0" Foreground="#E0E0E0" Padding="4">
+                                        <TreeView.ItemTemplate>
+                                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                                <StackPanel Orientation="Horizontal" Margin="2">
+                                                    <TextBlock Text="📦 " FontSize="12" />
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#F0F0F0" />
+                                                    <TextBlock Text="{Binding TriangleCount, StringFormat=' ({0} tris)'}" FontSize="10" Foreground="#888888" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </HierarchicalDataTemplate>
+                                        </TreeView.ItemTemplate>
+                                    </TreeView>
+                                </TabItem>
+
+                                <TabItem Header="Bones" Foreground="#E0E0E0">
+                                    <TreeView ItemsSource="{Binding Skeletons.RootBones}" Background="Transparent" BorderThickness="0" Foreground="#E0E0E0" Padding="4">
+                                        <TreeView.ItemTemplate>
+                                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                                <StackPanel Orientation="Horizontal" Margin="2">
+                                                    <TextBlock Text="🦴 " FontSize="12" />
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#FF7675" />
+                                                </StackPanel>
+                                            </HierarchicalDataTemplate>
+                                        </TreeView.ItemTemplate>
+                                    </TreeView>
+                                </TabItem>
+                            </TabControl>
+
+                            <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#2A2A36" />
+
+                            <!-- Object Inspector & Transform & UV -->
+                            <Border Grid.Row="2" Background="#16161E" BorderBrush="#2A2A36" BorderThickness="0,1,0,0" Padding="10,8">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel>
+                                        <TextBlock Text="OBJECT PROPERTIES" FontSize="11" FontWeight="Bold" Foreground="#00CEC9" Margin="0,0,0,6" />
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Name:" Foreground="#888888" FontSize="11" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Inspector.ElementName}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Stats:" Foreground="#888888" FontSize="11" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Inspector.TriangleCount, StringFormat='{}{0:N0} tris'}" Foreground="#55EFC4" FontSize="11" />
+                                        </Grid>
+
+                                        <Separator Background="#2A2A36" Margin="0,8" />
+
+                                        <!-- Transform Section -->
+                                        <DockPanel Margin="0,0,0,4">
+                                            <TextBlock Text="TRANSFORM" FontSize="11" FontWeight="Bold" Foreground="#FDCB6E" VerticalAlignment="Center" />
+                                            <Button Content="{Binding Inspector.ActiveSpace}" Command="{Binding Inspector.ToggleTransformSpaceCommand}" HorizontalAlignment="Right" Padding="6,2" Background="#282834" Foreground="#74B9FF" BorderThickness="0" FontSize="10" />
+                                        </DockPanel>
+
+                                        <!-- Position X, Y, Z -->
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="40" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Pos:" Foreground="#888888" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBox Grid.Column="1" Text="{Binding Inspector.PosX, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="10" FontFamily="Consolas" />
+                                            <TextBox Grid.Column="2" Text="{Binding Inspector.PosY, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="10" FontFamily="Consolas" />
+                                            <TextBox Grid.Column="3" Text="{Binding Inspector.PosZ, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+
+                                        <!-- Rotation X, Y, Z -->
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="40" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Rot:" Foreground="#888888" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBox Grid.Column="1" Text="{Binding Inspector.RotX, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="10" FontFamily="Consolas" />
+                                            <TextBox Grid.Column="2" Text="{Binding Inspector.RotY, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="10" FontFamily="Consolas" />
+                                            <TextBox Grid.Column="3" Text="{Binding Inspector.RotZ, UpdateSourceTrigger=LostFocus}" Background="#20202A" Foreground="#FFFFFF" BorderBrush="#3A3A4A" Margin="1" Padding="2" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+
+                                        <!-- Transform Actions -->
+                                        <UniformGrid Columns="3" Margin="0,4">
+                                            <Button Content="Update" Command="{Binding Inspector.ApplyNumericTransformCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#55EFC4" BorderThickness="0" FontSize="10" />
+                                            <Button Content="Reset" Command="{Binding Inspector.ResetTransformCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFAAA7" BorderThickness="0" FontSize="10" />
+                                            <Button Content="Bake" Command="{Binding Inspector.ApplyBakeTransformCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FDCB6E" BorderThickness="0" FontSize="10" />
+                                        </UniformGrid>
+
+                                        <Separator Background="#2A2A36" Margin="0,8" />
+
+                                        <!-- Pivot Editing Section -->
+                                        <TextBlock Text="PIVOT EDITING" FontSize="11" FontWeight="Bold" Foreground="#E17055" Margin="0,0,0,4" />
+                                        <UniformGrid Columns="3" Margin="0,2">
+                                            <Button Content="Center" Command="{Binding Inspector.CenterPivotCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
+                                            <Button Content="Origin" Command="{Binding Inspector.PivotToOriginCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
+                                            <Button Content="Bounds" Command="{Binding Inspector.PivotToBoundsCenterCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
+                                        </UniformGrid>
+
+                                        <Separator Background="#2A2A36" Margin="0,8" />
+
+                                        <!-- Texture & UV Section -->
+                                        <TextBlock Text="TEXTURE &amp; UV EDITING" FontSize="11" FontWeight="Bold" Foreground="#A29BFE" Margin="0,0,0,4" />
+                                        <UniformGrid Columns="3" Margin="0,4">
+                                            <Button Content="Apply UV" Command="{Binding Inspector.ApplyUVTransformCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#00CEC9" BorderThickness="0" FontSize="10" />
+                                            <Button Content="Flip U" Command="{Binding Inspector.FlipUVHorizontalCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
+                                            <Button Content="Flip V" Command="{Binding Inspector.FlipUVVerticalCommand}" Margin="1" Padding="4,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" FontSize="10" />
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="#2A2A36" />
+
+            <!-- ===================================================================== -->
+            <!-- RIGHT VIEWPORT AREA + GIZMO + FLOATING TOOLBARS                       -->
+            <!-- ===================================================================== -->
+            <Grid Grid.Column="2">
+                <!-- 3D Viewport Control -->
+                <controls:Viewport3DControl x:Name="Viewport3D"
+                                            Scene="{Binding Scene}"
+                                            RawUsmScene="{Binding RawUsmScene}"
+                                            Settings="{Binding Settings.CurrentSettings}"
+                                            CameraState="{Binding Camera.CurrentCamera}"
+                                            ActiveTool="{Binding ActiveTool}"
+                                            TransformSpace="{Binding ActiveSpace}"
+                                            SelectedNodeId="{Binding SelectedNodeId}"
+                                            TransformService="{Binding TransformService}"
+                                            UndoRedoService="{Binding UndoRedoService}"
+                                            PivotService="{Binding PivotService}" />
+
+                <!-- Orientation Gizmo Widget (Top-Right) -->
+                <controls:OrientationGizmoControl Camera="{Binding Camera}"
+                                                  HorizontalAlignment="Right"
+                                                  VerticalAlignment="Top"
+                                                  Margin="16" />
+
+                <!-- Floating Topbar Overlay: 3D Tools & View Presets -->
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="16,10">
+                    <!-- Row 1: Interactive 3D Editor Tools -->
+                    <Border Background="#DD181820" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="6,4" Margin="0,0,0,4">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Select (Q)" Command="{Binding SetToolCommand}" CommandParameter="{x:Static editor:EditorToolType.Select}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Select Tool (Q)" />
+                            <Button Content="Move (W)" Command="{Binding SetToolCommand}" CommandParameter="{x:Static editor:EditorToolType.Translate}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#FF7675" BorderThickness="0" ToolTip="Translate Tool (W)" />
+                            <Button Content="Rotate (E)" Command="{Binding SetToolCommand}" CommandParameter="{x:Static editor:EditorToolType.Rotate}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#55EFC4" BorderThickness="0" ToolTip="Rotate Tool (E)" />
+                            <Button Content="Scale (R)" Command="{Binding SetToolCommand}" CommandParameter="{x:Static editor:EditorToolType.Scale}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#74B9FF" BorderThickness="0" ToolTip="Scale Tool (R)" />
+                            <Button Content="Pivot (T)" Command="{Binding SetToolCommand}" CommandParameter="{x:Static editor:EditorToolType.Pivot}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#FDCB6E" BorderThickness="0" ToolTip="Edit Pivot (T)" />
+
+                            <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+
+                            <!-- Coordinate Reference Space -->
+                            <Button Content="{Binding ActiveSpace}" Command="{Binding ToggleSpaceCommand}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#A29BFE" BorderThickness="0" ToolTip="Toggle World vs Local space" />
+
+                            <!-- Snapping -->
+                            <ToggleButton Content="Snap" IsChecked="{Binding SnappingEnabled}" Margin="2,0" Padding="8,4" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Toggle Grid/Angle Snapping" />
+
+                            <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+
+                            <!-- History Shortcuts -->
+                            <Button Content="↶ Undo" Command="{Binding UndoCommand}" Margin="2,0" Padding="6,4" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Undo (Ctrl+Z)" />
+                            <Button Content="↷ Redo" Command="{Binding RedoCommand}" Margin="2,0" Padding="6,4" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Redo (Ctrl+Y)" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Row 2: Camera & Rendering Presets & Model Alignment -->
+                    <Border Background="#CC181820" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="6,3">
+                        <StackPanel Orientation="Horizontal">
+                            <!-- Presets -->
+                            <Button Content="Reset (0)" Command="{Binding Camera.ResetCameraCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Reset Camera View (0)" />
+                            <Button Content="⌖ Focus (F)" Command="{Binding FocusModelCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#74B9FF" BorderThickness="0" ToolTip="Frame &amp; Focus Model (F)" />
+                            <Button Content="Front (1)" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Front}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Front View (1)" />
+                            <Button Content="Right (3)" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Right}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Right View (3)" />
+                            <Button Content="Top (7)" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Top}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Top View (7)" />
+                            <Button Content="Iso" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Isometric}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Isometric View" />
+
+                            <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+
+                            <!-- Projection -->
+                            <Button Content="Ortho / Persp (5)" Command="{Binding Camera.ToggleProjectionCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#6C5CE7" BorderThickness="0" ToolTip="Toggle Perspective / Orthographic projection (5)" />
+
+                            <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+
+                            <!-- Alignment Tools -->
+                            <Button Content="⤓ Floor" Command="{Binding MoveModelToFloorCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#55EFC4" BorderThickness="0" ToolTip="Align Model Base to Floor (Min Y = 0)" />
+                            <Button Content="⊕ Center" Command="{Binding CenterModelCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#55EFC4" BorderThickness="0" ToolTip="Center Model at (0, 0) Origin" />
+                            <Button Content="↺ Reset Pos" Command="{Binding ResetModelPositionCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#E17055" BorderThickness="0" ToolTip="Reset Model Position to Identity" />
+
+                            <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+
+                            <!-- Shading Presets -->
+                            <Button Content="Studio" Command="{Binding Settings.ApplyPresetStudioCommand}" Margin="2,0" Padding="5,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" />
+                            <Button Content="Solid" Command="{Binding Settings.ApplyPresetNeutralCommand}" Margin="2,0" Padding="5,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" />
+                            <Button Content="Wire" Command="{Binding Settings.ApplyPresetWireframeCommand}" Margin="2,0" Padding="5,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" />
+
+                            <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+
+                            <!-- Toggles -->
+                            <CheckBox Content="Grid" IsChecked="{Binding Settings.ShowGrid}" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="3,0" />
+                            <CheckBox Content="Axes" IsChecked="{Binding Settings.ShowAxes}" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="3,0" />
+                            <CheckBox Content="Bounds" IsChecked="{Binding Settings.ShowBoundingBox}" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="3,0" />
+                            <CheckBox Content="Normals" IsChecked="{Binding Settings.ShowNormals}" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="3,0" />
+                            <CheckBox Content="Bones" IsChecked="{Binding Settings.ShowBones}" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="3,0" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>
