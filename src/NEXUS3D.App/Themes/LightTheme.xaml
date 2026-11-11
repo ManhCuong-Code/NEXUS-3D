@@ -81,5 +81,10 @@
     <SolidColorBrush x:Key="Brush.StatusDanger" Color="{StaticResource Color.StatusDanger}" />
     <SolidColorBrush x:Key="Brush.StatusInfo" Color="{StaticResource Color.StatusInfo}" />
 
+    <!-- Semantic Aliases -->
+    <SolidColorBrush x:Key="Brush.Success" Color="{StaticResource Color.StatusSuccess}" />
+    <SolidColorBrush x:Key="Brush.Warning" Color="{StaticResource Color.StatusWarning}" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="{StaticResource Color.StatusDanger}" />
+
 </ResourceDictionary>
 

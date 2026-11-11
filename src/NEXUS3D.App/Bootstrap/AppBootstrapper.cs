@@ -70,10 +70,18 @@ public sealed class AppBootstrapper : IDisposable
         {
             var shortcutService = _serviceProvider.GetRequiredService<NEXUS3D.App.Services.Shortcuts.IKeyboardShortcutService>();
             await shortcutService.LoadSettingsAsync();
+
+            var desktopShortcutService = _serviceProvider.GetRequiredService<IDesktopShortcutService>();
+            var settingsService = _serviceProvider.GetRequiredService<ISettingsService>();
+            var prefsResult = await settingsService.LoadPreferencesAsync();
+            if (prefsResult.IsSuccess && prefsResult.Value?.CreateDesktopShortcut == true)
+            {
+                desktopShortcutService.EnsureShortcutOnStartup(true);
+            }
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to load keyboard shortcuts.");
+            logger.LogWarning(ex, "Failed to load keyboard shortcuts or verify desktop shortcut.");
         }
 
         splash?.UpdateStatus("Launching NEXUS-3D Desktop Workspace...");
