@@ -3,9 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:sc="clr-namespace:NEXUS3D.App.Services.Shortcuts"
              mc:Ignorable="d">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="22">
+        <StackPanel Margin="24">
             <!-- Header & Actions -->
             <Grid Margin="0,0,0,18">
                 <Grid.ColumnDefinitions>
@@ -29,121 +30,260 @@
                 </StackPanel>
             </Grid>
 
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+            <!-- Settings Tabs: Preferences & Keyboard Shortcuts -->
+            <TabControl Background="Transparent" BorderThickness="0">
+                <TabControl.Resources>
+                    <Style TargetType="TabItem">
+                        <Setter Property="FontSize" Value="13" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Padding" Value="16,8" />
+                        <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+                        <Setter Property="Background" Value="{StaticResource Brush.SurfacePrimary}" />
+                        <Setter Property="Margin" Value="0,0,6,12" />
+                    </Style>
+                </TabControl.Resources>
 
-                <!-- Left Column: General & Export Preferences -->
-                <Border Grid.Column="0" Style="{StaticResource Style.CardBorder}">
-                    <StackPanel>
-                        <TextBlock Text="Application &amp; Export Configuration" Style="{StaticResource Text.SectionHeader}" />
-                        <TextBlock Text="Persisted in SQLite AppSettings and ExportConfigurations tables."
-                                   Style="{StaticResource Text.MutedCaption}"
-                                   Margin="0,2,0,14" />
+                <!-- TAB 1: General & Export Preferences -->
+                <TabItem Header="General &amp; Export Preferences">
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="18" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="Visual Theme Preset:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                        <ComboBox ItemsSource="{Binding AvailableThemes}"
-                                  SelectedItem="{Binding ThemeMode}"
-                                  Padding="8,6"
-                                  Margin="0,0,0,10" />
+                        <!-- Left Column: General Configuration -->
+                        <Border Grid.Column="0" Style="{StaticResource Style.CardBorder}">
+                            <StackPanel>
+                                <TextBlock Text="Application &amp; Export Configuration" Style="{StaticResource Text.SectionHeader}" />
+                                <TextBlock Text="Persisted in SQLite AppSettings and ExportConfigurations tables."
+                                           Style="{StaticResource Text.MutedCaption}"
+                                           Margin="0,2,0,14" />
 
-                        <TextBlock Text="Default Export Output Directory:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                        <TextBox Style="{StaticResource Style.InputTextBox}"
-                                 Text="{Binding DefaultOutputDirectory, UpdateSourceTrigger=PropertyChanged}"
-                                 Margin="0,0,0,10" />
+                                <TextBlock Text="Visual Theme Preset:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                <ComboBox ItemsSource="{Binding AvailableThemes}"
+                                          SelectedItem="{Binding ThemeMode}"
+                                          Padding="8,6"
+                                          Margin="0,0,0,12" />
 
-                        <UniformGrid Columns="2" Margin="0,0,0,10">
-                            <StackPanel Margin="0,0,6,0">
-                                <TextBlock Text="Default Target Format:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                                <ComboBox ItemsSource="{Binding AvailableTargetFormats}"
-                                          SelectedItem="{Binding DefaultTargetFormat}"
-                                          Padding="8,6" />
-                            </StackPanel>
-                            <StackPanel Margin="6,0,0,0">
-                                <TextBlock Text="Coordinate Up-Axis:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                                <ComboBox ItemsSource="{Binding AvailableAxisConventions}"
-                                          SelectedItem="{Binding DefaultAxisUp}"
-                                          Padding="8,6" />
-                            </StackPanel>
-                        </UniformGrid>
-
-                        <UniformGrid Columns="2" Margin="0,0,0,12">
-                            <StackPanel Margin="0,0,6,0">
-                                <TextBlock Text="Max Recent Files (5-100):" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                <TextBlock Text="Default Export Output Directory:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
                                 <TextBox Style="{StaticResource Style.InputTextBox}"
-                                         Text="{Binding MaxRecentFiles, UpdateSourceTrigger=PropertyChanged}" />
+                                         Text="{Binding DefaultOutputDirectory, UpdateSourceTrigger=PropertyChanged}"
+                                         Margin="0,0,0,12" />
+
+                                <UniformGrid Columns="2" Margin="0,0,0,12">
+                                    <StackPanel Margin="0,0,6,0">
+                                        <TextBlock Text="Default Target Format:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                        <ComboBox ItemsSource="{Binding AvailableTargetFormats}"
+                                                  SelectedItem="{Binding DefaultTargetFormat}"
+                                                  Padding="8,6" />
+                                    </StackPanel>
+                                    <StackPanel Margin="6,0,0,0">
+                                        <TextBlock Text="Coordinate Up-Axis:" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                        <ComboBox ItemsSource="{Binding AvailableAxisConventions}"
+                                                  SelectedItem="{Binding DefaultAxisUp}"
+                                                  Padding="8,6" />
+                                    </StackPanel>
+                                </UniformGrid>
+
+                                <UniformGrid Columns="2" Margin="0,0,0,14">
+                                    <StackPanel Margin="0,0,6,0">
+                                        <TextBlock Text="Max Recent Files (5-100):" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                        <TextBox Style="{StaticResource Style.InputTextBox}"
+                                                 Text="{Binding MaxRecentFiles, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="6,0,0,0">
+                                        <TextBlock Text="Export Decimal Precision (1-10):" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
+                                        <TextBox Style="{StaticResource Style.InputTextBox}"
+                                                 Text="{Binding DecimalPrecision, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                </UniformGrid>
+
+                                <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                          Content="Automatically Optimize Mesh Geometry on Export"
+                                          IsChecked="{Binding AutoOptimizeMesh}" />
+                                <CheckBox Style="{StaticResource Style.ModernCheckBox}"
+                                          Content="Enable Detailed Diagnostic File Logging"
+                                          IsChecked="{Binding EnableDetailedFileLogging}" />
                             </StackPanel>
-                            <StackPanel Margin="6,0,0,0">
-                                <TextBlock Text="Export Decimal Precision (1-10):" Style="{StaticResource Text.MutedCaption}" Margin="0,0,0,4" />
-                                <TextBox Style="{StaticResource Style.InputTextBox}"
-                                         Text="{Binding DecimalPrecision, UpdateSourceTrigger=PropertyChanged}" />
+                        </Border>
+
+                        <!-- Right Column: Registered Format Plugins -->
+                        <Border Grid.Column="2" Style="{StaticResource Style.CardBorder}">
+                            <StackPanel>
+                                <TextBlock Text="Installed Format &amp; Engine Plugins" Style="{StaticResource Text.SectionHeader}" />
+                                <TextBlock Text="Manage registered NEXUS-3D adapters tracked in SQLite."
+                                           Style="{StaticResource Text.MutedCaption}"
+                                           Margin="0,2,0,12" />
+
+                                <ItemsControl ItemsSource="{Binding RegisteredPlugins}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{StaticResource Brush.SurfaceSecondary}"
+                                                    BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="12,10"
+                                                    Margin="0,0,0,8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding Name}"
+                                                                       FontWeight="SemiBold"
+                                                                       FontSize="12.5"
+                                                                       Foreground="{StaticResource Brush.TextPrimary}" />
+                                                            <TextBlock Text="{Binding Version, StringFormat=' v{0}'}"
+                                                                       Style="{StaticResource Text.Monospace}"
+                                                                       Margin="6,1,0,0" />
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Description}"
+                                                                   Style="{StaticResource Text.MutedCaption}"
+                                                                   TextWrapping="Wrap"
+                                                                   Margin="0,3,0,0" />
+                                                    </StackPanel>
+                                                    <CheckBox Grid.Column="1"
+                                                              Content="Enabled"
+                                                              Foreground="{StaticResource Brush.TextSecondary}"
+                                                              IsChecked="{Binding IsEnabled}"
+                                                              VerticalAlignment="Center"
+                                                              Margin="12,0,0,0" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
-                        </UniformGrid>
+                        </Border>
+                    </Grid>
+                </TabItem>
 
-                        <CheckBox Style="{StaticResource Style.ModernCheckBox}"
-                                  Content="Automatically Optimize Mesh Geometry on Export"
-                                  IsChecked="{Binding AutoOptimizeMesh}" />
-                        <CheckBox Style="{StaticResource Style.ModernCheckBox}"
-                                  Content="Enable Detailed Diagnostic File Logging"
-                                  IsChecked="{Binding EnableDetailedFileLogging}" />
-                    </StackPanel>
-                </Border>
+                <!-- TAB 2: Keyboard Shortcuts (Part 5.4 Specification) -->
+                <TabItem Header="Keyboard Shortcuts">
+                    <Border Style="{StaticResource Style.CardBorder}" Margin="0,10,0,0">
+                        <StackPanel DataContext="{Binding Shortcuts}">
+                            <!-- Search & Category Filters -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                <!-- Right Column: Registered Format Adapter Plugins -->
-                <Border Grid.Column="2" Style="{StaticResource Style.CardBorder}">
-                    <StackPanel>
-                        <TextBlock Text="Installed Format &amp; Engine Plugins" Style="{StaticResource Text.SectionHeader}" />
-                        <TextBlock Text="Manage registered NEXUS 3D adapters tracked in SQLite."
-                                   Style="{StaticResource Text.MutedCaption}"
-                                   Margin="0,2,0,12" />
+                                <!-- Search Box -->
+                                <Border Grid.Column="0"
+                                        Background="{StaticResource Brush.SurfaceElevated}"
+                                        BorderBrush="{StaticResource Brush.BorderStrong}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,0"
+                                        Margin="0,0,12,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="22" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Path Grid.Column="0"
+                                              Data="{StaticResource Icon.Search}"
+                                              Fill="{StaticResource Brush.TextSecondary}"
+                                              Width="14" Height="14"
+                                              Stretch="Uniform"
+                                              VerticalAlignment="Center" />
+                                        <TextBox Grid.Column="1"
+                                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Foreground="{StaticResource Brush.TextPrimary}"
+                                                 CaretBrush="{StaticResource Brush.AccentHover}"
+                                                 FontSize="12.5"
+                                                 Padding="6,8"
+                                                 VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
 
-                        <ItemsControl ItemsSource="{Binding RegisteredPlugins}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="{StaticResource Brush.SurfaceSecondary}"
-                                            BorderBrush="{StaticResource Brush.BorderSubtle}"
-                                            BorderThickness="1"
-                                            CornerRadius="5"
-                                            Padding="12,10"
-                                            Margin="0,0,0,8">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding Name}"
+                                <!-- Category Dropdown -->
+                                <ComboBox Grid.Column="1"
+                                          ItemsSource="{Binding Categories}"
+                                          SelectedItem="{Binding SelectedCategoryName}"
+                                          Width="180"
+                                          Margin="0,0,12,0"
+                                          Padding="8,6"
+                                          VerticalContentAlignment="Center" />
+
+                                <!-- Reset Defaults -->
+                                <Button Grid.Column="2"
+                                        Style="{StaticResource Style.SecondaryButton}"
+                                        Content="Reset to Defaults"
+                                        Command="{Binding ResetAllDefaultsCommand}" />
+                            </Grid>
+
+                            <!-- Shortcuts List -->
+                            <ItemsControl ItemsSource="{Binding FilteredShortcuts}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type sc:KeyboardShortcutDefinition}">
+                                        <Border Background="{StaticResource Brush.SurfaceSecondary}"
+                                                BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Padding="14,10"
+                                                Margin="0,0,0,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="130" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Category Badge -->
+                                                <Border Grid.Column="0"
+                                                        Style="{StaticResource Style.StatusBadge}"
+                                                        HorizontalAlignment="Left">
+                                                    <TextBlock Text="{Binding Category}"
+                                                               FontSize="10.5"
                                                                FontWeight="SemiBold"
+                                                               Foreground="{StaticResource Brush.SecondaryHover}" />
+                                                </Border>
+
+                                                <!-- Name & Description -->
+                                                <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}"
                                                                FontSize="12.5"
+                                                               FontWeight="SemiBold"
                                                                Foreground="{StaticResource Brush.TextPrimary}" />
-                                                    <TextBlock Text="{Binding Version, StringFormat=' v{0}'}"
-                                                               Style="{StaticResource Text.Monospace}"
-                                                               Margin="6,1,0,0" />
+                                                    <TextBlock Text="{Binding Description}"
+                                                               FontSize="11"
+                                                               Foreground="{StaticResource Brush.TextSecondary}" />
                                                 </StackPanel>
-                                                <TextBlock Text="{Binding Description}"
-                                                           Style="{StaticResource Text.MutedCaption}"
-                                                           TextWrapping="Wrap"
-                                                           Margin="0,3,0,0" />
-                                            </StackPanel>
-                                            <CheckBox Grid.Column="1"
-                                                      Content="Enabled"
-                                                      Foreground="{StaticResource Brush.TextSecondary}"
-                                                      IsChecked="{Binding IsEnabled}"
-                                                      VerticalAlignment="Center"
-                                                      Margin="12,0,0,0" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
-            </Grid>
+
+                                                <!-- Keycaps -->
+                                                <ItemsControl Grid.Column="2"
+                                                              ItemsSource="{Binding KeycapTokens}"
+                                                              VerticalAlignment="Center">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Style="{StaticResource Style.ShortcutKeycap}">
+                                                                <TextBlock Text="{Binding}" Style="{StaticResource Text.Keycap}" />
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+            </TabControl>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
-

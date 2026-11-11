@@ -3,123 +3,207 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d"
-             Height="54">
+             mc:Ignorable="d">
     <Border Background="{StaticResource Brush.TopbarBackground}"
-            BorderBrush="{StaticResource Brush.BorderSubtle}"
-            BorderThickness="0,0,0,1"
-            Padding="18,0">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+            BorderBrush="{StaticResource Brush.BorderStrong}"
+            BorderThickness="0,0,0,1">
+        <StackPanel>
+            <!-- A. Title Bar Row (Window drag area, logo, document title, window buttons) -->
+            <Grid Height="36" Background="Transparent" MouseLeftButtonDown="OnTitleBarMouseDown">
+                <Grid.ColumnDefinitions>
+                    <!-- Left: Brand Logo & Title -->
+                    <ColumnDefinition Width="Auto" />
+                    <!-- Center: Document Title & Saved Badge -->
+                    <ColumnDefinition Width="*" />
+                    <!-- Right: Window Controls & Badges -->
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-            <!-- Brand Identity -->
-            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                <Border Background="{StaticResource Brush.AccentMuted}"
-                        BorderBrush="{StaticResource Brush.AccentPrimary}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Width="32" Height="32"
-                        Margin="0,0,12,0">
-                    <Path Data="{StaticResource Icon.Cube3D}"
-                          Fill="{StaticResource Brush.AccentHover}"
-                          Stretch="Uniform"
-                          Width="18" Height="18"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center" />
-                </Border>
-                <StackPanel VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding ApplicationTitle}"
-                                   FontSize="15"
-                                   FontWeight="Bold"
-                                   Foreground="{StaticResource Brush.TextPrimary}" />
-                        <Border Background="{StaticResource Brush.SurfaceSecondary}"
-                                BorderBrush="{StaticResource Brush.BorderStrong}"
-                                BorderThickness="1"
-                                CornerRadius="4"
-                                Padding="6,1"
-                                Margin="10,0,0,0"
-                                VerticalAlignment="Center">
-                            <TextBlock Text="{Binding VersionBadge}"
-                                       FontSize="10.5"
-                                       Foreground="{StaticResource Brush.AccentHover}" />
-                        </Border>
-                    </StackPanel>
-                    <TextBlock Text="{Binding ApplicationSubtitle}"
-                               FontSize="11"
-                               Foreground="{StaticResource Brush.TextSecondary}" />
-                </StackPanel>
-            </StackPanel>
+                <!-- Brand Logo & App Name -->
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="12,0,16,0">
+                    <Image Source="{StaticResource Brand.Logo.Symbol}"
+                           Width="20" Height="20"
+                           Margin="0,0,8,0"
+                           VerticalAlignment="Center" />
 
-            <!-- Active Module Breadcrumb -->
-            <StackPanel Grid.Column="1"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center">
-                <Border Background="{StaticResource Brush.SurfacePrimary}"
-                        BorderBrush="{StaticResource Brush.BorderSubtle}"
-                        BorderThickness="1"
-                        CornerRadius="5"
-                        Padding="12,5">
-                    <StackPanel Orientation="Horizontal">
-                        <Ellipse Width="8" Height="8"
-                                 Fill="{StaticResource Brush.StatusSuccess}"
-                                 VerticalAlignment="Center"
-                                 Margin="0,0,8,0" />
-                        <TextBlock Text="Active Workspace:"
-                                   FontSize="11.5"
-                                   Foreground="{StaticResource Brush.TextSecondary}"
-                                   Margin="0,0,6,0" />
-                        <TextBlock Text="{Binding ActiveModule}"
-                                   FontSize="11.5"
+                    <TextBlock Text="NEXUS"
+                               FontSize="13.5"
+                               FontWeight="Black"
+                               Foreground="{StaticResource Brush.TextPrimary}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="-3D"
+                               FontSize="13.5"
+                               FontWeight="Black"
+                               Foreground="{StaticResource Brush.SecondaryHover}"
+                               VerticalAlignment="Center" />
+
+                    <Border Style="{StaticResource Style.StatusBadge}" Margin="8,0,0,0">
+                        <TextBlock Text="{Binding VersionBadge}"
+                                   FontSize="10"
                                    FontWeight="SemiBold"
-                                   Foreground="{StaticResource Brush.TextPrimary}" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+                                   Foreground="{StaticResource Brush.AccentHover}" />
+                    </Border>
+                </StackPanel>
 
-            <!-- Right Actions: Workstation Status & Notification Toggle -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                <Border Background="{StaticResource Brush.SurfacePrimary}"
-                        BorderBrush="{StaticResource Brush.BorderSubtle}"
-                        BorderThickness="1"
-                        CornerRadius="5"
-                        Padding="10,5"
-                        Margin="0,0,10,0">
-                    <TextBlock Text=".NET 10 LTS • Clean Architecture"
-                               FontSize="11"
-                               Foreground="{StaticResource Brush.TextSecondary}" />
-                </Border>
+                <!-- Center: Active Document Name & Saved State Indicator -->
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <Border Background="{StaticResource Brush.SurfacePrimary}"
+                            BorderBrush="{StaticResource Brush.BorderSubtle}"
+                            BorderThickness="1"
+                            CornerRadius="5"
+                            Padding="12,4">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding ActiveDocumentTitle}"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource Brush.TextPrimary}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text=" – "
+                                       FontSize="11.5"
+                                       Foreground="{StaticResource Brush.TextMuted}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding SavedStatusText}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource Brush.SecondaryHover}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
 
-                <Button Style="{StaticResource Style.SecondaryButton}"
-                        Command="{Binding ToggleNotificationPanelCommand}"
-                        ToolTip="Toggle Notification &amp; Alert Center">
-                    <StackPanel Orientation="Horizontal">
-                        <Path Data="{StaticResource Icon.Bell}"
-                              Fill="{StaticResource Brush.TextPrimary}"
+                <!-- Right Actions: Theme Toggle, Notifications, Minimize, Maximize, Close -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Theme Toggle Button -->
+                    <Button Style="{StaticResource Style.IconButton}"
+                            Command="{Binding ToggleThemeCommand}"
+                            ToolTip="Toggle Dark / Light Theme"
+                            Margin="0,0,4,0">
+                        <Path Data="{StaticResource Icon.ThemeToggle}"
+                              Fill="{StaticResource Brush.TextSecondary}"
                               Width="14" Height="14"
-                              Stretch="Uniform"
-                              VerticalAlignment="Center"
-                              Margin="0,0,6,0" />
-                        <TextBlock Text="Alerts" VerticalAlignment="Center" />
-                        <Border Background="{StaticResource Brush.AccentPrimary}"
-                                CornerRadius="8"
-                                Padding="5,1"
-                                Margin="6,0,0,0"
-                                Visibility="{Binding HasUnreadNotifications, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="{Binding UnreadNotificationCount}"
-                                       FontSize="10"
-                                       FontWeight="Bold"
-                                       Foreground="{StaticResource Brush.TextPrimary}" />
-                        </Border>
-                    </StackPanel>
-                </Button>
-            </StackPanel>
-        </Grid>
+                              Stretch="Uniform" />
+                    </Button>
+
+                    <!-- Alert Center Toggle -->
+                    <Button Style="{StaticResource Style.IconButton}"
+                            Command="{Binding ToggleNotificationPanelCommand}"
+                            ToolTip="Notifications &amp; Alerts"
+                            Margin="0,0,8,0">
+                        <Grid>
+                            <Path Data="{StaticResource Icon.Bell}"
+                                  Fill="{StaticResource Brush.TextSecondary}"
+                                  Width="13" Height="13"
+                                  Stretch="Uniform" />
+                            <Ellipse Width="6" Height="6"
+                                     Fill="{StaticResource Brush.StatusDanger}"
+                                     HorizontalAlignment="Right"
+                                     VerticalAlignment="Top"
+                                     Margin="0,-2,-2,0"
+                                     Visibility="{Binding HasUnreadNotifications, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
+                    </Button>
+
+                    <!-- Window Buttons -->
+                    <Button Style="{StaticResource Style.WindowButton}"
+                            Click="OnMinimizeClick"
+                            ToolTip="Minimize">
+                        <Path Data="{StaticResource Icon.Window.Minimize}"
+                              Fill="{StaticResource Brush.TextSecondary}"
+                              Width="10" Height="10"
+                              Stretch="Uniform" />
+                    </Button>
+                    <Button Style="{StaticResource Style.WindowButton}"
+                            Click="OnMaximizeRestoreClick"
+                            ToolTip="Maximize / Restore">
+                        <Path Data="{StaticResource Icon.Window.Maximize}"
+                              Fill="{StaticResource Brush.TextSecondary}"
+                              Width="10" Height="10"
+                              Stretch="Uniform" />
+                    </Button>
+                    <Button Style="{StaticResource Style.WindowCloseButton}"
+                            Click="OnCloseClick"
+                            ToolTip="Close">
+                        <Path Data="{StaticResource Icon.Window.Close}"
+                              Fill="{StaticResource Brush.TextSecondary}"
+                              Width="10" Height="10"
+                              Stretch="Uniform" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- B. Main Menu Bar Row -->
+            <Border Background="{StaticResource Brush.SurfacePrimary}"
+                    BorderBrush="{StaticResource Brush.BorderSubtle}"
+                    BorderThickness="0,1,0,0"
+                    Padding="6,2">
+                <Menu Style="{StaticResource Style.ModernMenu}">
+                    <!-- File Menu -->
+                    <MenuItem Header="_File" Style="{StaticResource Style.ModernMenuItem}">
+                        <MenuItem Header="New Project" InputGestureText="Ctrl+N" Command="{Binding NewProjectCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Open File..." InputGestureText="Ctrl+O" Command="{Binding OpenFileCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <Separator />
+                        <MenuItem Header="Import Model..." InputGestureText="Ctrl+I" Command="{Binding OpenFileCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Export As..." InputGestureText="Ctrl+E" Command="{Binding NavigateConverterCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <Separator />
+                        <MenuItem Header="Save Project" InputGestureText="Ctrl+S" Command="{Binding SaveProjectCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Save Project As..." InputGestureText="Ctrl+Shift+S" Command="{Binding SaveProjectAsCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <Separator />
+                        <MenuItem Header="Exit" InputGestureText="Alt+F4" Click="OnCloseClick" Style="{StaticResource Style.ModernMenuItem}" />
+                    </MenuItem>
+
+                    <!-- Edit Menu -->
+                    <MenuItem Header="_Edit" Style="{StaticResource Style.ModernMenuItem}">
+                        <MenuItem Header="Undo" InputGestureText="Ctrl+Z" Command="{Binding UndoCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Redo" InputGestureText="Ctrl+Y" Command="{Binding RedoCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <Separator />
+                        <MenuItem Header="Cut" InputGestureText="Ctrl+X" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Copy" InputGestureText="Ctrl+C" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Paste" InputGestureText="Ctrl+V" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Delete Selected" InputGestureText="Del" Command="{Binding DeleteSelectedCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <Separator />
+                        <MenuItem Header="Preferences..." InputGestureText="Ctrl+," Command="{Binding NavigateSettingsCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                    </MenuItem>
+
+                    <!-- View Menu -->
+                    <MenuItem Header="_View" Style="{StaticResource Style.ModernMenuItem}">
+                        <MenuItem Header="3D Viewport Editor" InputGestureText="Ctrl+4" Command="{Binding NavigateViewportCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Home Dashboard" InputGestureText="Ctrl+1" Command="{Binding NavigateDashboardCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <Separator />
+                        <MenuItem Header="Toggle Dark / Light Theme" Command="{Binding ToggleThemeCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                    </MenuItem>
+
+                    <!-- Model Menu -->
+                    <MenuItem Header="_Model" Style="{StaticResource Style.ModernMenuItem}">
+                        <MenuItem Header="Voxelize Mesh..." InputGestureText="Ctrl+5" Command="{Binding NavigateVoxelizationCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Inspect Model Geometry" Command="{Binding NavigateViewportCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                    </MenuItem>
+
+                    <!-- Convert Menu -->
+                    <MenuItem Header="_Convert" Style="{StaticResource Style.ModernMenuItem}">
+                        <MenuItem Header="Convert Current Model..." InputGestureText="Ctrl+3" Command="{Binding NavigateConverterCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Batch Processing Studio..." InputGestureText="Ctrl+6" Command="{Binding NavigateBatchCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Conversion History &amp; Logs" Command="{Binding NavigateFileManagerCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                    </MenuItem>
+
+                    <!-- Tools Menu -->
+                    <MenuItem Header="_Tools" Style="{StaticResource Style.ModernMenuItem}">
+                        <MenuItem Header="3D Viewport Tools" InputGestureText="Ctrl+4" Command="{Binding NavigateViewportCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <MenuItem Header="Plugin Manager &amp; Extension Hub..." InputGestureText="Ctrl+7" Command="{Binding NavigateExtensionHubCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                    </MenuItem>
+
+                    <!-- Help Menu -->
+                    <MenuItem Header="_Help" Style="{StaticResource Style.ModernMenuItem}">
+                        <MenuItem Header="Keyboard Shortcuts Cheatsheet" InputGestureText="F1" Command="{Binding ShowShortcutsDialogCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                        <Separator />
+                        <MenuItem Header="About NEXUS-3D..." Command="{Binding ShowAboutDialogCommand}" Style="{StaticResource Style.ModernMenuItem}" />
+                    </MenuItem>
+                </Menu>
+            </Border>
+        </StackPanel>
     </Border>
 </UserControl>
-

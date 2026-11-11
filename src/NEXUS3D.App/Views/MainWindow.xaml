@@ -7,14 +7,23 @@
         xmlns:views="clr-namespace:NEXUS3D.App.Views"
         xmlns:vm="clr-namespace:NEXUS3D.App.ViewModels"
         mc:Ignorable="d"
-        Title="NEXUS 3D – Universal 3D Model Converter &amp; Editor"
-        Width="1320"
-        Height="820"
+        Title="NEXUS-3D – Universal 3D &amp; Schematic Converter"
+        Width="1360"
+        Height="840"
         MinWidth="1024"
         MinHeight="660"
         WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
         Background="{StaticResource Brush.WindowBackground}"
         Foreground="{StaticResource Brush.TextPrimary}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0"
+                      ResizeBorderThickness="6"
+                      CornerRadius="0"
+                      GlassFrameThickness="0"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <!-- ViewModel -> View DataTemplates for MVVM Navigation -->
@@ -41,42 +50,48 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <!-- Topbar -->
-            <RowDefinition Height="Auto" />
-            <!-- Main Workspace Area (Sidebar + Active Module Content + Notification Panel) -->
-            <RowDefinition Height="*" />
-            <!-- Status Bar -->
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <!-- Outer Border for Window Edge Definition -->
+    <Border BorderBrush="{StaticResource Brush.BorderStrong}"
+            BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <!-- Topbar (Title Bar + Main Menu) -->
+                <RowDefinition Height="Auto" />
+                <!-- Main Workspace Area (Sidebar + Active Module Content + Notification Panel) -->
+                <RowDefinition Height="*" />
+                <!-- Bottom Status Bar -->
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-        <!-- 1. Topbar -->
-        <controls:TopbarControl Grid.Row="0" />
+            <!-- 1. Topbar -->
+            <controls:TopbarControl Grid.Row="0" />
 
-        <!-- 2. Main Body -->
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+            <!-- 2. Main Workspace Body -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <!-- Collapsible Left Sidebar -->
+                    <ColumnDefinition Width="Auto" />
+                    <!-- Center Active Module Host -->
+                    <ColumnDefinition Width="*" />
+                    <!-- Right Notification & Alert Drawer -->
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-            <!-- Left Sidebar -->
-            <controls:SidebarControl Grid.Column="0" />
+                <!-- Left Sidebar -->
+                <controls:SidebarControl Grid.Column="0" />
 
-            <!-- Center Active Module Host -->
-            <ContentControl Grid.Column="1"
-                            Content="{Binding CurrentViewModel}"
-                            Focusable="False" />
+                <!-- Center Active Module Host -->
+                <ContentControl Grid.Column="1"
+                                Content="{Binding CurrentViewModel}"
+                                Focusable="False" />
 
-            <!-- Right Notification & Alert Drawer -->
-            <controls:NotificationPanelControl Grid.Column="2"
-                                               Visibility="{Binding IsNotificationPanelOpen, Converter={StaticResource BoolToVis}}" />
+                <!-- Right Notification & Alert Drawer -->
+                <controls:NotificationPanelControl Grid.Column="2"
+                                                   Visibility="{Binding IsNotificationPanelOpen, Converter={StaticResource BoolToVis}}" />
+            </Grid>
+
+            <!-- 3. Bottom Status Bar -->
+            <controls:StatusBarControl Grid.Row="2" />
         </Grid>
-
-        <!-- 3. Bottom Status Bar -->
-        <controls:StatusBarControl Grid.Row="2" />
-    </Grid>
+    </Border>
 </Window>
-

@@ -143,6 +143,7 @@ public static class DependencyConfig
     public static void ConfigurePresentation(IServiceCollection services)
     {
         services.AddSingleton<INavigationService, NavigationService>();
+        services.AddSingleton<NEXUS3D.App.Services.Shortcuts.IKeyboardShortcutService, NEXUS3D.App.Services.Shortcuts.KeyboardShortcutService>();
 
         services.AddSingleton<CameraViewModel>();
         services.AddSingleton<RenderSettingsViewModel>();
@@ -156,6 +157,7 @@ public static class DependencyConfig
         services.AddSingleton<FileManagerViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<ExtensionHubViewModel>();
+        services.AddSingleton<KeyboardShortcutViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
         services.AddTransient<MainWindow>();

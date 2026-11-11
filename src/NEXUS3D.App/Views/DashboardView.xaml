@@ -3,51 +3,162 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:NEXUS3D.App.ViewModels"
              mc:Ignorable="d">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="22">
-            <!-- Header & Quick Actions -->
-            <Grid Margin="0,0,0,18">
+        <StackPanel Margin="24">
+            <!-- Welcome Header -->
+            <Grid Margin="0,0,0,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="{Binding Title}" Style="{StaticResource Text.PageTitle}" />
-                    <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Text.PageSubtitle}" Margin="0,4,0,0" />
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Welcome to NEXUS" Style="{StaticResource Text.PageTitle}" FontSize="22" />
+                        <TextBlock Text="-3D" Style="{StaticResource Text.PageTitle}" FontSize="22" Foreground="{StaticResource Brush.SecondaryHover}" />
+                        <Border Style="{StaticResource Style.StatusBadge}" Margin="12,0,0,0">
+                            <TextBlock Text="v1.0.0 Ready"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource Brush.AccentHover}" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="Universal 3D Model, Minecraft Schematic &amp; Geometry Processing Workstation"
+                               Style="{StaticResource Text.PageSubtitle}"
+                               Margin="0,4,0,0" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Style="{StaticResource Style.SecondaryButton}"
-                            Content="Open Workspace Folder"
+                            Content="Workspace Folder"
                             Margin="0,0,8,0"
                             Command="{Binding OpenAppDataFolderCommand}" />
                     <Button Style="{StaticResource Style.SecondaryButton}"
-                            Content="Refresh Telemetry"
-                            Margin="0,0,8,0"
+                            Content="Sync Telemetry"
                             Command="{Binding RefreshDashboardCommand}" />
-                    <Button Style="{StaticResource Style.PrimaryButton}"
-                            Content="New Conversion Workspace →"
-                            Command="{Binding OpenConverterWorkspaceCommand}" />
                 </StackPanel>
             </Grid>
 
-            <!-- Top KPI Metric Cards (Responsive UniformGrid) -->
-            <UniformGrid Columns="5" Margin="0,0,0,18">
+            <!-- Quick Action Cards (Part 4 Specification) -->
+            <TextBlock Text="QUICK ACTIONS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" Margin="0,0,0,10" />
+            <UniformGrid Columns="6" Margin="0,0,0,20">
+                <!-- 1. Import 3D Model -->
+                <Button Style="{StaticResource Style.SecondaryButton}"
+                        Command="{Binding ImportModelCommand}"
+                        Padding="12,14"
+                        Margin="0,0,8,0"
+                        ToolTip="Import Wavefront OBJ, Schematic, or Bedrock JSON (Ctrl+I)">
+                    <StackPanel HorizontalAlignment="Center">
+                        <Path Data="{StaticResource Icon.Import}"
+                              Fill="{StaticResource Brush.AccentHover}"
+                              Width="20" Height="20"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center"
+                              Margin="0,0,0,8" />
+                        <TextBlock Text="Import Model" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" />
+                        <TextBlock Text="OBJ, SCHEM, JSON" FontSize="10" Foreground="{StaticResource Brush.TextMuted}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Button>
+
+                <!-- 2. New Project -->
+                <Button Style="{StaticResource Style.SecondaryButton}"
+                        Command="{Binding NewProjectCommand}"
+                        Padding="12,14"
+                        Margin="0,0,8,0"
+                        ToolTip="Create new empty 3D workspace (Ctrl+N)">
+                    <StackPanel HorizontalAlignment="Center">
+                        <Path Data="{StaticResource Icon.Cube3D}"
+                              Fill="{StaticResource Brush.SecondaryHover}"
+                              Width="20" Height="20"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center"
+                              Margin="0,0,0,8" />
+                        <TextBlock Text="New Project" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" />
+                        <TextBlock Text="Empty 3D Scene" FontSize="10" Foreground="{StaticResource Brush.TextMuted}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Button>
+
+                <!-- 3. Convert Model -->
+                <Button Style="{StaticResource Style.SecondaryButton}"
+                        Command="{Binding ConvertModelCommand}"
+                        Padding="12,14"
+                        Margin="0,0,8,0"
+                        ToolTip="Convert between 3D formats via USM (Ctrl+3)">
+                    <StackPanel HorizontalAlignment="Center">
+                        <Path Data="{StaticResource Icon.Converter}"
+                              Fill="{StaticResource Brush.AccentHover}"
+                              Width="20" Height="20"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center"
+                              Margin="0,0,0,8" />
+                        <TextBlock Text="Convert Model" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" />
+                        <TextBlock Text="Single File Pipeline" FontSize="10" Foreground="{StaticResource Brush.TextMuted}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Button>
+
+                <!-- 4. Batch Convert -->
+                <Button Style="{StaticResource Style.SecondaryButton}"
+                        Command="{Binding BatchConvertCommand}"
+                        Padding="12,14"
+                        Margin="0,0,8,0"
+                        ToolTip="Multi-threaded batch converter (Ctrl+6)">
+                    <StackPanel HorizontalAlignment="Center">
+                        <Path Data="{StaticResource Icon.Batch}"
+                              Fill="{StaticResource Brush.SecondaryHover}"
+                              Width="20" Height="20"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center"
+                              Margin="0,0,0,8" />
+                        <TextBlock Text="Batch Convert" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" />
+                        <TextBlock Text="Folder &amp; Multi-file" FontSize="10" Foreground="{StaticResource Brush.TextMuted}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Button>
+
+                <!-- 5. Open Schematic -->
+                <Button Style="{StaticResource Style.SecondaryButton}"
+                        Command="{Binding OpenSchematicCommand}"
+                        Padding="12,14"
+                        Margin="0,0,8,0"
+                        ToolTip="Open Minecraft Sponge or Legacy Schematic">
+                    <StackPanel HorizontalAlignment="Center">
+                        <Path Data="{StaticResource Icon.Voxel}"
+                              Fill="{StaticResource Brush.AccentHover}"
+                              Width="20" Height="20"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center"
+                              Margin="0,0,0,8" />
+                        <TextBlock Text="Open Schematic" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" />
+                        <TextBlock Text=".schem &amp; .schematic" FontSize="10" Foreground="{StaticResource Brush.TextMuted}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Button>
+
+                <!-- 6. Manage Files & History -->
+                <Button Style="{StaticResource Style.SecondaryButton}"
+                        Command="{Binding OpenFileManagerCommand}"
+                        Padding="12,14"
+                        ToolTip="View conversion history &amp; SQLite records">
+                    <StackPanel HorizontalAlignment="Center">
+                        <Path Data="{StaticResource Icon.FileManager}"
+                              Fill="{StaticResource Brush.SecondaryHover}"
+                              Width="20" Height="20"
+                              Stretch="Uniform"
+                              HorizontalAlignment="Center"
+                              Margin="0,0,0,8" />
+                        <TextBlock Text="File History" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" />
+                        <TextBlock Text="Saved Conversion Logs" FontSize="10" Foreground="{StaticResource Brush.TextMuted}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Button>
+            </UniformGrid>
+
+            <!-- Top KPI Telemetry Metric Cards -->
+            <UniformGrid Columns="5" Margin="0,0,0,22">
                 <Border Style="{StaticResource Style.MetricCardBorder}">
                     <StackPanel>
                         <TextBlock Text="SUPPORTED FORMATS" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
                         <TextBlock Text="{Binding SupportedFormatsCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
-                        <TextBlock Text="SCHEM • OBJ • JSON • GEO" Style="{StaticResource Text.MutedCaption}" />
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource Style.MetricCardBorder}">
-                    <StackPanel>
-                        <TextBlock Text="CONVERSION PROFILES" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
-                        <TextBlock Text="{Binding ConversionProfilesCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
-                        <TextBlock Text="Preset &amp; Custom Pipelines" Style="{StaticResource Text.MutedCaption}" />
+                        <TextBlock Text="SCHEM • OBJ • JSON • GEO • RV" Style="{StaticResource Text.MutedCaption}" />
                     </StackPanel>
                 </Border>
 
@@ -55,42 +166,54 @@
                     <StackPanel>
                         <TextBlock Text="RECENT MODEL FILES" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
                         <TextBlock Text="{Binding RecentFilesCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
-                        <TextBlock Text="Tracked in SQLite Index" Style="{StaticResource Text.MutedCaption}" />
+                        <TextBlock Text="Indexed in Local SQLite" Style="{StaticResource Text.MutedCaption}" />
                     </StackPanel>
                 </Border>
 
                 <Border Style="{StaticResource Style.MetricCardBorder}">
                     <StackPanel>
-                        <TextBlock Text="PREPARED JOBS" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                        <TextBlock Text="CONVERSION TASKS" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
                         <TextBlock Text="{Binding TotalConversionsCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
-                        <TextBlock Text="Total Recorded Tasks" Style="{StaticResource Text.MutedCaption}" />
+                        <TextBlock Text="Historical Conversions" Style="{StaticResource Text.MutedCaption}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Style.MetricCardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="ACTIVE EXTENSIONS" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                        <TextBlock Text="{Binding ActivePluginsCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
+                        <TextBlock Text="Loaded Plugin Packages" Style="{StaticResource Text.MutedCaption}" />
                     </StackPanel>
                 </Border>
 
                 <Border Style="{StaticResource Style.MetricCardBorder}" Margin="0">
                     <StackPanel>
-                        <TextBlock Text="ACTIVE ADAPTER PLUGINS" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
-                        <TextBlock Text="{Binding ActivePluginsCount}" Style="{StaticResource Text.MetricValue}" Margin="0,6,0,2" />
-                        <TextBlock Text="Foundation Modules Online" Style="{StaticResource Text.MutedCaption}" />
+                        <TextBlock Text="STORAGE BACKEND" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource Brush.TextMuted}" />
+                        <TextBlock Text="Online" Style="{StaticResource Text.MetricValue}" Foreground="{StaticResource Brush.StatusSuccess}" Margin="0,6,0,2" />
+                        <TextBlock Text="SQLite Database v1 Active" Style="{StaticResource Text.MutedCaption}" />
                     </StackPanel>
                 </Border>
             </UniformGrid>
 
-            <!-- Main Two-Column Grid -->
+            <!-- Main Workstation Layout: Supported Formats & Recent Projects -->
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1.15*" />
-                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="18" />
                     <ColumnDefinition Width="0.85*" />
                 </Grid.ColumnDefinitions>
 
-                <!-- Left Column: Registered 3D Format Adapters -->
+                <!-- Left Column: Supported Formats (Registered in Registry) -->
                 <Border Grid.Column="0" Style="{StaticResource Style.CardBorder}">
                     <StackPanel>
-                        <TextBlock Text="Registered 3D Format Adapters" Style="{StaticResource Text.SectionHeader}" />
-                        <TextBlock Text="Format descriptors registered in NEXUS3D.Formats.* for import &amp; export pipelines."
-                                   Style="{StaticResource Text.MutedCaption}"
-                                   Margin="0,2,0,12" />
+                        <Grid Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Supported 3D &amp; Schematic Formats" Style="{StaticResource Text.SectionHeader}" />
+                                <TextBlock Text="Verified formats registered in the universal conversion pipeline."
+                                           Style="{StaticResource Text.MutedCaption}"
+                                           Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Grid>
 
                         <ItemsControl ItemsSource="{Binding SupportedFormats}">
                             <ItemsControl.ItemTemplate>
@@ -98,21 +221,22 @@
                                     <Border Background="{StaticResource Brush.SurfaceSecondary}"
                                             BorderBrush="{StaticResource Brush.BorderSubtle}"
                                             BorderThickness="1"
-                                            CornerRadius="5"
-                                            Padding="12,10"
+                                            CornerRadius="6"
+                                            Padding="14,11"
                                             Margin="0,0,0,8">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="58" />
+                                                <ColumnDefinition Width="62" />
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
 
+                                            <!-- ShortCode Badge -->
                                             <Border Grid.Column="0"
                                                     Background="{StaticResource Brush.AccentMuted}"
                                                     BorderBrush="{StaticResource Brush.AccentPrimary}"
                                                     BorderThickness="1"
-                                                    CornerRadius="4"
+                                                    CornerRadius="5"
                                                     Padding="6,4"
                                                     VerticalAlignment="Center"
                                                     Margin="0,0,12,0">
@@ -123,6 +247,7 @@
                                                            HorizontalAlignment="Center" />
                                             </Border>
 
+                                            <!-- Display Name & Extensions -->
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="{Binding DisplayName}"
@@ -131,22 +256,27 @@
                                                                Foreground="{StaticResource Brush.TextPrimary}" />
                                                     <TextBlock Text="{Binding PrimaryExtension}"
                                                                Style="{StaticResource Text.Monospace}"
+                                                               Foreground="{StaticResource Brush.SecondaryHover}"
                                                                Margin="8,1,0,0" />
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding Description}"
                                                            Style="{StaticResource Text.MutedCaption}"
                                                            TextWrapping="Wrap"
-                                                           Margin="0,2,0,0" />
+                                                           Margin="0,3,0,0" />
                                             </StackPanel>
 
+                                            <!-- Native Geometry Badge -->
                                             <Border Grid.Column="2"
                                                     Background="{StaticResource Brush.SurfacePrimary}"
+                                                    BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                                    BorderThickness="1"
                                                     CornerRadius="4"
                                                     Padding="8,3"
                                                     VerticalAlignment="Center"
                                                     Margin="8,0,0,0">
                                                 <TextBlock Text="{Binding NativeGeometryKind}"
                                                            FontSize="11"
+                                                           FontWeight="Medium"
                                                            Foreground="{StaticResource Brush.StatusInfo}" />
                                             </Border>
                                         </Grid>
@@ -157,97 +287,114 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Right Column: Infrastructure Diagnostics & Quick Navigation -->
-                <StackPanel Grid.Column="2">
-                    <Border Style="{StaticResource Style.CardBorder}" Margin="0,0,0,16">
-                        <StackPanel>
-                            <TextBlock Text="Foundation Diagnostics" Style="{StaticResource Text.SectionHeader}" />
-                            <TextBlock Text="Runtime storage and logging paths resolved dynamically."
-                                       Style="{StaticResource Text.MutedCaption}"
-                                       Margin="0,2,0,12" />
+                <!-- Right Column: Recent Projects (With Open & Remove from Recent buttons) -->
+                <Border Grid.Column="2" Style="{StaticResource Style.CardBorder}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="SQLite Database File:" Style="{StaticResource Text.MutedCaption}" />
-                            <Border Background="{StaticResource Brush.WindowBackground}"
-                                    BorderBrush="{StaticResource Brush.BorderSubtle}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Padding="8,6"
-                                    Margin="0,4,0,10">
-                                <TextBlock Text="{Binding DatabasePathDisplay}"
-                                           Style="{StaticResource Text.Monospace}"
-                                           TextWrapping="Wrap" />
-                            </Border>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Recent Projects" Style="{StaticResource Text.SectionHeader}" />
+                                <TextBlock Text="Quick access to recently opened models."
+                                           Style="{StaticResource Text.MutedCaption}"
+                                           Margin="0,2,0,0" />
+                            </StackPanel>
 
-                            <TextBlock Text="Rolling File Logs Directory:" Style="{StaticResource Text.MutedCaption}" />
-                            <Border Background="{StaticResource Brush.WindowBackground}"
-                                    BorderBrush="{StaticResource Brush.BorderSubtle}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Padding="8,6"
-                                    Margin="0,4,0,12">
-                                <TextBlock Text="{Binding LogsPathDisplay}"
-                                           Style="{StaticResource Text.Monospace}"
-                                           TextWrapping="Wrap" />
-                            </Border>
+                            <Button Grid.Column="1"
+                                    Style="{StaticResource Style.IconButton}"
+                                    Command="{Binding RefreshDashboardCommand}"
+                                    ToolTip="Refresh Recent Files">
+                                <Path Data="{StaticResource Icon.Refresh}"
+                                      Fill="{StaticResource Brush.TextSecondary}"
+                                      Width="13" Height="13"
+                                      Stretch="Uniform" />
+                            </Button>
+                        </Grid>
 
-                            <UniformGrid Columns="2">
-                                <Button Style="{StaticResource Style.SecondaryButton}"
-                                        Content="Manage Files &amp; History"
-                                        Margin="0,0,6,0"
-                                        Command="{Binding OpenFileManagerCommand}" />
-                                <Button Style="{StaticResource Style.SecondaryButton}"
-                                        Content="System Settings"
-                                        Margin="6,0,0,0"
-                                        Command="{Binding OpenSettingsCommand}" />
-                            </UniformGrid>
-                        </StackPanel>
-                    </Border>
+                        <!-- Recent Files List -->
+                        <ItemsControl ItemsSource="{Binding RecentFiles}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource Brush.SurfaceSecondary}"
+                                            BorderBrush="{StaticResource Brush.BorderSubtle}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="12,9"
+                                            Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                    <Border Style="{StaticResource Style.CardBorder}">
-                        <StackPanel>
-                            <TextBlock Text="Recent Conversion Queue" Style="{StaticResource Text.SectionHeader}" />
-                            <TextBlock Text="Latest prepared tasks stored in SQLite."
-                                       Style="{StaticResource Text.MutedCaption}"
-                                       Margin="0,2,0,10" />
-
-                            <ItemsControl ItemsSource="{Binding RecentHistory}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="{StaticResource Brush.SurfaceSecondary}"
-                                                CornerRadius="4"
-                                                Padding="10,7"
-                                                Margin="0,0,0,6">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel Grid.Column="0">
-                                                    <TextBlock Text="{Binding JobName}"
+                                            <!-- File Info -->
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding FileName}"
                                                                FontWeight="SemiBold"
-                                                               FontSize="12"
+                                                               FontSize="12.5"
                                                                Foreground="{StaticResource Brush.TextPrimary}"
                                                                TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock Text="{Binding TargetFilePath}"
-                                                               Style="{StaticResource Text.MutedCaption}"
-                                                               TextTrimming="CharacterEllipsis" />
+                                                    <Border Style="{StaticResource Style.StatusBadge}" Margin="8,0,0,0">
+                                                        <TextBlock Text="{Binding DetectedFormat}"
+                                                                   FontSize="9.5"
+                                                                   FontWeight="Bold"
+                                                                   Foreground="{StaticResource Brush.SecondaryHover}" />
+                                                    </Border>
                                                 </StackPanel>
-                                                <TextBlock Grid.Column="1"
-                                                           Text="{Binding Status}"
-                                                           FontSize="11"
-                                                           Foreground="{StaticResource Brush.AccentHover}"
-                                                           VerticalAlignment="Center"
-                                                           Margin="8,0,0,0" />
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
+                                                <TextBlock Text="{Binding FilePath}"
+                                                           Style="{StaticResource Text.Monospace}"
+                                                           FontSize="10.5"
+                                                           Foreground="{StaticResource Brush.TextMuted}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Margin="0,2,0,0" />
+                                            </StackPanel>
+
+                                            <!-- Action Buttons: Open & Remove from Recent -->
+                                            <StackPanel Grid.Column="1"
+                                                        Orientation="Horizontal"
+                                                        VerticalAlignment="Center"
+                                                        Margin="8,0,0,0">
+                                                <Button Style="{StaticResource Style.SecondaryButton}"
+                                                        Padding="10,4"
+                                                        Margin="0,0,6,0"
+                                                        Command="{Binding DataContext.OpenRecentFileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip="Open this model in 3D Viewport">
+                                                    <TextBlock Text="Open" FontSize="11" />
+                                                </Button>
+
+                                                <Button Style="{StaticResource Style.IconButton}"
+                                                        Command="{Binding DataContext.RemoveRecentFileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip="Remove from recent list (does not delete file)">
+                                                    <Path Data="{StaticResource Icon.Trash}"
+                                                          Fill="{StaticResource Brush.StatusDanger}"
+                                                          Width="12" Height="12"
+                                                          Stretch="Uniform" />
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Empty State if no recent files -->
+                        <Border Background="{StaticResource Brush.SurfaceSecondary}"
+                                CornerRadius="6"
+                                Padding="16"
+                                Visibility="{Binding RecentFiles.Count, Converter={StaticResource BoolToVis}, ConverterParameter=Inverse}">
+                            <TextBlock Text="No recent models opened yet. Click 'Import Model' to get started."
+                                       Style="{StaticResource Text.MutedCaption}"
+                                       HorizontalAlignment="Center" />
+                        </Border>
+                    </StackPanel>
+                </Border>
             </Grid>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
-

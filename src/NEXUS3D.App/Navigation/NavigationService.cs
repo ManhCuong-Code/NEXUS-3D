@@ -23,17 +23,47 @@ public sealed class NavigationService : INavigationService
 
     public async Task NavigateToAsync(NavigationModule module, CancellationToken cancellationToken = default)
     {
-        BaseViewModel targetViewModel = module switch
+        BaseViewModel targetViewModel;
+
+        switch (module)
         {
-            NavigationModule.Dashboard => _serviceProvider.GetRequiredService<DashboardViewModel>(),
-            NavigationModule.Converter => _serviceProvider.GetRequiredService<ConverterViewModel>(),
-            NavigationModule.Viewport => _serviceProvider.GetRequiredService<ViewportViewModel>(),
-            NavigationModule.Voxelization => _serviceProvider.GetRequiredService<VoxelizationViewModel>(),
-            NavigationModule.FileManager => _serviceProvider.GetRequiredService<FileManagerViewModel>(),
-            NavigationModule.Settings => _serviceProvider.GetRequiredService<SettingsViewModel>(),
-            NavigationModule.ExtensionHub => _serviceProvider.GetRequiredService<ExtensionHubViewModel>(),
-            _ => _serviceProvider.GetRequiredService<DashboardViewModel>()
-        };
+            case NavigationModule.Dashboard:
+                targetViewModel = _serviceProvider.GetRequiredService<DashboardViewModel>();
+                break;
+            case NavigationModule.Converter:
+                var convVm = _serviceProvider.GetRequiredService<ConverterViewModel>();
+                convVm.SelectedWorkspaceTab = 0;
+                targetViewModel = convVm;
+                break;
+            case NavigationModule.Import:
+                var importVm = _serviceProvider.GetRequiredService<ConverterViewModel>();
+                importVm.SelectedWorkspaceTab = 0;
+                targetViewModel = importVm;
+                break;
+            case NavigationModule.BatchProcessing:
+                var batchVm = _serviceProvider.GetRequiredService<ConverterViewModel>();
+                batchVm.SelectedWorkspaceTab = 1;
+                targetViewModel = batchVm;
+                break;
+            case NavigationModule.Viewport:
+                targetViewModel = _serviceProvider.GetRequiredService<ViewportViewModel>();
+                break;
+            case NavigationModule.Voxelization:
+                targetViewModel = _serviceProvider.GetRequiredService<VoxelizationViewModel>();
+                break;
+            case NavigationModule.FileManager:
+                targetViewModel = _serviceProvider.GetRequiredService<FileManagerViewModel>();
+                break;
+            case NavigationModule.Settings:
+                targetViewModel = _serviceProvider.GetRequiredService<SettingsViewModel>();
+                break;
+            case NavigationModule.ExtensionHub:
+                targetViewModel = _serviceProvider.GetRequiredService<ExtensionHubViewModel>();
+                break;
+            default:
+                targetViewModel = _serviceProvider.GetRequiredService<DashboardViewModel>();
+                break;
+        }
 
         CurrentModule = module;
         CurrentViewModel = targetViewModel;

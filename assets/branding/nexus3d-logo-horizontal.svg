@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 260" width="100%" height="100%">
+  <defs>
+    <linearGradient id="hPrimaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8471FA" />
+      <stop offset="100%" stop-color="#6750F5" />
+    </linearGradient>
+    <linearGradient id="hSecondaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3BE" />
+      <stop offset="100%" stop-color="#18B6A4" />
+    </linearGradient>
+    <linearGradient id="hAccentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6BB5FF" />
+      <stop offset="100%" stop-color="#49A6FF" />
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#18B6A4" />
+      <stop offset="100%" stop-color="#49A6FF" />
+    </linearGradient>
+    <filter id="hGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Left Symbol (Scale & Center at X=130, Y=130) -->
+  <g transform="translate(-10, 0)">
+    <!-- Data Orbits -->
+    <g opacity="0.8">
+      <circle cx="130" cy="35" r="4.5" fill="#6BB5FF" filter="url(#hGlow)" />
+      <line x1="130" y1="40" x2="130" y2="68" stroke="#6BB5FF" stroke-width="1.8" stroke-dasharray="3,3" />
+
+      <circle cx="220" cy="88" r="4" fill="#8471FA" filter="url(#hGlow)" />
+      <line x1="216" y1="90" x2="194" y2="104" stroke="#8471FA" stroke-width="1.8" stroke-dasharray="3,3" />
+
+      <circle cx="220" cy="172" r="4" fill="#22D3BE" filter="url(#hGlow)" />
+      <line x1="216" y1="170" x2="194" y2="156" stroke="#22D3BE" stroke-width="1.8" stroke-dasharray="3,3" />
+
+      <circle cx="130" cy="225" r="4.5" fill="#18B6A4" filter="url(#hGlow)" />
+      <line x1="130" y1="220" x2="130" y2="192" stroke="#18B6A4" stroke-width="1.8" stroke-dasharray="3,3" />
+
+      <circle cx="40" cy="172" r="4" fill="#49A6FF" filter="url(#hGlow)" />
+      <line x1="44" y1="170" x2="66" y2="156" stroke="#49A6FF" stroke-width="1.8" stroke-dasharray="3,3" />
+
+      <circle cx="40" cy="88" r="4" fill="#6750F5" filter="url(#hGlow)" />
+      <line x1="44" y1="90" x2="66" y2="104" stroke="#6750F5" stroke-width="1.8" stroke-dasharray="3,3" />
+    </g>
+
+    <!-- 3D Cube Isometric -->
+    <!-- Top Face -->
+    <path d="M 130,68 L 194,105 L 130,142 L 66,105 Z" fill="url(#hPrimaryGrad)" stroke="#9B8BFA" stroke-width="1.5" />
+    <g stroke="#C2B7FF" stroke-width="1.2" opacity="0.8">
+      <line x1="98" y1="86" x2="162" y2="123" />
+      <line x1="130" y1="68" x2="130" y2="142" />
+      <line x1="98" y1="123" x2="162" y2="86" />
+      <line x1="66" y1="105" x2="194" y2="105" />
+      <circle cx="130" cy="105" r="2.5" fill="#FFFFFF" />
+    </g>
+
+    <!-- Left Face -->
+    <path d="M 66,105 L 130,142 L 130,196 L 66,159 Z" fill="url(#hSecondaryGrad)" stroke="#3BE1CE" stroke-width="1.5" />
+    <g stroke="#108E80" stroke-width="1.2" fill="#14A493" opacity="0.95">
+      <line x1="98" y1="123" x2="98" y2="177" stroke="#22D3BE" stroke-width="1.2" />
+      <line x1="66" y1="132" x2="130" y2="169" stroke="#22D3BE" stroke-width="1.2" />
+      <path d="M 82,132 L 98,141 L 98,160 L 82,151 Z" fill="#20C4B1" stroke="#4EF1DF" stroke-width="1" />
+    </g>
+
+    <!-- Right Face -->
+    <path d="M 130,142 L 194,105 L 194,159 L 130,196 Z" fill="url(#hAccentGrad)" stroke="#75BFFF" stroke-width="1.5" />
+    <g stroke="#A8D5FF" stroke-width="1.2" opacity="0.9">
+      <line x1="146" y1="151" x2="178" y2="132" />
+      <line x1="162" y1="123" x2="162" y2="177" />
+      <circle cx="162" cy="150" r="3" fill="#FFFFFF" stroke="#2478CC" stroke-width="1" />
+    </g>
+
+    <!-- Center Point -->
+    <circle cx="130" cy="142" r="5" fill="#FFFFFF" filter="url(#hGlow)" />
+    <circle cx="130" cy="142" r="2.8" fill="#6750F5" />
+  </g>
+
+  <!-- Typography Right Side -->
+  <g transform="translate(260, 0)">
+    <!-- Brand Name: NEXUS-3D -->
+    <text x="0" y="136"
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          font-size="82"
+          font-weight="900"
+          letter-spacing="4"
+          fill="#F3F4F8">
+      NEXUS<tspan fill="url(#textGrad)">-3D</tspan>
+    </text>
+
+    <!-- Tagline: UNIVERSAL 3D & SCHEMATIC CONVERTER -->
+    <text x="4" y="178"
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          font-size="16"
+          font-weight="700"
+          letter-spacing="6"
+          fill="#A5ADBD">
+      UNIVERSAL 3D &amp; SCHEMATIC CONVERTER
+    </text>
+
+    <!-- Tech Specs / Badges -->
+    <g transform="translate(4, 198)">
+      <rect x="0" y="0" width="86" height="22" rx="4" fill="#191C23" stroke="#303643" stroke-width="1" />
+      <text x="43" y="15" font-family="'Segoe UI', sans-serif" font-size="11" font-weight="600" fill="#6750F5" text-anchor="middle">.NET 10 LTS</text>
+
+      <rect x="96" y="0" width="84" height="22" rx="4" fill="#191C23" stroke="#303643" stroke-width="1" />
+      <text x="138" y="15" font-family="'Segoe UI', sans-serif" font-size="11" font-weight="600" fill="#18B6A4" text-anchor="middle">USM CORE</text>
+
+      <rect x="190" y="0" width="70" height="22" rx="4" fill="#191C23" stroke="#303643" stroke-width="1" />
+      <text x="225" y="15" font-family="'Segoe UI', sans-serif" font-size="11" font-weight="600" fill="#49A6FF" text-anchor="middle">v1.0.0</text>
+    </g>
+  </g>
+</svg>
+

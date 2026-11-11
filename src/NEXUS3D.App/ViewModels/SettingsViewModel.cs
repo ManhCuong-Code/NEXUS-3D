@@ -70,19 +70,23 @@ public sealed partial class SettingsViewModel : BaseViewModel
 
     public ObservableCollection<PluginRegistration> RegisteredPlugins { get; } = [];
 
+    public KeyboardShortcutViewModel Shortcuts { get; }
+
     public SettingsViewModel(
         ISettingsService settingsService,
         IPluginCatalogService pluginCatalogService,
         INotificationService notificationService,
-        IApplicationPathsService pathsService)
+        IApplicationPathsService pathsService,
+        KeyboardShortcutViewModel shortcutsViewModel)
     {
         _settingsService = Guard.NotNull(settingsService);
         _pluginCatalogService = Guard.NotNull(pluginCatalogService);
         _notificationService = Guard.NotNull(notificationService);
         _pathsService = Guard.NotNull(pathsService);
+        Shortcuts = Guard.NotNull(shortcutsViewModel);
 
         Title = "System Settings & Configuration";
-        Subtitle = "Configure default export parameters, coordinate conventions, logging, and format plugins.";
+        Subtitle = "Configure default export parameters, coordinate conventions, logging, format plugins, and keyboard shortcuts.";
     }
 
     public override Task OnNavigatedToAsync(CancellationToken cancellationToken = default) =>

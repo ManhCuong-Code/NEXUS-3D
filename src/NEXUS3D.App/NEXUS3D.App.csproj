@@ -8,6 +8,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>NEXUS3D.App</RootNamespace>
     <AssemblyName>NEXUS3D.App</AssemblyName>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

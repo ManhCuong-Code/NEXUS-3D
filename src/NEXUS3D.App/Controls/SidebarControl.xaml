@@ -3,113 +3,286 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d"
-             Width="230">
+             mc:Ignorable="d">
+    <UserControl.Style>
+        <Style TargetType="UserControl">
+            <Setter Property="Width" Value="220" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                    <Setter Property="Width" Value="58" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Style>
+
     <Border Background="{StaticResource Brush.SidebarBackground}"
-            BorderBrush="{StaticResource Brush.BorderSubtle}"
+            BorderBrush="{StaticResource Brush.BorderStrong}"
             BorderThickness="0,0,1,0">
         <DockPanel LastChildFill="True">
-            <!-- Bottom Architecture Info Card -->
+            <!-- Sidebar Header: Collapse / Expand Toggle Button -->
+            <Border DockPanel.Dock="Top"
+                    Height="42"
+                    BorderBrush="{StaticResource Brush.BorderSubtle}"
+                    BorderThickness="0,0,0,1"
+                    Padding="8,0">
+                <Grid>
+                    <!-- Title when expanded -->
+                    <TextBlock Text="NAVIGATION"
+                               FontSize="10"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource Brush.TextMuted}"
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <!-- Collapse / Expand Toggle Button -->
+                    <Button Style="{StaticResource Style.IconButton}"
+                            HorizontalAlignment="Right"
+                            Command="{Binding ToggleSidebarCommand}"
+                            ToolTip="Collapse / Expand Sidebar">
+                        <Path Data="{StaticResource Icon.Menu}"
+                              Fill="{StaticResource Brush.TextSecondary}"
+                              Width="14" Height="14"
+                              Stretch="Uniform" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Bottom System Info Pill when expanded -->
             <Border DockPanel.Dock="Bottom"
                     Background="{StaticResource Brush.SurfacePrimary}"
                     BorderBrush="{StaticResource Brush.BorderSubtle}"
                     BorderThickness="1"
                     CornerRadius="6"
-                    Margin="12"
-                    Padding="12,10">
+                    Margin="10"
+                    Padding="10,8">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <StackPanel>
-                    <TextBlock Text="FOUNDATION STAGE 01"
-                               FontSize="10"
+                    <TextBlock Text="NEXUS-3D SUITE"
+                               FontSize="9.5"
                                FontWeight="Bold"
-                               Foreground="{StaticResource Brush.AccentHover}" />
-                    <TextBlock Text="SQLite &amp; File Logging Active"
-                               FontSize="11.5"
+                               Foreground="{StaticResource Brush.SecondaryHover}" />
+                    <TextBlock Text="USM Engine v2.0 Active"
+                               FontSize="11"
                                Foreground="{StaticResource Brush.TextSecondary}"
-                               Margin="0,3,0,0" />
+                               Margin="0,2,0,0" />
                 </StackPanel>
             </Border>
 
-            <!-- Navigation Menu Items -->
-            <StackPanel Margin="0,14,0,0">
-                <TextBlock Text="CORE MODULES"
-                           FontSize="10.5"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource Brush.TextMuted}"
-                           Margin="20,0,0,6" />
+            <!-- Navigation Menu Items (The 9 Modules specified in Part 3.2 C) -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="0,8,0,0">
+                    <!-- 1. Home -->
+                    <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                                 GroupName="MainNav"
+                                 Tag="{StaticResource Icon.Dashboard}"
+                                 IsChecked="{Binding IsDashboardActive, Mode=OneWay}"
+                                 Command="{Binding NavigateDashboardCommand}"
+                                 ToolTip="Home Dashboard (Ctrl+1)">
+                        <TextBlock Text="Home">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsSidebarCollapsed, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </RadioButton>
 
-                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
-                             GroupName="MainNav"
-                             Tag="{StaticResource Icon.Dashboard}"
-                             Content="Dashboard"
-                             IsChecked="{Binding IsDashboardActive, Mode=OneWay}"
-                             Command="{Binding NavigateDashboardCommand}" />
+                    <!-- 2. Import -->
+                    <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                                 GroupName="MainNav"
+                                 Tag="{StaticResource Icon.Import}"
+                                 IsChecked="{Binding IsImportActive, Mode=OneWay}"
+                                 Command="{Binding OpenFileCommand}"
+                                 ToolTip="Import 3D Model (Ctrl+I)">
+                        <TextBlock Text="Import">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsSidebarCollapsed, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </RadioButton>
 
-                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
-                             GroupName="MainNav"
-                             Tag="{StaticResource Icon.Converter}"
-                             Content="3D Converter"
-                             IsChecked="{Binding IsConverterActive, Mode=OneWay}"
-                             Command="{Binding NavigateConverterCommand}" />
+                    <!-- 3. Convert -->
+                    <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                                 GroupName="MainNav"
+                                 Tag="{StaticResource Icon.Converter}"
+                                 IsChecked="{Binding IsConverterActive, Mode=OneWay}"
+                                 Command="{Binding NavigateConverterCommand}"
+                                 ToolTip="3D Model Converter (Ctrl+3)">
+                        <TextBlock Text="Convert">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsSidebarCollapsed, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </RadioButton>
 
-                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
-                             GroupName="MainNav"
-                             Tag="{StaticResource Icon.Converter}"
-                             Content="3D Viewport"
-                             IsChecked="{Binding IsViewportActive, Mode=OneWay}"
-                             Command="{Binding NavigateViewportCommand}" />
+                    <!-- 4. 3D Editor -->
+                    <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                                 GroupName="MainNav"
+                                 Tag="{StaticResource Icon.Viewport}"
+                                 IsChecked="{Binding IsViewportActive, Mode=OneWay}"
+                                 Command="{Binding NavigateViewportCommand}"
+                                 ToolTip="3D Viewport Editor (Ctrl+4)">
+                        <TextBlock Text="3D Editor">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsSidebarCollapsed, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </RadioButton>
 
-                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
-                             GroupName="MainNav"
-                             Tag="{StaticResource Icon.Cube3D}"
-                             Content="Voxelization"
-                             IsChecked="{Binding IsVoxelizationActive, Mode=OneWay}"
-                             Command="{Binding NavigateVoxelizationCommand}" />
+                    <!-- 5. Voxelization -->
+                    <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                                 GroupName="MainNav"
+                                 Tag="{StaticResource Icon.Voxel}"
+                                 IsChecked="{Binding IsVoxelizationActive, Mode=OneWay}"
+                                 Command="{Binding NavigateVoxelizationCommand}"
+                                 ToolTip="Voxelization Engine (Ctrl+5)">
+                        <TextBlock Text="Voxelization">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsSidebarCollapsed, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </RadioButton>
 
-                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
-                             GroupName="MainNav"
-                             Tag="{StaticResource Icon.FileManager}"
-                             Content="File Manager"
-                             IsChecked="{Binding IsFileManagerActive, Mode=OneWay}"
-                             Command="{Binding NavigateFileManagerCommand}" />
+                    <!-- 6. Batch Processing -->
+                    <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                                 GroupName="MainNav"
+                                 Tag="{StaticResource Icon.Batch}"
+                                 IsChecked="{Binding IsBatchActive, Mode=OneWay}"
+                                 Command="{Binding NavigateBatchCommand}"
+                                 ToolTip="Batch Processing Studio (Ctrl+6)">
+                        <TextBlock Text="Batch Processing">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsSidebarCollapsed, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </RadioButton>
 
-                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
-                             GroupName="MainNav"
-                             Tag="{StaticResource Icon.Settings}"
-                             Content="Settings"
-                             IsChecked="{Binding IsSettingsActive, Mode=OneWay}"
-                             Command="{Binding NavigateSettingsCommand}" />
+                    <!-- 7. Plugin Manager -->
+                    <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                                 GroupName="MainNav"
+                                 Tag="{StaticResource Icon.Plugin}"
+                                 IsChecked="{Binding IsExtensionHubActive, Mode=OneWay}"
+                                 Command="{Binding NavigateExtensionHubCommand}"
+                                 ToolTip="Plugin Manager &amp; SDK Hub (Ctrl+7)">
+                        <TextBlock Text="Plugin Manager">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsSidebarCollapsed, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </RadioButton>
 
-                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
-                             GroupName="MainNav"
-                             Tag="{StaticResource Icon.Plugin}"
-                             Content="Extension Hub"
-                             IsChecked="{Binding IsExtensionHubActive, Mode=OneWay}"
-                             Command="{Binding NavigateExtensionHubCommand}" />
+                    <!-- 8. History -->
+                    <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                                 GroupName="MainNav"
+                                 Tag="{StaticResource Icon.FileManager}"
+                                 IsChecked="{Binding IsFileManagerActive, Mode=OneWay}"
+                                 Command="{Binding NavigateFileManagerCommand}"
+                                 ToolTip="Conversion History &amp; Files">
+                        <TextBlock Text="History">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsSidebarCollapsed, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </RadioButton>
 
-                <Separator Background="{StaticResource Brush.BorderSubtle}" Margin="16,14" />
+                    <Separator Background="{StaticResource Brush.BorderSubtle}" Margin="10,8" />
 
-                <TextBlock Text="UPCOMING STAGES"
-                           FontSize="10.5"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource Brush.TextMuted}"
-                           Margin="20,0,0,6" />
-
-                <!-- Disabled Upcoming Modules demonstrating Disabled state -->
-                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
-                             GroupName="MainNav"
-                             Tag="{StaticResource Icon.Viewport}"
-                             Content="3D Viewport Editor"
-                             IsEnabled="False"
-                             ToolTip="Planned for Stage 05 – Interactive 3D Viewport" />
-
-                <RadioButton Style="{StaticResource Style.SidebarNavButton}"
-                             GroupName="MainNav"
-                             Tag="{StaticResource Icon.Plugin}"
-                             Content="Mesh Optimizer"
-                             IsEnabled="False"
-                             ToolTip="Planned for Stage 07 – Geometry Optimization" />
-            </StackPanel>
+                    <!-- 9. Settings -->
+                    <RadioButton Style="{StaticResource Style.SidebarNavButton}"
+                                 GroupName="MainNav"
+                                 Tag="{StaticResource Icon.Settings}"
+                                 IsChecked="{Binding IsSettingsActive, Mode=OneWay}"
+                                 Command="{Binding NavigateSettingsCommand}"
+                                 ToolTip="Preferences &amp; Shortcuts (Ctrl+,)">
+                        <TextBlock Text="Settings">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.IsSidebarCollapsed, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </RadioButton>
+                </StackPanel>
+            </ScrollViewer>
         </DockPanel>
     </Border>
 </UserControl>
-

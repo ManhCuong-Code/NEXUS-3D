@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Light Background #F5F6FA -->
+  <rect width="512" height="512" rx="64" fill="#F5F6FA" stroke="#D5DAE3" stroke-width="2" />
+  <circle cx="256" cy="256" r="180" fill="#6750F5" opacity="0.06" filter="blur(30px)" />
+
+  <defs>
+    <linearGradient id="primaryGradLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#735DF7" />
+      <stop offset="100%" stop-color="#553CDE" />
+    </linearGradient>
+    <linearGradient id="secondaryGradLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15A695" />
+      <stop offset="100%" stop-color="#0E8A7B" />
+    </linearGradient>
+    <linearGradient id="accentGradLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3A96F2" />
+      <stop offset="100%" stop-color="#1F75D3" />
+    </linearGradient>
+  </defs>
+
+  <!-- Network Connection Orbits & Nodes -->
+  <g opacity="0.85">
+    <circle cx="256" cy="62" r="7" fill="#1F75D3" />
+    <line x1="256" y1="70" x2="256" y2="128" stroke="#1F75D3" stroke-width="2.5" stroke-dasharray="4,4" />
+
+    <circle cx="438" cy="168" r="6" fill="#553CDE" />
+    <line x1="432" y1="172" x2="384" y2="200" stroke="#553CDE" stroke-width="2.5" stroke-dasharray="4,4" />
+
+    <circle cx="438" cy="344" r="6.5" fill="#0E8A7B" />
+    <line x1="432" y1="340" x2="384" y2="312" stroke="#0E8A7B" stroke-width="2.5" stroke-dasharray="4,4" />
+
+    <circle cx="256" cy="450" r="7" fill="#0E8A7B" />
+    <line x1="256" y1="442" x2="256" y2="384" stroke="#0E8A7B" stroke-width="2.5" stroke-dasharray="4,4" />
+
+    <circle cx="74" cy="344" r="6.5" fill="#1F75D3" />
+    <line x1="80" y1="340" x2="128" y2="312" stroke="#1F75D3" stroke-width="2.5" stroke-dasharray="4,4" />
+
+    <circle cx="74" cy="168" r="6" fill="#553CDE" />
+    <line x1="80" y1="172" x2="128" y2="200" stroke="#553CDE" stroke-width="2.5" stroke-dasharray="4,4" />
+  </g>
+
+  <!-- 3D CUBE -->
+  <!-- Top Face: Mesh -->
+  <path d="M 256,128 L 384,202 L 256,276 L 128,202 Z" fill="url(#primaryGradLight)" stroke="#432CB8" stroke-width="2" />
+  <g stroke="#E8E2FF" stroke-width="1.8" opacity="0.9">
+    <line x1="192" y1="165" x2="320" y2="239" />
+    <line x1="256" y1="128" x2="256" y2="276" />
+    <line x1="192" y1="239" x2="320" y2="165" />
+    <line x1="128" y1="202" x2="384" y2="202" />
+    <circle cx="256" cy="202" r="3.5" fill="#FFFFFF" />
+    <circle cx="192" cy="165" r="2.5" fill="#FFFFFF" />
+    <circle cx="320" cy="165" r="2.5" fill="#FFFFFF" />
+    <circle cx="192" cy="239" r="2.5" fill="#FFFFFF" />
+    <circle cx="320" cy="239" r="2.5" fill="#FFFFFF" />
+  </g>
+
+  <!-- Left Face: Voxel -->
+  <path d="M 128,202 L 256,276 L 256,384 L 128,310 Z" fill="url(#secondaryGradLight)" stroke="#096357" stroke-width="2" />
+  <g stroke="#08544A" stroke-width="1.8" fill="#107F70" opacity="0.95">
+    <line x1="192" y1="239" x2="192" y2="347" stroke="#3BE1CE" stroke-width="1.5" />
+    <line x1="128" y1="256" x2="256" y2="330" stroke="#3BE1CE" stroke-width="1.5" />
+    <path d="M 160,256 L 192,274 L 192,311 L 160,293 Z" fill="#149A89" stroke="#5BF5E3" stroke-width="1.2" />
+    <path d="M 160,256 L 192,274 L 160,293 L 128,274 Z" fill="#1BAC99" stroke="#5BF5E3" stroke-width="1.2" />
+    <path d="M 192,274 L 224,293 L 224,330 L 192,311 Z" fill="#0F8071" stroke="#5BF5E3" stroke-width="1.2" />
+  </g>
+
+  <!-- Right Face: Geometry -->
+  <path d="M 256,276 L 384,202 L 384,310 L 256,384 Z" fill="url(#accentGradLight)" stroke="#11559F" stroke-width="2" />
+  <g stroke="#FFFFFF" stroke-width="1.8" opacity="0.95">
+    <line x1="288" y1="294" x2="352" y2="257" stroke="#87C4FF" stroke-width="2" />
+    <line x1="288" y1="365" x2="352" y2="328" stroke="#87C4FF" stroke-width="2" />
+    <line x1="320" y1="239" x2="320" y2="347" stroke="#87C4FF" stroke-width="2" />
+    <circle cx="320" cy="293" r="5" fill="#FFFFFF" stroke="#11559F" stroke-width="1.5" />
+    <circle cx="288" cy="257" r="3.5" fill="#D4EAFF" />
+    <circle cx="352" cy="257" r="3.5" fill="#D4EAFF" />
+    <circle cx="288" cy="330" r="3.5" fill="#D4EAFF" />
+    <circle cx="352" cy="330" r="3.5" fill="#D4EAFF" />
+  </g>
+
+  <!-- Center Nexus Point -->
+  <circle cx="256" cy="276" r="9" fill="#FFFFFF" stroke="#553CDE" stroke-width="2" />
+  <circle cx="256" cy="276" r="5" fill="#553CDE" />
+</svg>
+
