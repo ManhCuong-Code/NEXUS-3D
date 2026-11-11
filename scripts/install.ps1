@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # NEXUS-3D – Windows User Installation Script
 # Installs NEXUS-3D Desktop GUI & CLI, creates Desktop and Start Menu shortcuts,
 # configures User PATH, and generates uninstaller.
@@ -31,12 +31,12 @@ if (-not $SkipPublish) {
     New-Item -ItemType Directory -Path $publishWpf -Force | Out-Null
     New-Item -ItemType Directory -Path $publishCli -Force | Out-Null
 
-    Write-Host "  -> Publishing Desktop Studio (NEXUS3D.App)..." -ForegroundColor Gray
-    dotnet publish $wpfProj -c Release -o $publishWpf --nologo -v q
+    Write-Host "  -> Publishing Desktop Studio (NEXUS3D.App) [Self-Contained win-x64]..." -ForegroundColor Gray
+    dotnet publish $wpfProj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o $publishWpf --nologo -v q
     if ($LASTEXITCODE -ne 0) { throw "WPF publish failed." }
 
-    Write-Host "  -> Publishing Headless CLI (nexus3d.exe)..." -ForegroundColor Gray
-    dotnet publish $cliProj -c Release -o $publishCli --nologo -v q
+    Write-Host "  -> Publishing Headless CLI (nexus3d.exe) [Self-Contained win-x64]..." -ForegroundColor Gray
+    dotnet publish $cliProj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o $publishCli --nologo -v q
     if ($LASTEXITCODE -ne 0) { throw "CLI publish failed." }
 } else {
     $publishWpf = Join-Path $rootDir "dist\publish\wpf"
