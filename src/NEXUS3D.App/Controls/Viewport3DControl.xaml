@@ -22,7 +22,11 @@
                                IsZoomEnabled="True"
                                RotateAroundMouseDownPoint="True"
                                ZoomAroundMouseDownPoint="True"
-                               ClipToBounds="True">
+                               ClipToBounds="True"
+                               RotateGesture="RightClick"
+                               RotateGesture2="MiddleClick"
+                               PanGesture="Shift+MiddleClick"
+                               PanGesture2="Shift+RightClick">
             <helix:HelixViewport3D.DefaultCamera>
                 <PerspectiveCamera Position="16,16,24" LookDirection="-16,-16,-24" UpDirection="0,1,0" FieldOfView="45"/>
             </helix:HelixViewport3D.DefaultCamera>
@@ -30,14 +34,16 @@
             <!-- Default Lighting Environment -->
             <helix:DefaultLights />
 
-            <!-- Floor Grid Lines -->
+            <!-- Floor Grid Lines: Horizontal XZ Plane (Normal=0,1,0) -->
             <helix:GridLinesVisual3D x:Name="GridVisual"
                                      Width="80"
                                      Length="80"
                                      MajorDistance="10"
                                      MinorDistance="1"
-                                     Thickness="0.5"
-                                     Fill="#33AAAAAA" />
+                                     Thickness="0.6"
+                                     Fill="#283344"
+                                     Normal="0,1,0"
+                                     LengthDirection="1,0,0" />
 
             <!-- Dynamic Model Container will be populated in code-behind -->
         </helix:HelixViewport3D>

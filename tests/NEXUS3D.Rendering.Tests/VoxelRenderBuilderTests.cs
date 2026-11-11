@@ -60,4 +60,30 @@ public sealed class VoxelRenderBuilderTests
         Assert.Equal(1, chunks[0].VoxelCount);
         Assert.Equal(1, chunks[1].VoxelCount);
     }
+
+    [Fact]
+    public void BuildVoxelChunk_MultiBlockTypes_GeneratesDistinctSubMeshesWithBlockMaterialIds()
+    {
+        var grid = new VoxelGrid();
+        grid.SetVoxel(new Voxel(new VoxelPosition(0, 0, 0), 1, new BlockState("minecraft", "stone")));
+        grid.SetVoxel(new Voxel(new VoxelPosition(0, 1, 0), 2, new BlockState("minecraft", "dirt")));
+        grid.SetVoxel(new Voxel(new VoxelPosition(0, 2, 0), 3, new BlockState("minecraft", "glass")));
+
+        var chunk = _builder.Build(grid, enableCulling: true);
+
+        Assert.Equal(3, chunk.VoxelCount);
+        Assert.Equal(3, chunk.SubMeshes.Count);
+
+        var matIds = chunk.SubMeshes.Select(s => s.MaterialId).ToHashSet();
+        Assert.Contains("block:minecraft:stone", matIds);
+        Assert.Contains("block:minecraft:dirt", matIds);
+        Assert.Contains("block:minecraft:glass", matIds);
+
+        foreach (var submesh in chunk.SubMeshes)
+        {
+            Assert.True(submesh.Positions.Length > 0);
+            Assert.True(submesh.Indices.Length > 0);
+            Assert.True(submesh.Colors.Length > 0);
+        }
+    }
 }

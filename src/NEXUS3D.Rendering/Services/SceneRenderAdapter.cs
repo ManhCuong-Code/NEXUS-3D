@@ -1,3 +1,4 @@
+using System.IO;
 using System.Numerics;
 using NEXUS3D.Domain.Mathematics;
 using NEXUS3D.Domain.Scene;
@@ -8,7 +9,8 @@ using NEXUS3D.Rendering.Domain;
 namespace NEXUS3D.Rendering.Services;
 
 /// <summary>
-/// Core adapter converting USM (Scene3D) into GPU-optimized RenderScene.
+/// Core adapter converting USM (Scene3D) into GPU-optimized RenderScene,
+/// managing multi-material submeshes, block material registry, textures, and hierarchy.
 /// </summary>
 public sealed class SceneRenderAdapter : IRenderSceneAdapter
 {
@@ -35,10 +37,29 @@ public sealed class SceneRenderAdapter : IRenderSceneAdapter
             Name = scene.Name
         };
 
+        // Determine base directory for texture resolution
+        string? baseDirectory = null;
+        if (!string.IsNullOrWhiteSpace(scene.Metadata.Source?.OriginalFileName))
+        {
+            try
+            {
+                string fn = scene.Metadata.Source.OriginalFileName;
+                baseDirectory = Path.GetDirectoryName(fn);
+                if (string.IsNullOrEmpty(baseDirectory) && File.Exists(fn))
+                {
+                    baseDirectory = Path.GetDirectoryName(Path.GetFullPath(fn));
+                }
+            }
+            catch
+            {
+                // Ignore invalid file paths
+            }
+        }
+
         // 1. Adapt Materials
         foreach (var mat in scene.Materials.Materials)
         {
-            var rMat = _materialAdapter.AdaptMaterial(mat);
+            var rMat = _materialAdapter.AdaptMaterial(mat, baseDirectory);
             renderScene.Materials[rMat.Id] = rMat;
             renderScene.Materials[rMat.Name] = rMat;
         }
@@ -63,7 +84,7 @@ public sealed class SceneRenderAdapter : IRenderSceneAdapter
 
         foreach (var rootNode in scene.Graph.Root.Children)
         {
-            var rNode = AdaptNode(rootNode, Matrix4x4.Identity, settings, ref totalTriangles, ref totalVertices, ref totalVoxels);
+            var rNode = AdaptNode(rootNode, Matrix4x4.Identity, settings, renderScene, ref totalTriangles, ref totalVertices, ref totalVoxels);
             renderScene.RootNodes.Add(rNode);
         }
 
@@ -81,6 +102,7 @@ public sealed class SceneRenderAdapter : IRenderSceneAdapter
         SceneNode node,
         Matrix4x4 parentWorld,
         RenderSettings settings,
+        RenderScene scene,
         ref int totalTriangles,
         ref int totalVertices,
         ref int totalVoxels)
@@ -99,22 +121,52 @@ public sealed class SceneRenderAdapter : IRenderSceneAdapter
 
         if (node.Object is not null)
         {
-            // Process Meshes
+            // Process Meshes (supporting multi-material submesh partitioning)
             foreach (var mesh in node.Object.Meshes)
             {
-                var rMesh = _meshBuilder.Build(mesh, "default");
-                rNode.Meshes.Add(rMesh);
-                totalTriangles += rMesh.TriangleCount;
-                totalVertices += rMesh.VertexCount;
+                var rMeshes = _meshBuilder.BuildMulti(mesh, "default");
+                foreach (var rMesh in rMeshes)
+                {
+                    rNode.Meshes.Add(rMesh);
+                    totalTriangles += rMesh.TriangleCount;
+                    totalVertices += rMesh.VertexCount;
+                }
             }
 
-            // Process Voxel Grids
+            // Process Voxel Grids (supporting multi-block materials)
             foreach (var voxelGrid in node.Object.VoxelGrids)
             {
                 var chunk = _voxelBuilder.Build(voxelGrid, enableCulling: true);
                 rNode.VoxelChunks.Add(chunk);
                 totalVoxels += chunk.VoxelCount;
-                if (chunk.Mesh is not null)
+
+                // Register block materials in renderScene.Materials
+                foreach (var subMesh in chunk.SubMeshes)
+                {
+                    if (!string.IsNullOrEmpty(subMesh.MaterialId) && !scene.Materials.ContainsKey(subMesh.MaterialId))
+                    {
+                        string blockId = subMesh.MaterialId.StartsWith("block:")
+                            ? subMesh.MaterialId["block:".Length..]
+                            : subMesh.MaterialId;
+
+                        var blockInfo = BlockMaterialRegistry.GetBlockInfo(blockId);
+                        var blockMat = new RenderMaterial(
+                            Id: subMesh.MaterialId,
+                            Name: blockInfo.DisplayName,
+                            BaseColor: blockInfo.Color,
+                            SpecularColor: Vector4.One * 0.15f,
+                            Shininess: 15f,
+                            Opacity: blockInfo.Opacity,
+                            IsDoubleSided: true);
+
+                        scene.Materials[subMesh.MaterialId] = blockMat;
+                    }
+
+                    totalTriangles += subMesh.TriangleCount;
+                    totalVertices += subMesh.VertexCount;
+                }
+
+                if (chunk.SubMeshes.Count == 0 && chunk.Mesh is not null)
                 {
                     totalTriangles += chunk.Mesh.TriangleCount;
                     totalVertices += chunk.Mesh.VertexCount;
@@ -125,7 +177,7 @@ public sealed class SceneRenderAdapter : IRenderSceneAdapter
         // Process Children
         foreach (var child in node.Children)
         {
-            var childNode = AdaptNode(child, worldMat, settings, ref totalTriangles, ref totalVertices, ref totalVoxels);
+            var childNode = AdaptNode(child, worldMat, settings, scene, ref totalTriangles, ref totalVertices, ref totalVoxels);
             rNode.Children.Add(childNode);
         }
 
@@ -138,56 +190,53 @@ public sealed class SceneRenderAdapter : IRenderSceneAdapter
         var result = new List<RenderBone>();
         var boneMap = new Dictionary<Guid, RenderBone>();
 
-        foreach (var b in skeleton.Bones)
+        foreach (var bone in skeleton.Bones)
         {
             var rBone = new RenderBone
             {
-                Name = b.Name,
-                Pivot = new Vector3((float)b.Pivot.X, (float)b.Pivot.Y, (float)b.Pivot.Z),
-                Rotation = new Vector3((float)b.BindRotationDegrees.X, (float)b.BindRotationDegrees.Y, (float)b.BindRotationDegrees.Z),
-                Transform = ToNumericsMatrix(b.LocalTransform.ToMatrix())
+                Name = bone.Name,
+                Pivot = new Vector3((float)bone.Pivot.X, (float)bone.Pivot.Y, (float)bone.Pivot.Z),
+                Rotation = new Vector3((float)bone.BindRotationDegrees.X, (float)bone.BindRotationDegrees.Y, (float)bone.BindRotationDegrees.Z),
+                Transform = ToNumericsMatrix(bone.LocalTransform.ToMatrix())
             };
-            boneMap[b.Id] = rBone;
+            boneMap[bone.Id] = rBone;
         }
 
-        foreach (var b in skeleton.Bones)
+        foreach (var bone in skeleton.Bones)
         {
-            var rBone = boneMap[b.Id];
-            if (b.ParentBoneId.HasValue && boneMap.TryGetValue(b.ParentBoneId.Value, out var parentBone))
+            var current = boneMap[bone.Id];
+            if (bone.ParentBoneId.HasValue && boneMap.TryGetValue(bone.ParentBoneId.Value, out var parent))
             {
-                rBone.ParentName = parentBone.Name;
-                parentBone.Children.Add(rBone);
+                current.ParentName = parent.Name;
+                parent.Children.Add(current);
             }
             else
             {
-                result.Add(rBone);
+                result.Add(current);
             }
         }
 
-        // Compute world pivots
+        void ComputeWorldMatrices(RenderBone b, Matrix4x4 parentMatrix)
+        {
+            b.WorldMatrix = b.Transform * parentMatrix;
+            foreach (var c in b.Children)
+            {
+                ComputeWorldMatrices(c, b.WorldMatrix);
+            }
+        }
+
         foreach (var root in result)
         {
-            ComputeBoneWorldTransforms(root, Matrix4x4.Identity);
+            ComputeWorldMatrices(root, Matrix4x4.Identity);
         }
 
         return result;
     }
 
-    private static void ComputeBoneWorldTransforms(RenderBone bone, Matrix4x4 parentMatrix)
-    {
-        bone.WorldMatrix = bone.Transform * parentMatrix;
-        foreach (var child in bone.Children)
-        {
-            ComputeBoneWorldTransforms(child, bone.WorldMatrix);
-        }
-    }
-
-    private static Matrix4x4 ToNumericsMatrix(Matrix4x4D m)
-    {
-        return new Matrix4x4(
+    private static Matrix4x4 ToNumericsMatrix(Matrix4x4D m) =>
+        new(
             (float)m.M11, (float)m.M12, (float)m.M13, (float)m.M14,
             (float)m.M21, (float)m.M22, (float)m.M23, (float)m.M24,
             (float)m.M31, (float)m.M32, (float)m.M33, (float)m.M34,
             (float)m.M41, (float)m.M42, (float)m.M43, (float)m.M44);
-    }
 }

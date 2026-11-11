@@ -127,19 +127,45 @@ public sealed class ObjLineParser
                 lineNumber);
         }
 
-        Span<double> values = stackalloc double[4];
+        Span<double> values = stackalloc double[8];
         int count = ParseDoubles(args, values, lineNumber, ObjErrorCodes.InvalidVertex, "vertex 'v'");
 
-        if (count < 3 || count > 4)
+        if (count < 3)
         {
             throw new ObjException(
                 ObjErrorCodes.InvalidVertex,
-                $"Vertex 'v' requires 3 or 4 coordinates (x y z [w]), but found {count}.",
+                $"Vertex 'v' requires at least 3 coordinates (x y z [w] [r g b [a]]), but found {count}.",
                 lineNumber);
         }
 
-        double w = count == 4 ? values[3] : 1.0;
-        var vertex = new ObjVertex(values[0], values[1], values[2], w, lineNumber);
+        double x = values[0];
+        double y = values[1];
+        double z = values[2];
+        double w = 1.0;
+        NEXUS3D.Domain.Mathematics.Vector4D? color = null;
+
+        if (count == 4)
+        {
+            w = values[3];
+        }
+        else if (count == 6)
+        {
+            // v x y z r g b
+            color = new NEXUS3D.Domain.Mathematics.Vector4D(values[3], values[4], values[5], 1.0);
+        }
+        else if (count == 7)
+        {
+            // v x y z r g b a
+            color = new NEXUS3D.Domain.Mathematics.Vector4D(values[3], values[4], values[5], values[6]);
+        }
+        else if (count >= 8)
+        {
+            // v x y z w r g b a
+            w = values[3];
+            color = new NEXUS3D.Domain.Mathematics.Vector4D(values[4], values[5], values[6], values[7]);
+        }
+
+        var vertex = new ObjVertex(x, y, z, w, lineNumber, color);
 
         if (!vertex.IsFinite)
         {

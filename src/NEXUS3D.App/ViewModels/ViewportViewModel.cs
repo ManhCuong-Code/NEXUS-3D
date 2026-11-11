@@ -139,6 +139,8 @@ public sealed partial class ViewportViewModel : BaseViewModel
             _selectionService.ClearSelection();
             Inspector.Clear();
 
+            FocusModel();
+
             StatusMessage = $"Loaded '{sceneModel.Name}' ({rScene.TotalTriangles:N0} triangles, {rScene.TotalVoxels:N0} voxels).";
         }
         catch (Exception ex)
@@ -262,6 +264,55 @@ public sealed partial class ViewportViewModel : BaseViewModel
         {
             Inspector.InspectUsmNode(Inspector.ActiveNode, RawUsmScene);
         }
+    }
+
+    [RelayCommand]
+    public void FocusModel()
+    {
+        if (Scene is null) return;
+        var min = Scene.BoundsMin;
+        var max = Scene.BoundsMax;
+        var center = (min + max) * 0.5f;
+        float maxDim = Math.Max(max.X - min.X, Math.Max(max.Y - min.Y, max.Z - min.Z));
+        Camera.Focus(center, Math.Max(maxDim * 0.8f, 2.0f));
+    }
+
+    [RelayCommand]
+    public async Task MoveModelToFloorAsync()
+    {
+        if (Scene is null || RawUsmScene is null) return;
+        float minY = Scene.BoundsMin.Y;
+        if (Math.Abs(minY) < 1e-4) return;
+
+        double deltaY = -minY;
+        var p = RawUsmScene.Graph.Root.LocalTransform.Position;
+        RawUsmScene.Graph.Root.LocalTransform.Position = new Vector3D(p.X, p.Y + deltaY, p.Z);
+
+        await LoadSceneModelAsync(RawUsmScene, LoadedFilePath);
+    }
+
+    [RelayCommand]
+    public async Task CenterModelAsync()
+    {
+        if (Scene is null || RawUsmScene is null) return;
+        var center = (Scene.BoundsMin + Scene.BoundsMax) * 0.5f;
+        if (Math.Abs(center.X) < 1e-4 && Math.Abs(center.Z) < 1e-4) return;
+
+        double deltaX = -center.X;
+        double deltaZ = -center.Z;
+        var p = RawUsmScene.Graph.Root.LocalTransform.Position;
+        RawUsmScene.Graph.Root.LocalTransform.Position = new Vector3D(p.X + deltaX, p.Y, p.Z + deltaZ);
+
+        await LoadSceneModelAsync(RawUsmScene, LoadedFilePath);
+    }
+
+    [RelayCommand]
+    public async Task ResetModelPositionAsync()
+    {
+        if (RawUsmScene is null) return;
+        RawUsmScene.Graph.Root.LocalTransform = Transform3D.Identity();
+
+        await LoadSceneModelAsync(RawUsmScene, LoadedFilePath);
     }
 
     private void OnHierarchyNodeSelected(object? sender, string? nodeId)

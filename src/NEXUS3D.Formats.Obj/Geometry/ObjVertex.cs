@@ -3,9 +3,15 @@ using NEXUS3D.Domain.Mathematics;
 namespace NEXUS3D.Formats.Obj.Geometry;
 
 /// <summary>
-/// Represents a Wavefront OBJ vertex position (<c>v x y z [w]</c>) preserving full double precision.
+/// Represents a Wavefront OBJ vertex position (<c>v x y z [w] [r g b [a]]</c>) preserving full double precision and optional vertex color.
 /// </summary>
-public readonly record struct ObjVertex(double X, double Y, double Z, double W = 1.0, int SourceLineNumber = 0)
+public readonly record struct ObjVertex(
+    double X,
+    double Y,
+    double Z,
+    double W = 1.0,
+    int SourceLineNumber = 0,
+    Vector4D? Color = null)
 {
     public bool IsFinite =>
         double.IsFinite(X) &&
@@ -23,4 +29,3 @@ public readonly record struct ObjVertex(double X, double Y, double Z, double W =
 
     public Vector4D ToVector4D() => new(X, Y, Z, W);
 }
-

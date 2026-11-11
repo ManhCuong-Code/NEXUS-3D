@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.Numerics;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
@@ -11,7 +12,8 @@ using NEXUS3D.Rendering.Domain;
 namespace NEXUS3D.App.Rendering;
 
 /// <summary>
-/// Hardware-accelerated WPF / HelixToolkit scene converter translating RenderScene snapshots into ModelVisual3D and LinesVisual3D.
+/// Hardware-accelerated WPF / HelixToolkit scene converter translating RenderScene snapshots into ModelVisual3D and LinesVisual3D,
+/// supporting multi-material meshes, multi-block voxel rendering, and texture mapping.
 /// </summary>
 public sealed class HelixSceneRenderer : IDisposable
 {
@@ -103,7 +105,7 @@ public sealed class HelixSceneRenderer : IDisposable
             nodeGroup.Transform = ToMatrixTransform3D(node.WorldTransform);
         }
 
-        // Meshes
+        // 1. Meshes
         foreach (var mesh in node.Meshes)
         {
             var geom = BuildMeshGeometry(mesh);
@@ -129,20 +131,17 @@ public sealed class HelixSceneRenderer : IDisposable
             }
         }
 
-        // Voxel Chunks
+        // 2. Voxel Chunks (supporting per-block multi-material rendering)
         foreach (var chunk in node.VoxelChunks)
         {
-            if (chunk.Mesh is not null)
+            var meshesToRender = chunk.SubMeshes.Count > 0
+                ? (IReadOnlyList<RenderMesh>)chunk.SubMeshes
+                : (chunk.Mesh is not null ? [chunk.Mesh] : []);
+
+            foreach (var vMesh in meshesToRender)
             {
-                var geom = BuildMeshGeometry(chunk.Mesh, chunk.Position);
-                Color chunkColor = Color.FromRgb(180, 185, 195);
-                if (chunk.Mesh.Colors.Length > 0)
-                {
-                    var c = chunk.Mesh.Colors[0];
-                    chunkColor = Color.FromRgb((byte)Math.Clamp((int)(c.X * 255), 0, 255), (byte)Math.Clamp((int)(c.Y * 255), 0, 255), (byte)Math.Clamp((int)(c.Z * 255), 0, 255));
-                }
-                var mat = new DiffuseMaterial(new SolidColorBrush(chunkColor));
-                mat.Freeze();
+                var geom = BuildMeshGeometry(vMesh, chunk.Position);
+                var mat = ResolveMaterial(vMesh.MaterialId, scene, settings);
 
                 var model = new GeometryModel3D(geom, mat)
                 {
@@ -153,14 +152,14 @@ public sealed class HelixSceneRenderer : IDisposable
 
                 if (settings.Shading is ShadingMode.Wireframe or ShadingMode.SolidWireframe || settings.ShowWireframe)
                 {
-                    AddWireframeLines(chunk.Mesh, linesVisual, node.WorldTransform, chunk.Position);
+                    AddWireframeLines(vMesh, linesVisual, node.WorldTransform, chunk.Position);
                 }
             }
         }
 
         parentGroup.Children.Add(nodeGroup);
 
-        // Children
+        // 3. Children Nodes
         foreach (var child in node.Children)
         {
             BuildNodeVisual(child, scene, settings, parentGroup, linesVisual);
@@ -193,7 +192,7 @@ public sealed class HelixSceneRenderer : IDisposable
             for (int i = 0; i < mesh.Normals.Length; i++)
             {
                 var n = mesh.Normals[i];
-                normals.Add(new Vector3D(n.X, n.Y, n.Z));
+                normals.Add(new System.Windows.Media.Media3D.Vector3D(n.X, n.Y, n.Z));
             }
             geom.Normals = normals;
         }
@@ -204,7 +203,7 @@ public sealed class HelixSceneRenderer : IDisposable
             for (int i = 0; i < mesh.UVs.Length; i++)
             {
                 var uv = mesh.UVs[i];
-                uvs.Add(new System.Windows.Point(uv.X, 1.0 - uv.Y)); // Flip V for WPF coordinate convention
+                uvs.Add(new System.Windows.Point(uv.X, 1.0 - uv.Y)); // Flip V for WPF convention
             }
             geom.TextureCoordinates = uvs;
         }
@@ -240,9 +239,10 @@ public sealed class HelixSceneRenderer : IDisposable
             }
         }
 
-        // Solid Color Fallback
+        // Solid / Translucent Color
+        float alpha = rMat.BaseColor.W * rMat.Opacity;
         var col = Color.FromArgb(
-            (byte)Math.Clamp(rMat.BaseColor.W * 255f, 0, 255),
+            (byte)Math.Clamp(alpha * 255f, 0, 255),
             (byte)Math.Clamp(rMat.BaseColor.X * 255f, 0, 255),
             (byte)Math.Clamp(rMat.BaseColor.Y * 255f, 0, 255),
             (byte)Math.Clamp(rMat.BaseColor.Z * 255f, 0, 255));
@@ -256,7 +256,7 @@ public sealed class HelixSceneRenderer : IDisposable
         if (rMat.SpecularColor.Length() > 0.1f)
         {
             var specCol = Color.FromArgb(
-                255,
+                (byte)Math.Clamp(rMat.SpecularColor.W * 255f, 0, 255),
                 (byte)Math.Clamp(rMat.SpecularColor.X * 255f, 0, 255),
                 (byte)Math.Clamp(rMat.SpecularColor.Y * 255f, 0, 255),
                 (byte)Math.Clamp(rMat.SpecularColor.Z * 255f, 0, 255));
@@ -285,8 +285,11 @@ public sealed class HelixSceneRenderer : IDisposable
                 var brush = new ImageBrush(bitmap)
                 {
                     TileMode = TileMode.Tile,
-                    ViewportUnits = BrushMappingMode.Absolute
+                    ViewportUnits = BrushMappingMode.RelativeToBoundingBox,
+                    ViewboxUnits = BrushMappingMode.RelativeToBoundingBox,
+                    Viewport = new Rect(0, 0, 1, 1)
                 };
+                RenderOptions.SetBitmapScalingMode(brush, BitmapScalingMode.NearestNeighbor);
                 brush.Freeze();
                 return brush;
             }

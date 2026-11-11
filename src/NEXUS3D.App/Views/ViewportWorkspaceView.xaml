@@ -226,6 +226,8 @@
             <controls:Viewport3DControl x:Name="Viewport3D"
                                         Scene="{Binding Scene}"
                                         RawUsmScene="{Binding RawUsmScene}"
+                                        Settings="{Binding Settings.CurrentSettings}"
+                                        CameraState="{Binding Camera.CurrentCamera}"
                                         ActiveTool="{Binding ActiveTool}"
                                         TransformSpace="{Binding ActiveSpace}"
                                         SelectedNodeId="{Binding SelectedNodeId}"
@@ -260,11 +262,12 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Row 2: Camera & Rendering Presets -->
+                <!-- Row 2: Camera & Rendering Presets & Model Alignment -->
                 <Border Background="#CC181820" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="6,3">
                     <StackPanel Orientation="Horizontal">
                         <!-- Presets -->
-                        <Button Content="Reset" Command="{Binding Camera.ResetCameraCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Reset Camera" />
+                        <Button Content="Reset" Command="{Binding Camera.ResetCameraCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Reset Camera View" />
+                        <Button Content="⌖ Focus" Command="{Binding FocusModelCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#74B9FF" BorderThickness="0" ToolTip="Frame &amp; Focus Model" />
                         <Button Content="Front" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Front}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Front View (1)" />
                         <Button Content="Right" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Right}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Right View (4)" />
                         <Button Content="Top" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Top}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Top View (5)" />
@@ -274,6 +277,13 @@
 
                         <!-- Projection -->
                         <Button Content="Ortho / Persp" Command="{Binding Camera.ToggleProjectionCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#6C5CE7" BorderThickness="0" ToolTip="Toggle Perspective / Orthographic projection" />
+
+                        <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
+
+                        <!-- Alignment Tools -->
+                        <Button Content="⤓ Floor" Command="{Binding MoveModelToFloorCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#55EFC4" BorderThickness="0" ToolTip="Align Model Base to Floor (Min Y = 0)" />
+                        <Button Content="⊕ Center" Command="{Binding CenterModelCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#55EFC4" BorderThickness="0" ToolTip="Center Model at (0, 0) Origin" />
+                        <Button Content="↺ Reset Pos" Command="{Binding ResetModelPositionCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#E17055" BorderThickness="0" ToolTip="Reset Model Position to Identity" />
 
                         <Separator Width="1" Background="#44FFFFFF" Margin="6,2" />
 

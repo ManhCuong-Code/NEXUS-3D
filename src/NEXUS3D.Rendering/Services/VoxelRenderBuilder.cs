@@ -5,14 +5,15 @@ using NEXUS3D.Rendering.Domain;
 namespace NEXUS3D.Rendering.Services;
 
 /// <summary>
-/// Builds high-performance, culled and chunk-partitioned 3D mesh representation of VoxelGrids for GPU rendering.
+/// Builds high-performance, culled, multi-material representation of VoxelGrids for GPU rendering,
+/// preserving accurate Minecraft block colors and materials.
 /// </summary>
 public sealed class VoxelRenderBuilder
 {
     private static readonly (int dx, int dy, int dz, Vector3 normal)[] Faces =
     [
-        (0, 1, 0, Vector3.UnitY),   // Top
-        (0, -1, 0, -Vector3.UnitY), // Bottom
+        (0, 1, 0, Vector3.UnitY),   // Top (+Y)
+        (0, -1, 0, -Vector3.UnitY), // Bottom (-Y)
         (0, 0, 1, Vector3.UnitZ),   // North (+Z)
         (0, 0, -1, -Vector3.UnitZ), // South (-Z)
         (1, 0, 0, Vector3.UnitX),   // East (+X)
@@ -36,13 +37,6 @@ public sealed class VoxelRenderBuilder
             voxelSet.Add((v.Position.X, v.Position.Y, v.Position.Z));
         }
 
-        var positions = new List<Vector3>(voxels.Count * 12);
-        var normals = new List<Vector3>(voxels.Count * 12);
-        var uvs = new List<Vector2>(voxels.Count * 12);
-        var colors = new List<Vector4>(voxels.Count * 12);
-        var indices = new List<int>(voxels.Count * 18);
-        var wireframe = new List<int>(voxels.Count * 24);
-
         float vx = (float)grid.VoxelSize.X;
         float vy = (float)grid.VoxelSize.Y;
         float vz = (float)grid.VoxelSize.Z;
@@ -50,123 +44,189 @@ public sealed class VoxelRenderBuilder
         if (vy <= 0) vy = 1f;
         if (vz <= 0) vz = 1f;
 
-        var min = new Vector3(float.MaxValue);
-        var max = new Vector3(float.MinValue);
+        var globalMin = new Vector3(float.MaxValue);
+        var globalMax = new Vector3(float.MinValue);
 
+        // Group voxels by distinct block identifier for multi-material rendering
+        var voxelsByBlock = new Dictionary<string, List<Voxel>>(StringComparer.OrdinalIgnoreCase);
         foreach (var voxel in voxels)
         {
-            int x = voxel.Position.X;
-            int y = voxel.Position.Y;
-            int z = voxel.Position.Z;
-
-            float x0 = x * vx;
-            float y0 = y * vy;
-            float z0 = z * vz;
-            float x1 = x0 + vx;
-            float y1 = y0 + vy;
-            float z1 = z0 + vz;
-
-            min = Vector3.Min(min, new Vector3(x0, y0, z0));
-            max = Vector3.Max(max, new Vector3(x1, y1, z1));
-
-            var color = ResolveVoxelColor(voxel);
-
-            for (int f = 0; f < 6; f++)
+            string blockKey = voxel.State?.GetFullIdentifier() ?? "minecraft:stone";
+            if (!voxelsByBlock.TryGetValue(blockKey, out var list))
             {
-                var (dx, dy, dz, normal) = Faces[f];
+                list = [];
+                voxelsByBlock[blockKey] = list;
+            }
+            list.Add(voxel);
+        }
 
-                // Hidden face culling
-                if (enableCulling && voxelSet.Contains((x + dx, y + dy, z + dz)))
+        var subMeshes = new List<RenderMesh>(voxelsByBlock.Count);
+        var combinedPositions = new List<Vector3>(voxels.Count * 12);
+        var combinedNormals = new List<Vector3>(voxels.Count * 12);
+        var combinedUVs = new List<Vector2>(voxels.Count * 12);
+        var combinedColors = new List<Vector4>(voxels.Count * 12);
+        var combinedIndices = new List<int>(voxels.Count * 18);
+        var combinedWireframe = new List<int>(voxels.Count * 24);
+
+        foreach (var (blockKey, blockVoxels) in voxelsByBlock)
+        {
+            var blockInfo = BlockMaterialRegistry.GetBlockInfo(blockKey);
+            var color = blockInfo.Color;
+
+            var bPositions = new List<Vector3>(blockVoxels.Count * 12);
+            var bNormals = new List<Vector3>(blockVoxels.Count * 12);
+            var bUvs = new List<Vector2>(blockVoxels.Count * 12);
+            var bColors = new List<Vector4>(blockVoxels.Count * 12);
+            var bIndices = new List<int>(blockVoxels.Count * 18);
+            var bWireframe = new List<int>(blockVoxels.Count * 24);
+
+            var bMin = new Vector3(float.MaxValue);
+            var bMax = new Vector3(float.MinValue);
+
+            foreach (var voxel in blockVoxels)
+            {
+                int x = voxel.Position.X;
+                int y = voxel.Position.Y;
+                int z = voxel.Position.Z;
+
+                float x0 = x * vx;
+                float y0 = y * vy;
+                float z0 = z * vz;
+                float x1 = x0 + vx;
+                float y1 = y0 + vy;
+                float z1 = z0 + vz;
+
+                bMin = Vector3.Min(bMin, new Vector3(x0, y0, z0));
+                bMax = Vector3.Max(bMax, new Vector3(x1, y1, z1));
+                globalMin = Vector3.Min(globalMin, new Vector3(x0, y0, z0));
+                globalMax = Vector3.Max(globalMax, new Vector3(x1, y1, z1));
+
+                for (int f = 0; f < 6; f++)
                 {
-                    continue;
+                    var (dx, dy, dz, normal) = Faces[f];
+
+                    // Hidden face culling against all solid neighbors
+                    if (enableCulling && voxelSet.Contains((x + dx, y + dy, z + dz)))
+                    {
+                        continue;
+                    }
+
+                    int bBaseIdx = bPositions.Count;
+                    int combBaseIdx = combinedPositions.Count;
+
+                    Vector3 p0, p1, p2, p3;
+                    switch (f)
+                    {
+                        case 0: // Top (+Y)
+                            p0 = new Vector3(x0, y1, z1);
+                            p1 = new Vector3(x1, y1, z1);
+                            p2 = new Vector3(x1, y1, z0);
+                            p3 = new Vector3(x0, y1, z0);
+                            break;
+                        case 1: // Bottom (-Y)
+                            p0 = new Vector3(x0, y0, z0);
+                            p1 = new Vector3(x1, y0, z0);
+                            p2 = new Vector3(x1, y0, z1);
+                            p3 = new Vector3(x0, y0, z1);
+                            break;
+                        case 2: // North (+Z)
+                            p0 = new Vector3(x0, y0, z1);
+                            p1 = new Vector3(x1, y0, z1);
+                            p2 = new Vector3(x1, y1, z1);
+                            p3 = new Vector3(x0, y1, z1);
+                            break;
+                        case 3: // South (-Z)
+                            p0 = new Vector3(x1, y0, z0);
+                            p1 = new Vector3(x0, y0, z0);
+                            p2 = new Vector3(x0, y1, z0);
+                            p3 = new Vector3(x1, y1, z0);
+                            break;
+                        case 4: // East (+X)
+                            p0 = new Vector3(x1, y0, z1);
+                            p1 = new Vector3(x1, y0, z0);
+                            p2 = new Vector3(x1, y1, z0);
+                            p3 = new Vector3(x1, y1, z1);
+                            break;
+                        default: // West (-X)
+                            p0 = new Vector3(x0, y0, z0);
+                            p1 = new Vector3(x0, y0, z1);
+                            p2 = new Vector3(x0, y1, z1);
+                            p3 = new Vector3(x0, y1, z0);
+                            break;
+                    }
+
+                    // Add to submesh
+                    bPositions.Add(p0); bPositions.Add(p1); bPositions.Add(p2); bPositions.Add(p3);
+                    combinedPositions.Add(p0); combinedPositions.Add(p1); combinedPositions.Add(p2); combinedPositions.Add(p3);
+
+                    for (int v = 0; v < 4; v++)
+                    {
+                        bNormals.Add(normal);
+                        bColors.Add(color);
+                        combinedNormals.Add(normal);
+                        combinedColors.Add(color);
+                    }
+
+                    var uv0 = new Vector2(0, 0);
+                    var uv1 = new Vector2(1, 0);
+                    var uv2 = new Vector2(1, 1);
+                    var uv3 = new Vector2(0, 1);
+
+                    bUvs.Add(uv0); bUvs.Add(uv1); bUvs.Add(uv2); bUvs.Add(uv3);
+                    combinedUVs.Add(uv0); combinedUVs.Add(uv1); combinedUVs.Add(uv2); combinedUVs.Add(uv3);
+
+                    // Submesh Triangles
+                    bIndices.Add(bBaseIdx); bIndices.Add(bBaseIdx + 1); bIndices.Add(bBaseIdx + 2);
+                    bIndices.Add(bBaseIdx); bIndices.Add(bBaseIdx + 2); bIndices.Add(bBaseIdx + 3);
+
+                    // Submesh Wireframe
+                    bWireframe.Add(bBaseIdx); bWireframe.Add(bBaseIdx + 1);
+                    bWireframe.Add(bBaseIdx + 1); bWireframe.Add(bBaseIdx + 2);
+                    bWireframe.Add(bBaseIdx + 2); bWireframe.Add(bBaseIdx + 3);
+                    bWireframe.Add(bBaseIdx + 3); bWireframe.Add(bBaseIdx);
+
+                    // Combined Triangles & Wireframe
+                    combinedIndices.Add(combBaseIdx); combinedIndices.Add(combBaseIdx + 1); combinedIndices.Add(combBaseIdx + 2);
+                    combinedIndices.Add(combBaseIdx); combinedIndices.Add(combBaseIdx + 2); combinedIndices.Add(combBaseIdx + 3);
+                    combinedWireframe.Add(combBaseIdx); combinedWireframe.Add(combBaseIdx + 1);
+                    combinedWireframe.Add(combBaseIdx + 1); combinedWireframe.Add(combBaseIdx + 2);
+                    combinedWireframe.Add(combBaseIdx + 2); combinedWireframe.Add(combBaseIdx + 3);
+                    combinedWireframe.Add(combBaseIdx + 3); combinedWireframe.Add(combBaseIdx);
                 }
+            }
 
-                int baseIdx = positions.Count;
-
-                switch (f)
+            if (bPositions.Count > 0)
+            {
+                var blockRenderMesh = new RenderMesh
                 {
-                    case 0: // Top (+Y)
-                        positions.Add(new Vector3(x0, y1, z1));
-                        positions.Add(new Vector3(x1, y1, z1));
-                        positions.Add(new Vector3(x1, y1, z0));
-                        positions.Add(new Vector3(x0, y1, z0));
-                        break;
-                    case 1: // Bottom (-Y)
-                        positions.Add(new Vector3(x0, y0, z0));
-                        positions.Add(new Vector3(x1, y0, z0));
-                        positions.Add(new Vector3(x1, y0, z1));
-                        positions.Add(new Vector3(x0, y0, z1));
-                        break;
-                    case 2: // North (+Z)
-                        positions.Add(new Vector3(x0, y0, z1));
-                        positions.Add(new Vector3(x1, y0, z1));
-                        positions.Add(new Vector3(x1, y1, z1));
-                        positions.Add(new Vector3(x0, y1, z1));
-                        break;
-                    case 3: // South (-Z)
-                        positions.Add(new Vector3(x1, y0, z0));
-                        positions.Add(new Vector3(x0, y0, z0));
-                        positions.Add(new Vector3(x0, y1, z0));
-                        positions.Add(new Vector3(x1, y1, z0));
-                        break;
-                    case 4: // East (+X)
-                        positions.Add(new Vector3(x1, y0, z1));
-                        positions.Add(new Vector3(x1, y0, z0));
-                        positions.Add(new Vector3(x1, y1, z0));
-                        positions.Add(new Vector3(x1, y1, z1));
-                        break;
-                    case 5: // West (-X)
-                        positions.Add(new Vector3(x0, y0, z0));
-                        positions.Add(new Vector3(x0, y0, z1));
-                        positions.Add(new Vector3(x0, y1, z1));
-                        positions.Add(new Vector3(x0, y1, z0));
-                        break;
-                }
-
-                for (int v = 0; v < 4; v++)
-                {
-                    normals.Add(normal);
-                    colors.Add(color);
-                }
-
-                uvs.Add(new Vector2(0, 0));
-                uvs.Add(new Vector2(1, 0));
-                uvs.Add(new Vector2(1, 1));
-                uvs.Add(new Vector2(0, 1));
-
-                // Triangles: (0, 1, 2) and (0, 2, 3)
-                indices.Add(baseIdx);
-                indices.Add(baseIdx + 1);
-                indices.Add(baseIdx + 2);
-
-                indices.Add(baseIdx);
-                indices.Add(baseIdx + 2);
-                indices.Add(baseIdx + 3);
-
-                // Wireframe edges
-                wireframe.Add(baseIdx);
-                wireframe.Add(baseIdx + 1);
-                wireframe.Add(baseIdx + 1);
-                wireframe.Add(baseIdx + 2);
-                wireframe.Add(baseIdx + 2);
-                wireframe.Add(baseIdx + 3);
-                wireframe.Add(baseIdx + 3);
-                wireframe.Add(baseIdx);
+                    Id = $"{grid.Id}_{blockKey}",
+                    Name = blockInfo.DisplayName,
+                    Positions = [.. bPositions],
+                    Normals = [.. bNormals],
+                    UVs = [.. bUvs],
+                    Colors = [.. bColors],
+                    Indices = [.. bIndices],
+                    WireframeIndices = [.. bWireframe],
+                    MaterialId = $"block:{blockKey}",
+                    BoundsMin = bMin == new Vector3(float.MaxValue) ? Vector3.Zero : bMin,
+                    BoundsMax = bMax == new Vector3(float.MinValue) ? Vector3.Zero : bMax
+                };
+                subMeshes.Add(blockRenderMesh);
             }
         }
 
-        var renderMesh = new RenderMesh
+        var consolidatedMesh = new RenderMesh
         {
             Id = grid.Id.ToString(),
             Name = grid.Name,
-            Positions = [.. positions],
-            Normals = [.. normals],
-            UVs = [.. uvs],
-            Colors = [.. colors],
-            Indices = [.. indices],
-            WireframeIndices = [.. wireframe],
-            BoundsMin = min == new Vector3(float.MaxValue) ? Vector3.Zero : min,
-            BoundsMax = max == new Vector3(float.MinValue) ? Vector3.Zero : max
+            Positions = [.. combinedPositions],
+            Normals = [.. combinedNormals],
+            UVs = [.. combinedUVs],
+            Colors = [.. combinedColors],
+            Indices = [.. combinedIndices],
+            WireframeIndices = [.. combinedWireframe],
+            BoundsMin = globalMin == new Vector3(float.MaxValue) ? Vector3.Zero : globalMin,
+            BoundsMax = globalMax == new Vector3(float.MinValue) ? Vector3.Zero : globalMax
         };
 
         return new RenderVoxelChunk
@@ -174,7 +234,8 @@ public sealed class VoxelRenderBuilder
             Id = grid.Id.ToString(),
             Position = new Vector3((float)grid.Origin.X * vx, (float)grid.Origin.Y * vy, (float)grid.Origin.Z * vz),
             VoxelCount = voxels.Count,
-            Mesh = renderMesh
+            Mesh = consolidatedMesh,
+            SubMeshes = subMeshes
         };
     }
 
@@ -218,18 +279,13 @@ public sealed class VoxelRenderBuilder
         return result;
     }
 
-    private static Vector4 ResolveVoxelColor(Voxel voxel)
+    public static Vector4 ResolveVoxelColor(Voxel voxel)
     {
         if (voxel.State is not null)
         {
-            // Deterministic hash color based on block name
-            int hash = Math.Abs(voxel.State.Name.GetHashCode());
-            float r = ((hash & 0xFF) / 255f) * 0.7f + 0.3f;
-            float g = (((hash >> 8) & 0xFF) / 255f) * 0.7f + 0.3f;
-            float b = (((hash >> 16) & 0xFF) / 255f) * 0.7f + 0.3f;
-            return new Vector4(r, g, b, 1.0f);
+            return BlockMaterialRegistry.GetBlockInfo(voxel.State).Color;
         }
 
-        return new Vector4(0.7f, 0.7f, 0.75f, 1.0f);
+        return new Vector4(0.5f, 0.5f, 0.5f, 1.0f);
     }
 }

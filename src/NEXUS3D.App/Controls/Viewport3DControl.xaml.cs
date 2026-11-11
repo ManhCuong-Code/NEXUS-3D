@@ -321,7 +321,13 @@ public partial class Viewport3DControl : UserControl
 
     public void FocusScene()
     {
-        if (Scene is null) return;
+        if (Scene is null)
+        {
+            GridVisual.Normal = new System.Windows.Media.Media3D.Vector3D(0, 1, 0);
+            GridVisual.LengthDirection = new System.Windows.Media.Media3D.Vector3D(1, 0, 0);
+            GridVisual.Center = new Point3D(0, 0, 0);
+            return;
+        }
 
         var min = Scene.BoundsMin;
         var max = Scene.BoundsMax;
@@ -359,6 +365,17 @@ public partial class Viewport3DControl : UserControl
             GridVisual.Length = gridDim;
             GridVisual.MajorDistance = Math.Max(10.0, Math.Pow(10, Math.Floor(Math.Log10(gridDim))));
             GridVisual.MinorDistance = Math.Max(1.0, GridVisual.MajorDistance / 10.0);
+
+            // Align floor grid strictly to horizontal XZ plane right under model base (min.Y)
+            GridVisual.Normal = new System.Windows.Media.Media3D.Vector3D(0, 1, 0);
+            GridVisual.LengthDirection = new System.Windows.Media.Media3D.Vector3D(1, 0, 0);
+            GridVisual.Center = new Point3D(center.X, min.Y - 0.005, center.Z);
+        }
+        else
+        {
+            GridVisual.Normal = new System.Windows.Media.Media3D.Vector3D(0, 1, 0);
+            GridVisual.LengthDirection = new System.Windows.Media.Media3D.Vector3D(1, 0, 0);
+            GridVisual.Center = new Point3D(0, 0, 0);
         }
 
         try

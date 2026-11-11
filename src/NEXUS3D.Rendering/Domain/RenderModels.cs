@@ -108,6 +108,7 @@ public sealed class RenderVoxelChunk
     public Vector3 Position { get; init; }
     public int VoxelCount { get; init; }
     public RenderMesh? Mesh { get; init; }
+    public List<RenderMesh> SubMeshes { get; init; } = [];
 }
 
 /// <summary>

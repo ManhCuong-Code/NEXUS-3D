@@ -226,5 +226,33 @@ public sealed class ObjParserTests
         Assert.Equal("custom_vendor_tag", doc.UnrecognizedStatements[0].Keyword);
         Assert.Contains(doc.Warnings, w => w.Code == ObjErrorCodes.UnsupportedStatement);
     }
+
+    [Fact]
+    public async Task Parse_VertexColors_ParsesRGBAndRGBA()
+    {
+        const string obj = """
+            v 1.0 2.0 3.0 1.0 0.5 0.25
+            v 4.0 5.0 6.0 0.1 0.2 0.3 0.8
+            f 1 2 1
+            """;
+
+        var doc = await ParseTextAsync(obj, new ObjParseOptions { StrictValidation = false });
+
+        Assert.Equal(2, doc.Positions.Count);
+
+        // First vertex has RGB
+        Assert.NotNull(doc.Positions[0].Color);
+        Assert.Equal(1.0, doc.Positions[0].Color!.Value.X, 4);
+        Assert.Equal(0.5, doc.Positions[0].Color!.Value.Y, 4);
+        Assert.Equal(0.25, doc.Positions[0].Color!.Value.Z, 4);
+        Assert.Equal(1.0, doc.Positions[0].Color!.Value.W, 4);
+
+        // Second vertex has RGBA
+        Assert.NotNull(doc.Positions[1].Color);
+        Assert.Equal(0.1, doc.Positions[1].Color!.Value.X, 4);
+        Assert.Equal(0.2, doc.Positions[1].Color!.Value.Y, 4);
+        Assert.Equal(0.3, doc.Positions[1].Color!.Value.Z, 4);
+        Assert.Equal(0.8, doc.Positions[1].Color!.Value.W, 4);
+    }
 }
 

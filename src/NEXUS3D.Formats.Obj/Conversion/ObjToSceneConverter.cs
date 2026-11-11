@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using NEXUS3D.Domain.Coordinates;
 using NEXUS3D.Domain.Materials;
 using NEXUS3D.Domain.Mathematics;
@@ -159,8 +160,21 @@ public sealed class ObjToSceneConverter : IObjToSceneConverter
                         scene.Textures.Add(texData);
                     }
 
-                    return new TextureSlot(texData.Id, statement.Channel);
+                    string channel = !string.IsNullOrWhiteSpace(statement.Channel)
+                        ? statement.Channel
+                        : resolved.NormalizedRelativePath;
+                    return new TextureSlot(texData.Id, channel);
                 });
+
+                if (usmMaterial.TextureSlots.TryGetValue("Albedo", out var aSlot) ||
+                    usmMaterial.TextureSlots.TryGetValue("Diffuse", out aSlot) ||
+                    usmMaterial.TextureSlots.TryGetValue("map_Kd", out aSlot))
+                {
+                    if (!string.IsNullOrWhiteSpace(aSlot.Channel))
+                    {
+                        usmMaterial.CustomProperties["diffuseTexture"] = JsonSerializer.SerializeToElement(aSlot.Channel);
+                    }
+                }
 
                 scene.Materials.Add(usmMaterial);
                 materialNameToId[mtlMat.Name] = usmMaterial.Id;
@@ -416,7 +430,7 @@ public sealed class ObjToSceneConverter : IObjToSceneConverter
             }
         }
 
-        var vertex = new Vertex(position, normal, texCoord);
+        var vertex = new Vertex(position, normal, texCoord, objPos.Color);
         if (Math.Abs(objPos.W - 1.0) > MathUtilities.Epsilon)
         {
             vertex.CustomAttributes["obj.w"] = objPos.ToVector4D();

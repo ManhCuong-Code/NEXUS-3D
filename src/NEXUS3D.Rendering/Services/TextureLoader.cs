@@ -25,7 +25,13 @@ public sealed class TextureLoader : ITextureLoader
         // Clean slashes
         var normalizedRef = textureRef.Trim().Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
 
-        // Security check: Guard against obvious malicious root escapes if baseDirectory provided
+        // Check if already an existing absolute path
+        if (Path.IsPathRooted(normalizedRef) && File.Exists(normalizedRef))
+        {
+            return normalizedRef;
+        }
+
+        // Resolve against baseDirectory
         if (!string.IsNullOrEmpty(baseDirectory))
         {
             try
@@ -33,7 +39,7 @@ public sealed class TextureLoader : ITextureLoader
                 var fullBasePath = Path.GetFullPath(baseDirectory);
                 var combined = Path.GetFullPath(Path.Combine(fullBasePath, normalizedRef));
 
-                // Reject any attempt to break outside baseDirectory
+                // Security check: Guard against malicious path traversal escaping baseDirectory
                 if (!combined.StartsWith(fullBasePath, StringComparison.OrdinalIgnoreCase))
                 {
                     return null;
@@ -58,17 +64,18 @@ public sealed class TextureLoader : ITextureLoader
                 {
                     return texturesSub;
                 }
+
+                // Check in "texture" subfolder
+                var textureSub = Path.Combine(fullBasePath, "texture", filenameOnly);
+                if (File.Exists(textureSub))
+                {
+                    return textureSub;
+                }
             }
             catch
             {
                 // Path resolution error fallback
             }
-        }
-
-        // Check if absolute path exists
-        if (Path.IsPathRooted(normalizedRef) && File.Exists(normalizedRef))
-        {
-            return normalizedRef;
         }
 
         return null;
@@ -135,59 +142,93 @@ public sealed class TextureLoader : ITextureLoader
 
     public (int Width, int Height) GetTextureDimensions(string texturePath)
     {
-        if (string.IsNullOrWhiteSpace(texturePath))
-        {
-            return (0, 0);
-        }
-
-        if (_dimensionCache.TryGetValue(texturePath, out var cached))
-        {
-            return cached;
-        }
-
         if (!IsTextureAvailable(texturePath))
         {
             return (0, 0);
         }
 
-        try
+        return _dimensionCache.GetOrAdd(texturePath, path =>
         {
-            using var stream = File.OpenRead(texturePath);
-            // Basic header inspection for PNG / JPEG / BMP
-            var dims = ReadDimensionsFromHeader(stream, Path.GetExtension(texturePath));
-            _dimensionCache[texturePath] = dims;
-            return dims;
-        }
-        catch
-        {
-            return (0, 0);
-        }
+            try
+            {
+                // Fast header inspection without full decode
+                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var ext = Path.GetExtension(path).ToLowerInvariant();
+
+                return ext switch
+                {
+                    ".png" => ReadPngDimensions(fs),
+                    ".jpg" or ".jpeg" => ReadJpegDimensions(fs),
+                    _ => (16, 16)
+                };
+            }
+            catch
+            {
+                return (16, 16);
+            }
+        });
     }
 
-    private static (int Width, int Height) ReadDimensionsFromHeader(Stream stream, string extension)
+    private static (int Width, int Height) ReadPngDimensions(Stream stream)
+    {
+        var buffer = new byte[24];
+        if (stream.Read(buffer, 0, 24) == 24)
+        {
+            // PNG signature check
+            if (buffer[0] == 0x89 && buffer[1] == 0x50 && buffer[2] == 0x4E && buffer[3] == 0x47)
+            {
+                int width = (buffer[16] << 24) | (buffer[17] << 16) | (buffer[18] << 8) | buffer[19];
+                int height = (buffer[20] << 24) | (buffer[21] << 16) | (buffer[22] << 8) | buffer[23];
+                return (Math.Max(1, width), Math.Max(1, height));
+            }
+        }
+        return (16, 16);
+    }
+
+    private static (int Width, int Height) ReadJpegDimensions(Stream stream)
     {
         using var reader = new BinaryReader(stream);
-
-        if (string.Equals(extension, ".png", StringComparison.OrdinalIgnoreCase))
+        if (reader.ReadByte() != 0xFF || reader.ReadByte() != 0xD8)
         {
-            // PNG signature (8 bytes) + IHDR length (4 bytes) + "IHDR" (4 bytes)
-            if (stream.Length < 24) return (0, 0);
-            stream.Seek(16, SeekOrigin.Begin);
-            int width = (reader.ReadByte() << 24) | (reader.ReadByte() << 16) | (reader.ReadByte() << 8) | reader.ReadByte();
-            int height = (reader.ReadByte() << 24) | (reader.ReadByte() << 16) | (reader.ReadByte() << 8) | reader.ReadByte();
-            return (width, height);
+            return (16, 16);
         }
 
-        if (string.Equals(extension, ".bmp", StringComparison.OrdinalIgnoreCase))
+        while (stream.Position < stream.Length)
         {
-            if (stream.Length < 26) return (0, 0);
-            stream.Seek(18, SeekOrigin.Begin);
-            int width = reader.ReadInt32();
-            int height = Math.Abs(reader.ReadInt32());
-            return (width, height);
+            byte marker = reader.ReadByte();
+            while (marker != 0xFF)
+            {
+                marker = reader.ReadByte();
+            }
+
+            marker = reader.ReadByte();
+            while (marker == 0xFF)
+            {
+                marker = reader.ReadByte();
+            }
+
+            if (marker is 0xC0 or 0xC1 or 0xC2) // SOF0, SOF1, SOF2 markers
+            {
+                reader.ReadInt16(); // skip length
+                reader.ReadByte();  // skip precision
+                int height = (reader.ReadByte() << 8) | reader.ReadByte();
+                int width = (reader.ReadByte() << 8) | reader.ReadByte();
+                return (Math.Max(1, width), Math.Max(1, height));
+            }
+
+            if (marker is 0xD9 or 0xDA) // EOI or SOS
+            {
+                break;
+            }
+
+            // Skip block
+            ushort length = (ushort)((reader.ReadByte() << 8) | reader.ReadByte());
+            if (length > 2)
+            {
+                stream.Seek(length - 2, SeekOrigin.Current);
+            }
         }
 
-        // Fallback default
-        return (64, 64);
+        return (16, 16);
     }
 }

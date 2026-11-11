@@ -42,6 +42,9 @@ public sealed partial class RenderSettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _backgroundColorHex = "#1E1E24";
 
+    [ObservableProperty]
+    private RenderSettings _currentSettings = RenderSettings.Default;
+
     public event EventHandler<RenderSettings>? SettingsChanged;
 
     public RenderSettingsViewModel(IRenderService renderService)
@@ -63,6 +66,7 @@ public sealed partial class RenderSettingsViewModel : ObservableObject
         ShowTextures = s.ShowTextures;
         NormalScale = s.NormalScale;
         BackgroundColorHex = s.BackgroundColorHex;
+        CurrentSettings = s;
     }
 
     partial void OnSelectedShadingChanged(ShadingMode value) => ApplyChanges();
@@ -128,6 +132,7 @@ public sealed partial class RenderSettingsViewModel : ObservableObject
             NormalScale: NormalScale);
 
         _renderService.UpdateSettings(settings);
+        CurrentSettings = settings;
         SettingsChanged?.Invoke(this, settings);
     }
 }
