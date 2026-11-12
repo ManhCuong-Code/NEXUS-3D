@@ -547,7 +547,8 @@ public sealed class SceneToBedrockGeometryConverter : ISceneToBedrockGeometryCon
             var bounds = firstMesh.CalculateBounds();
             if (bounds.IsValid)
             {
-                origin = BedrockCoordinateConverter.UsmPositionToBedrock(bounds.Min);
+                // Mesh vertices are in bone-local coordinates (corners - bone.Pivot); add owningBone.Pivot to recover model space
+                origin = owningBone.Pivot + BedrockCoordinateConverter.UsmPositionToBedrock(bounds.Min);
                 size = bounds.Size;
                 uv = BedrockCubeUv.CreateBoxUv(0, 0);
                 foundProperties = true;

@@ -379,17 +379,23 @@ public partial class Viewport3DControl : UserControl
 
     public void FocusScene()
     {
-        if (Scene is null)
+        if (Scene is not null && Scene.BoundsMin != Scene.BoundsMax)
         {
-            GridVisual.Normal = new System.Windows.Media.Media3D.Vector3D(0, 1, 0);
-            GridVisual.LengthDirection = new System.Windows.Media.Media3D.Vector3D(1, 0, 0);
-            GridVisual.Center = new Point3D(0, 0, 0);
+            var min = Scene.BoundsMin;
+            var max = Scene.BoundsMax;
+            FocusBounds(new Point3D(min.X, min.Y, min.Z), new Point3D(max.X, max.Y, max.Z));
             return;
         }
 
-        var min = Scene.BoundsMin;
-        var max = Scene.BoundsMax;
-        FocusBounds(new Point3D(min.X, min.Y, min.Z), new Point3D(max.X, max.Y, max.Z));
+        if (RawUsmScene?.Graph.Root.GetWorldBounds() is { IsValid: true } b)
+        {
+            FocusBounds(new Point3D(b.Min.X, b.Min.Y, b.Min.Z), new Point3D(b.Max.X, b.Max.Y, b.Max.Z));
+            return;
+        }
+
+        GridVisual.Normal = new System.Windows.Media.Media3D.Vector3D(0, 1, 0);
+        GridVisual.LengthDirection = new System.Windows.Media.Media3D.Vector3D(1, 0, 0);
+        GridVisual.Center = new Point3D(0, 0, 0);
     }
 
     public void FocusSelected()
@@ -421,6 +427,13 @@ public partial class Viewport3DControl : UserControl
                 var usmNode = RawUsmScene.Graph.FindNode(guid);
                 if (usmNode is not null)
                 {
+                    if (usmNode.GetWorldBounds() is { IsValid: true } wb)
+                    {
+                        FocusBounds(new Point3D(wb.Min.X, wb.Min.Y, wb.Min.Z),
+                                    new Point3D(wb.Max.X, wb.Max.Y, wb.Max.Z));
+                        return;
+                    }
+
                     var world = usmNode.GetWorldMatrix();
                     var center = world.Translation;
                     double r = 1.0;
@@ -562,18 +575,6 @@ public partial class Viewport3DControl : UserControl
     private void UpdateGizmoDisplay()
     {
         var targetNodeId = SelectedNodeId;
-        if (string.IsNullOrEmpty(targetNodeId))
-        {
-            if (RawUsmScene?.Graph.Root.Children.FirstOrDefault() is { } firstUsmNode)
-            {
-                targetNodeId = firstUsmNode.Id.ToString();
-            }
-            else if (Scene?.RootNodes.Count > 0)
-            {
-                targetNodeId = Scene.RootNodes[0].Id;
-            }
-        }
-
         if (string.IsNullOrEmpty(targetNodeId) || ActiveTool == EditorToolType.None)
         {
             _gizmoVisual.Hide();
@@ -590,8 +591,16 @@ public partial class Viewport3DControl : UserControl
             var node = RawUsmScene.Graph.FindNode(guid);
             if (node is not null)
             {
-                var worldPos = node.GetWorldMatrix().Translation;
-                gizmoPos = new Point3D(worldPos.X, worldPos.Y, worldPos.Z);
+                if (node.Object?.GetLocalBounds() is { IsValid: true } localBounds)
+                {
+                    var worldBounds = localBounds.Transform(node.GetWorldMatrix());
+                    gizmoPos = new Point3D(worldBounds.Center.X, worldBounds.Center.Y, worldBounds.Center.Z);
+                }
+                else
+                {
+                    var worldPos = node.GetWorldMatrix().Translation;
+                    gizmoPos = new Point3D(worldPos.X, worldPos.Y, worldPos.Z);
+                }
 
                 if (TransformSpace == TransformSpace.Local)
                 {
@@ -1065,21 +1074,31 @@ public partial class Viewport3DControl : UserControl
         if (RawUsmScene is not null && Guid.TryParse(SelectedNodeId, out var guid))
         {
             var node = RawUsmScene.Graph.FindNode(guid);
-            if (node is not null && node.Object?.Meshes.Count > 0)
+            if (node is not null)
             {
-                var bounds = node.Object.Meshes[0].Bounds;
-                var world = node.GetWorldMatrix();
-                var min = world.TransformPoint(bounds.Min);
-                var max = world.TransformPoint(bounds.Max);
-                double sx = Math.Max(0.02, Math.Abs(max.X - min.X));
-                double sy = Math.Max(0.02, Math.Abs(max.Y - min.Y));
-                double sz = Math.Max(0.02, Math.Abs(max.Z - min.Z));
-                _selectedCubeHighlightVisual.BoundingBox = new Rect3D(Math.Min(min.X, max.X), Math.Min(min.Y, max.Y), Math.Min(min.Z, max.Z), sx, sy, sz);
-                if (!HelixViewport.Children.Contains(_selectedCubeHighlightVisual))
+                BoundingBox? bb = null;
+                if (node.Object?.GetLocalBounds() is { IsValid: true } localBounds)
                 {
-                    HelixViewport.Children.Add(_selectedCubeHighlightVisual);
+                    bb = localBounds.Transform(node.GetWorldMatrix());
                 }
-                return;
+                else if (node.GetWorldBounds() is { IsValid: true } worldBounds)
+                {
+                    bb = worldBounds;
+                }
+
+                if (bb.HasValue)
+                {
+                    var wb = bb.Value;
+                    double sx = Math.Max(0.02, Math.Abs(wb.Size.X));
+                    double sy = Math.Max(0.02, Math.Abs(wb.Size.Y));
+                    double sz = Math.Max(0.02, Math.Abs(wb.Size.Z));
+                    _selectedCubeHighlightVisual.BoundingBox = new Rect3D(wb.Min.X, wb.Min.Y, wb.Min.Z, sx, sy, sz);
+                    if (!HelixViewport.Children.Contains(_selectedCubeHighlightVisual))
+                    {
+                        HelixViewport.Children.Add(_selectedCubeHighlightVisual);
+                    }
+                    return;
+                }
             }
         }
 

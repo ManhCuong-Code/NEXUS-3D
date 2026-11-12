@@ -35,6 +35,14 @@ public sealed class BedrockConversionReport
     public int PolyMeshCount { get; init; }
     public int GeneratedMeshCount { get; init; }
     public int PreservedExtensionCount { get; init; }
+    public int ValidCubeCount { get; init; }
+    public int ErrorCubeCount { get; init; }
+    public int MeshCount { get; init; }
+    public int FaceCount { get; init; }
+    public int VertexCount { get; init; }
+    public int TriangleCount { get; init; }
+    public int CubesWithUvCount { get; init; }
+    public int BonesWithParentCount { get; init; }
     public LossReport LossReport { get; init; } = new();
     public List<WarningRecord> Warnings { get; init; } = [];
     public List<ValidationIssue> Issues { get; init; } = [];

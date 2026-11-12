@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using NEXUS3D.App.Controls;
@@ -30,6 +31,30 @@ public partial class ViewportWorkspaceView : UserControl
         if (DataContext is ViewportViewModel vm)
         {
             vm.SelectNode(nodeId);
+        }
+    }
+
+    private void OnBedrockOutlinerSelectedItemChanged(object sender, System.Windows.RoutedPropertyChangedEventArgs<object> e)
+    {
+        if (DataContext is not ViewportViewModel vm) return;
+
+        if (e.NewValue is BedrockCubeItemViewModel cube)
+        {
+            vm.BedrockWorkspace.SelectCube(cube);
+            string? targetId = cube.NodeId?.ToString() ?? cube.CubeId;
+            if (!string.IsNullOrEmpty(targetId))
+            {
+                vm.SelectNode(targetId);
+            }
+        }
+        else if (e.NewValue is BedrockBoneNodeViewModel bone)
+        {
+            vm.BedrockWorkspace.SelectBone(bone);
+            string? targetId = bone.NodeId?.ToString() ?? bone.Name;
+            if (!string.IsNullOrEmpty(targetId))
+            {
+                vm.SelectNode(targetId);
+            }
         }
     }
 

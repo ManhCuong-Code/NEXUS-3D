@@ -127,49 +127,130 @@ public sealed class MaterialRenderAdapter : IMaterialRenderAdapter
         // Fallback: Check if there's an adjacent or companion texture file in baseDirectory
         if (string.IsNullOrEmpty(diffusePath) && !string.IsNullOrEmpty(baseDirectory) && Directory.Exists(baseDirectory))
         {
-            var candidates = new List<string>
+            var searchDirectories = new List<string>
             {
-                Path.Combine(baseDirectory, $"{material.Name}.png"),
-                Path.Combine(baseDirectory, "textures", $"{material.Name}.png"),
-                Path.Combine(baseDirectory, "textures", "entity", $"{material.Name}.png")
+                baseDirectory,
+                Path.Combine(baseDirectory, "textures", "entity"),
+                Path.Combine(baseDirectory, "textures"),
+                Path.Combine(baseDirectory, "textures", "models"),
+                Path.Combine(baseDirectory, "texture")
             };
 
-            // If material name has geometry prefix (e.g., geometry.fantastic_material -> fantastic)
-            string cleanMat = material.Name;
-            if (cleanMat.StartsWith("geometry.", StringComparison.OrdinalIgnoreCase))
+            var parent = Directory.GetParent(baseDirectory)?.FullName;
+            if (!string.IsNullOrEmpty(parent) && Directory.Exists(parent))
             {
-                cleanMat = cleanMat[9..];
-            }
-            if (cleanMat.EndsWith("_material", StringComparison.OrdinalIgnoreCase))
-            {
-                cleanMat = cleanMat[..^9];
+                searchDirectories.Add(Path.Combine(parent, "textures", "entity"));
+                searchDirectories.Add(Path.Combine(parent, "textures"));
+                searchDirectories.Add(parent);
             }
 
-            candidates.Add(Path.Combine(baseDirectory, $"{cleanMat}.png"));
-            candidates.Add(Path.Combine(baseDirectory, "textures", $"{cleanMat}.png"));
-            candidates.Add(Path.Combine(baseDirectory, "textures", "entity", $"{cleanMat}.png"));
+            var nameCandidates = new List<string>();
 
-            foreach (var cand in candidates)
+            // 1. Raw and clean material name
+            if (!string.IsNullOrWhiteSpace(material.Name))
             {
-                if (File.Exists(cand))
+                nameCandidates.Add(material.Name);
+
+                string cleanMat = material.Name;
+                if (cleanMat.StartsWith("geometry.", StringComparison.OrdinalIgnoreCase))
                 {
-                    diffusePath = cand;
-                    break;
+                    cleanMat = cleanMat[9..];
                 }
-            }
-
-            // If still not found, check if there is an unambiguous single PNG in the directory
-            if (string.IsNullOrEmpty(diffusePath))
-            {
-                try
+                if (cleanMat.EndsWith("_material", StringComparison.OrdinalIgnoreCase))
                 {
-                    var pngs = Directory.GetFiles(baseDirectory, "*.png", SearchOption.TopDirectoryOnly);
-                    if (pngs.Length == 1)
+                    cleanMat = cleanMat[..^9];
+                }
+
+                if (!nameCandidates.Contains(cleanMat, StringComparer.OrdinalIgnoreCase))
+                {
+                    nameCandidates.Add(cleanMat);
+                }
+
+                // Sub-segments for dot notation (e.g. humanoid.custom -> custom, humanoid)
+                int dotIdx = cleanMat.LastIndexOf('.');
+                if (dotIdx >= 0)
+                {
+                    string suffix = cleanMat[(dotIdx + 1)..];
+                    string prefix = cleanMat[..dotIdx];
+                    if (!string.IsNullOrEmpty(suffix) && !nameCandidates.Contains(suffix, StringComparer.OrdinalIgnoreCase))
                     {
-                        diffusePath = pngs[0];
+                        nameCandidates.Add(suffix);
+                    }
+                    if (!string.IsNullOrEmpty(prefix) && !nameCandidates.Contains(prefix, StringComparer.OrdinalIgnoreCase))
+                    {
+                        nameCandidates.Add(prefix);
                     }
                 }
-                catch { }
+            }
+
+            // 2. Identifier / model name in CustomProperties
+            foreach (var key in new[] { "modelName", "identifier", "bedrock.geometryId", "geometryIdentifier", "bedrock.material" })
+            {
+                if (material.CustomProperties.TryGetValue(key, out var propElem) && propElem.ValueKind == JsonValueKind.String)
+                {
+                    var val = propElem.GetString();
+                    if (!string.IsNullOrWhiteSpace(val))
+                    {
+                        if (!nameCandidates.Contains(val, StringComparer.OrdinalIgnoreCase))
+                        {
+                            nameCandidates.Add(val);
+                        }
+                        if (val.StartsWith("geometry.", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var stripped = val[9..];
+                            if (!nameCandidates.Contains(stripped, StringComparer.OrdinalIgnoreCase))
+                            {
+                                nameCandidates.Add(stripped);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Standard companion skin texture filenames
+            foreach (var standard in new[] { "skin", "steve", "alex", "default", "texture" })
+            {
+                if (!nameCandidates.Contains(standard, StringComparer.OrdinalIgnoreCase))
+                {
+                    nameCandidates.Add(standard);
+                }
+            }
+
+            // A. Search for named candidates across search directories
+            foreach (var dir in searchDirectories)
+            {
+                if (!Directory.Exists(dir)) continue;
+
+                foreach (var name in nameCandidates)
+                {
+                    string cand = Path.Combine(dir, $"{name}.png");
+                    if (File.Exists(cand))
+                    {
+                        diffusePath = cand;
+                        break;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(diffusePath)) break;
+            }
+
+            // B. If still not found, check if there is an unambiguous single PNG in search directories
+            if (string.IsNullOrEmpty(diffusePath))
+            {
+                foreach (var dir in searchDirectories)
+                {
+                    if (!Directory.Exists(dir)) continue;
+                    try
+                    {
+                        var pngs = Directory.GetFiles(dir, "*.png", SearchOption.TopDirectoryOnly);
+                        if (pngs.Length == 1)
+                        {
+                            diffusePath = pngs[0];
+                            break;
+                        }
+                    }
+                    catch { }
+                }
             }
         }
 

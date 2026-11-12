@@ -56,6 +56,8 @@ public sealed partial class BedrockBoneNodeViewModel : ObservableObject
     public ObservableCollection<BedrockBoneNodeViewModel> Children { get; } = [];
     public ObservableCollection<BedrockCubeItemViewModel> Cubes { get; } = [];
 
+    public IEnumerable<object> OutlinerChildren => Children.Cast<object>().Concat(Cubes.Cast<object>());
+
     public int TotalCubeCount => Cubes.Count + Children.Sum(c => c.TotalCubeCount);
 }
 
@@ -489,6 +491,16 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
         SelectedCube = cube;
         if (cube is null) return;
 
+        // Ensure SelectedBone reflects the cube's owning bone
+        if (!string.IsNullOrEmpty(cube.BoneName) && (SelectedBone is null || SelectedBone.Name != cube.BoneName))
+        {
+            var owningBone = GetAllBones(RootBones).FirstOrDefault(b => b.Name == cube.BoneName);
+            if (owningBone is not null)
+            {
+                SelectedBone = owningBone;
+            }
+        }
+
         // Update selection flags across all cubes
         foreach (var c in GetAllCubes())
         {
@@ -529,56 +541,67 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
             return;
         }
 
-        foreach (var geo in Geometries)
+        if (SelectedCube is not null &&
+            (string.Equals(SelectedCube.NodeId?.ToString(), nodeId, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(SelectedCube.CubeId, nodeId, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(SelectedCube.Name, nodeId, StringComparison.OrdinalIgnoreCase)))
         {
-            foreach (var bone in GetAllBones(geo.Bones))
+            return;
+        }
+
+        var candidateBones = Geometries.Count > 0
+            ? Geometries.SelectMany(g => GetAllBones(g.Bones))
+            : GetAllBones(RootBones);
+
+        foreach (var bone in candidateBones)
+        {
+            var matchingCube = bone.Cubes.FirstOrDefault(c =>
+                string.Equals(c.NodeId?.ToString(), nodeId, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(c.CubeId, nodeId, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(c.Name, nodeId, StringComparison.OrdinalIgnoreCase));
+
+            if (matchingCube is not null)
             {
-                var matchingCube = bone.Cubes.FirstOrDefault(c =>
-                    string.Equals(c.NodeId?.ToString(), nodeId, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(c.CubeId, nodeId, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(c.Name, nodeId, StringComparison.OrdinalIgnoreCase));
+                SelectedGeometry = Geometries.FirstOrDefault(g => g.Bones.Any(b => b.Name == bone.Name || GetAllBones(b.Children).Any(c => c.Name == bone.Name)))
+                                   ?? Geometries.FirstOrDefault();
+                SelectedBone = bone;
+                SelectedCube = matchingCube;
 
-                if (matchingCube is not null)
+                if (SelectedGeometry is not null) SelectedGeometry.IsExpanded = true;
+                bone.IsExpanded = true;
+                bone.IsSelected = true;
+
+                foreach (var c in GetAllCubes())
                 {
-                    SelectedGeometry = geo;
-                    SelectedBone = bone;
-                    SelectedCube = matchingCube;
-
-                    geo.IsExpanded = true;
-                    bone.IsExpanded = true;
-                    bone.IsSelected = true;
-
-                    foreach (var c in GetAllCubes())
-                    {
-                        c.IsSelected = ReferenceEquals(c, matchingCube);
-                    }
-
-                    if (_inspector is not null && _currentScene is not null && matchingCube.NodeId.HasValue)
-                    {
-                        var node = _currentScene.Graph.FindNode(matchingCube.NodeId.Value);
-                        if (node is not null)
-                        {
-                            _inspector.InspectUsmNode(node, _currentScene);
-                        }
-                    }
-                    return;
+                    c.IsSelected = ReferenceEquals(c, matchingCube);
                 }
 
-                if (string.Equals(bone.NodeId?.ToString(), nodeId, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(bone.Name, nodeId, StringComparison.OrdinalIgnoreCase))
+                if (_inspector is not null && _currentScene is not null && matchingCube.NodeId.HasValue)
                 {
-                    SelectedGeometry = geo;
-                    SelectedBone = bone;
-                    geo.IsExpanded = true;
-                    bone.IsExpanded = true;
-                    bone.IsSelected = true;
-
-                    if (bone.Cubes.Count > 0)
+                    var node = _currentScene.Graph.FindNode(matchingCube.NodeId.Value);
+                    if (node is not null)
                     {
-                        SelectCube(bone.Cubes[0]);
+                        _inspector.InspectUsmNode(node, _currentScene);
                     }
-                    return;
                 }
+                return;
+            }
+
+            if (string.Equals(bone.NodeId?.ToString(), nodeId, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(bone.Name, nodeId, StringComparison.OrdinalIgnoreCase))
+            {
+                SelectedGeometry = Geometries.FirstOrDefault(g => g.Bones.Any(b => b.Name == bone.Name || GetAllBones(b.Children).Any(c => c.Name == bone.Name)))
+                                   ?? Geometries.FirstOrDefault();
+                SelectedBone = bone;
+                if (SelectedGeometry is not null) SelectedGeometry.IsExpanded = true;
+                bone.IsExpanded = true;
+                bone.IsSelected = true;
+
+                if (bone.Cubes.Count > 0)
+                {
+                    SelectCube(bone.Cubes[0]);
+                }
+                return;
             }
         }
     }

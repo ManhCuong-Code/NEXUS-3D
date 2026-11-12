@@ -140,6 +140,10 @@ public sealed partial class ViewportViewModel : BaseViewModel
         _workspaceSession.SceneChanged += OnWorkspaceSessionSceneChanged;
         BlockWorkspace.BlockHighlightRequested += (s, blockId) => HighlightedBlockId = blockId;
         BlockWorkspace.BlockCoordinateSelected += (s, coord) => HighlightedBlockCoord = coord;
+
+        BedrockWorkspace.ViewportNodeSelector = SelectNode;
+        BedrockWorkspace.CubeHighlightRequested += (s, id) => SelectNode(id);
+        BedrockWorkspace.CubeSelected += (s, id) => SelectNode(id);
     }
 
     partial void OnActiveTabChanged(WorkspaceDocumentTab? oldValue, WorkspaceDocumentTab? newValue)
@@ -455,6 +459,7 @@ public sealed partial class ViewportViewModel : BaseViewModel
         SelectedNodeId = nodeId;
         _renderService.SelectNode(nodeId);
         Hierarchy.SelectById(nodeId);
+        BedrockWorkspace.SelectNodeById(nodeId);
 
         if (!string.IsNullOrEmpty(nodeId))
         {
@@ -544,15 +549,23 @@ public sealed partial class ViewportViewModel : BaseViewModel
                 var node = RawUsmScene.Graph.FindNode(guid);
                 if (node is not null)
                 {
+                    if (node.GetWorldBounds() is { IsValid: true } wb)
+                    {
+                        var center = new System.Numerics.Vector3((float)wb.Center.X, (float)wb.Center.Y, (float)wb.Center.Z);
+                        float radius = Math.Max(0.5f, (float)Math.Max(wb.Size.X, Math.Max(wb.Size.Y, wb.Size.Z)) * 0.8f);
+                        Camera.Focus(center, radius);
+                        return;
+                    }
+
                     var world = node.GetWorldMatrix();
-                    var center = new System.Numerics.Vector3((float)world.Translation.X, (float)world.Translation.Y, (float)world.Translation.Z);
-                    float radius = 1.5f;
+                    var center2 = new System.Numerics.Vector3((float)world.Translation.X, (float)world.Translation.Y, (float)world.Translation.Z);
+                    float r = 1.5f;
                     if (node.Object?.Meshes.Count > 0)
                     {
                         var b = node.Object.Meshes[0].Bounds;
-                        radius = Math.Max(0.5f, (float)(b.Max - b.Min).Length() * 0.5f);
+                        r = Math.Max(0.5f, (float)(b.Max - b.Min).Length() * 0.5f);
                     }
-                    Camera.Focus(center, radius);
+                    Camera.Focus(center2, r);
                     return;
                 }
             }
@@ -578,12 +591,23 @@ public sealed partial class ViewportViewModel : BaseViewModel
     [RelayCommand]
     public void FocusModel()
     {
-        if (Scene is null) return;
-        var min = Scene.BoundsMin;
-        var max = Scene.BoundsMax;
-        var center = (min + max) * 0.5f;
-        float maxDim = Math.Max(max.X - min.X, Math.Max(max.Y - min.Y, max.Z - min.Z));
-        Camera.Focus(center, Math.Max(maxDim * 0.8f, 2.0f));
+        if (Scene is not null && Scene.BoundsMin != Scene.BoundsMax)
+        {
+            var min = Scene.BoundsMin;
+            var max = Scene.BoundsMax;
+            var center = (min + max) * 0.5f;
+            float maxDim = Math.Max(max.X - min.X, Math.Max(max.Y - min.Y, max.Z - min.Z));
+            Camera.Focus(center, Math.Max(maxDim * 0.8f, 2.0f));
+            return;
+        }
+
+        if (RawUsmScene?.Graph.Root.GetWorldBounds() is { IsValid: true } b)
+        {
+            var center = new System.Numerics.Vector3((float)b.Center.X, (float)b.Center.Y, (float)b.Center.Z);
+            var size = b.Size;
+            float maxDim = (float)Math.Max(size.X, Math.Max(size.Y, size.Z));
+            Camera.Focus(center, Math.Max(maxDim * 0.8f, 2.0f));
+        }
     }
 
     [RelayCommand]

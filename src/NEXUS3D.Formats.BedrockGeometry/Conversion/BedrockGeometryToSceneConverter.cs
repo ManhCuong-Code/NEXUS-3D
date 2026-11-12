@@ -88,9 +88,16 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
 
         int totalBones = 0;
         int totalCubes = 0;
+        int validCubes = 0;
+        int errorCubes = 0;
+        int cubesWithUv = 0;
+        int bonesWithParent = 0;
         int totalLocators = 0;
         int totalPolyMeshes = 0;
         int generatedMeshes = 0;
+        int totalFaces = 0;
+        int totalVertices = 0;
+        int totalTriangles = 0;
         int preservedExtensions = document.RootExtensionData.Count;
 
         var materialByName = new Dictionary<string, MaterialData>(StringComparer.OrdinalIgnoreCase);
@@ -115,6 +122,8 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
             var skeleton = new SkeletonData(geoId);
             geoRootObj.SkeletonId = skeleton.Id;
 
+            var bedrockBoneByName = geo.Bones.ToDictionary(b => b.Name, StringComparer.Ordinal);
+
             // Pre-allocate BoneData & SceneNode for every bone in original declaration order
             var boneDataByName = new Dictionary<string, BoneData>(StringComparer.Ordinal);
             var boneNodeByName = new Dictionary<string, SceneNode>(StringComparer.Ordinal);
@@ -125,17 +134,38 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
                 totalBones++;
                 preservedExtensions += bone.ExtensionData.Count;
 
+                if (!string.IsNullOrWhiteSpace(bone.Parent))
+                {
+                    bonesWithParent++;
+                }
+
                 string boneName = !string.IsNullOrWhiteSpace(bone.Name) ? bone.Name : $"bone_{bIdx}";
                 Vector3D usmPivot = BedrockCoordinateConverter.BedrockPositionToUsm(bone.Pivot);
                 Vector3D usmRotEuler = BedrockCoordinateConverter.BedrockRotationToUsmEuler(bone.Rotation);
                 QuaternionD usmRotQuat = BedrockCoordinateConverter.BedrockRotationToUsmQuaternion(bone.Rotation);
+
+                // Hierarchical local transform:
+                // - Root bone: local position is bone.pivot in USM space
+                // - Child bone: local position is (bone.pivot - parent.pivot) in USM space
+                Vector3D localPosition;
+                if (!string.IsNullOrWhiteSpace(bone.Parent) &&
+                    bedrockBoneByName.TryGetValue(bone.Parent, out BedrockBone? parentBone))
+                {
+                    localPosition = BedrockCoordinateConverter.BedrockPositionToUsm(bone.Pivot - parentBone.Pivot);
+                }
+                else
+                {
+                    localPosition = usmPivot;
+                }
+
+                var boneTransform = new Transform3D(localPosition, usmRotQuat, Vector3D.One);
 
                 var usmBone = new BoneData(boneName)
                 {
                     Pivot = usmPivot,
                     BindRotationDegrees = usmRotEuler,
                     BindingExpression = bone.Binding,
-                    LocalTransform = new Transform3D(usmPivot, usmRotQuat, Vector3D.One)
+                    LocalTransform = boneTransform.DeepClone()
                 };
 
                 foreach ((string locName, BedrockLocator locator) in bone.Locators)
@@ -161,7 +191,7 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
 
                 var boneNode = new SceneNode(boneName, boneSceneObj)
                 {
-                    LocalTransform = new Transform3D(usmPivot, usmRotQuat, Vector3D.One),
+                    LocalTransform = boneTransform,
                     IsVisible = bone.NeverRender != true
                 };
 
@@ -172,8 +202,10 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
                         BedrockCube cube = bone.Cubes[cIdx];
                         totalCubes++;
                         preservedExtensions += cube.ExtensionData.Count;
+
                         if (cube.Uv is not null)
                         {
+                            cubesWithUv++;
                             preservedExtensions += cube.Uv.ExtensionData.Count;
                             foreach (BedrockFaceUv fUv in cube.Uv.Faces.Values)
                             {
@@ -187,8 +219,11 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
 
                         if (!cube.HasValidOrigin || !cube.HasValidSize)
                         {
+                            errorCubes++;
                             continue;
                         }
+
+                        validCubes++;
 
                         MaterialData cubeMat = !string.IsNullOrWhiteSpace(bone.Material)
                             ? GetOrCreateMaterial(scene, materialByName, bone.Material!)
@@ -208,6 +243,10 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
                             geo.Description,
                             cubeName,
                             cubeMat.Id);
+
+                        totalFaces += cubeMesh.Faces.Count;
+                        totalVertices += cubeMesh.Vertices.Count;
+                        totalTriangles += cubeMesh.Faces.Sum(f => Math.Max(0, f.VertexIndices.Count - 2));
 
                         var cubeSceneObj = new SceneObject(cubeName)
                         {
@@ -279,9 +318,13 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
                     {
                         totalPolyMeshes++;
                         preservedExtensions += polyMesh.ExtensionData.Count;
-                        MeshData? convertedPoly = BuildPolyMesh(polyMesh, $"{boneName}_polymesh", defaultGeoMaterial.Id);
+                        MeshData? convertedPoly = BuildPolyMesh(polyMesh, $"{boneName}_polymesh", defaultGeoMaterial.Id, bone);
                         if (convertedPoly is not null)
                         {
+                            totalFaces += convertedPoly.Faces.Count;
+                            totalVertices += convertedPoly.Vertices.Count;
+                            totalTriangles += convertedPoly.Faces.Sum(f => Math.Max(0, f.VertexIndices.Count - 2));
+
                             boneSceneObj.Meshes.Add(convertedPoly);
                             generatedMeshes++;
                         }
@@ -341,11 +384,26 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
         // Preserve full lossless Bedrock Geometry document snapshot in ExtensionData
         AttachDocumentExtensionData(scene, document, options.PreserveRawData);
 
-        lossReport.RecordSupported("BedrockGeometry", $"Converted {document.Geometries.Count} Bedrock geometry definition(s), {totalBones} bone(s), {totalCubes} cube(s), and {totalLocators} locator(s).");
+        lossReport.RecordSupported("BedrockGeometry", $"Converted {document.Geometries.Count} Bedrock geometry definition(s), {totalBones} bone(s) ({bonesWithParent} with parent), {totalCubes} cube(s) ({validCubes} valid, {errorCubes} invalid, {cubesWithUv} with UV), and {totalLocators} locator(s).");
+        lossReport.RecordSupported("BedrockGeometryDiagnostics", $"Diagnostics: {document.Geometries.Count} geometries, {totalBones} bones, {totalCubes} cubes, {generatedMeshes} meshes, {totalFaces} faces, {totalVertices} vertices, {totalTriangles} triangles.");
         if (preservedExtensions > 0 && options.PreserveRawData)
         {
             lossReport.RecordPreservedRaw("BedrockExtensions", $"Preserved {preservedExtensions} unknown/custom JSON properties in USM ExtensionData.");
         }
+
+        var diagExt = new ExtensionData("bedrock:diagnostics");
+        diagExt.Values["totalGeometries"] = JsonSerializer.SerializeToElement(document.Geometries.Count);
+        diagExt.Values["totalBones"] = JsonSerializer.SerializeToElement(totalBones);
+        diagExt.Values["totalCubes"] = JsonSerializer.SerializeToElement(totalCubes);
+        diagExt.Values["validCubes"] = JsonSerializer.SerializeToElement(validCubes);
+        diagExt.Values["errorCubes"] = JsonSerializer.SerializeToElement(errorCubes);
+        diagExt.Values["meshes"] = JsonSerializer.SerializeToElement(generatedMeshes);
+        diagExt.Values["faces"] = JsonSerializer.SerializeToElement(totalFaces);
+        diagExt.Values["vertices"] = JsonSerializer.SerializeToElement(totalVertices);
+        diagExt.Values["triangles"] = JsonSerializer.SerializeToElement(totalTriangles);
+        diagExt.Values["cubesWithUv"] = JsonSerializer.SerializeToElement(cubesWithUv);
+        diagExt.Values["bonesWithParent"] = JsonSerializer.SerializeToElement(bonesWithParent);
+        scene.Metadata.AddExtension(diagExt);
 
         scene.Metadata.LossReport = lossReport;
         scene.Metadata.Warnings.AddRange(warnings);
@@ -361,6 +419,14 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
             PolyMeshCount = totalPolyMeshes,
             GeneratedMeshCount = generatedMeshes,
             PreservedExtensionCount = preservedExtensions,
+            ValidCubeCount = validCubes,
+            ErrorCubeCount = errorCubes,
+            MeshCount = generatedMeshes,
+            FaceCount = totalFaces,
+            VertexCount = totalVertices,
+            TriangleCount = totalTriangles,
+            CubesWithUvCount = cubesWithUv,
+            BonesWithParentCount = bonesWithParent,
             LossReport = lossReport,
             Warnings = warnings,
             Issues = issues
@@ -408,13 +474,14 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
         return mat;
     }
 
-    private static MeshData? BuildPolyMesh(BedrockPolyMesh polyMesh, string meshName, Guid materialId)
+    private static MeshData? BuildPolyMesh(BedrockPolyMesh polyMesh, string meshName, Guid materialId, BedrockBone owningBone)
     {
         if (polyMesh.Positions.Count == 0)
         {
             return null;
         }
 
+        Vector3D usmBonePivot = BedrockCoordinateConverter.BedrockPositionToUsm(owningBone.Pivot);
         var mesh = new MeshData(meshName, MeshTopology.Polygons);
         if (polyMesh.Polys.Count > 0)
         {
@@ -432,7 +499,7 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
                     int posIdx = vertIndices[0];
                     if (posIdx < 0 || posIdx >= polyMesh.Positions.Count) continue;
 
-                    Vector3D pos = BedrockCoordinateConverter.BedrockPositionToUsm(polyMesh.Positions[posIdx]);
+                    Vector3D pos = BedrockCoordinateConverter.BedrockPositionToUsm(polyMesh.Positions[posIdx]) - usmBonePivot;
                     Vector3D? norm = vertIndices.Length >= 2 && vertIndices[1] >= 0 && vertIndices[1] < polyMesh.Normals.Count
                         ? BedrockCoordinateConverter.BedrockPositionToUsm(polyMesh.Normals[vertIndices[1]]).Normalize()
                         : null;
@@ -454,7 +521,7 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
         {
             for (int i = 0; i < polyMesh.Positions.Count; i++)
             {
-                Vector3D pos = BedrockCoordinateConverter.BedrockPositionToUsm(polyMesh.Positions[i]);
+                Vector3D pos = BedrockCoordinateConverter.BedrockPositionToUsm(polyMesh.Positions[i]) - usmBonePivot;
                 Vector3D? norm = i < polyMesh.Normals.Count
                     ? BedrockCoordinateConverter.BedrockPositionToUsm(polyMesh.Normals[i]).Normalize()
                     : null;
