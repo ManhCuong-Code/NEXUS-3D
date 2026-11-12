@@ -5,6 +5,8 @@ using NEXUS3D.App.Controls;
 using NEXUS3D.App.ViewModels;
 using NEXUS3D.Editor.Abstractions;
 using NEXUS3D.Rendering.Contracts;
+using NEXUS3D.Rendering.Domain;
+using NEXUS3D.Rendering.Services;
 
 namespace NEXUS3D.App.Views;
 
@@ -16,6 +18,64 @@ public partial class ViewportWorkspaceView : UserControl
         Viewport3D.NodeSelected += OnViewportNodeSelected;
         Viewport3D.BlockPicked += OnViewportBlockPicked;
         KeyDown += OnWorkspaceKeyDown;
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.OldValue is ViewportViewModel oldVm)
+        {
+            oldVm.BedrockWorkspace.CubeMeshUpdated -= OnBedrockCubeMeshUpdated;
+            oldVm.BedrockWorkspace.ViewportRefresher = null;
+        }
+
+        if (e.NewValue is ViewportViewModel newVm)
+        {
+            newVm.BedrockWorkspace.CubeMeshUpdated += OnBedrockCubeMeshUpdated;
+            newVm.BedrockWorkspace.ViewportRefresher = OnBedrockViewportRefresh;
+        }
+    }
+
+    private void OnBedrockCubeMeshUpdated(object? sender, BedrockCubeItemViewModel? cube)
+    {
+        if (DataContext is not ViewportViewModel vm) return;
+
+        // If there is an active RenderScene and the cube has a NodeId, sync the RenderNode's mesh
+        if (cube?.NodeId.HasValue == true && vm.Scene is not null && vm.RawUsmScene is not null)
+        {
+            string nodeIdStr = cube.NodeId.Value.ToString();
+            var rNode = FindRenderNode(vm.Scene.RootNodes, nodeIdStr);
+            var usmNode = vm.RawUsmScene.Graph.FindNode(cube.NodeId.Value);
+
+            if (rNode is not null && usmNode?.Object?.Meshes.Count > 0)
+            {
+                rNode.Meshes.Clear();
+                var builder = new MeshRenderBuilder();
+                foreach (var mesh in usmNode.Object.Meshes)
+                {
+                    var rMeshes = builder.BuildMulti(mesh, "default");
+                    rNode.Meshes.AddRange(rMeshes);
+                }
+            }
+        }
+
+        Viewport3D.RebuildSceneVisuals();
+    }
+
+    private void OnBedrockViewportRefresh()
+    {
+        Viewport3D.RebuildSceneVisuals();
+    }
+
+    private static RenderNode? FindRenderNode(IEnumerable<RenderNode> nodes, string id)
+    {
+        foreach (var node in nodes)
+        {
+            if (string.Equals(node.Id, id, StringComparison.OrdinalIgnoreCase)) return node;
+            var found = FindRenderNode(node.Children, id);
+            if (found is not null) return found;
+        }
+        return null;
     }
 
     private void OnViewportBlockPicked(object? sender, BlockPickEventArgs? e)
@@ -62,11 +122,13 @@ public partial class ViewportWorkspaceView : UserControl
     {
         if (DataContext is not ViewportViewModel vm) return;
 
-        // If focus is currently inside a TextBox (e.g. numeric input), ignore single-key shortcuts
-        if (Keyboard.FocusedElement is TextBox)
+        // If focus is currently inside a TextBox (e.g. numeric input), update binding and apply
+        if (Keyboard.FocusedElement is TextBox tb)
         {
             if (e.Key == Key.Enter)
             {
+                var binding = tb.GetBindingExpression(TextBox.TextProperty);
+                binding?.UpdateSource();
                 vm.Inspector.ApplyNumericTransformCommand.Execute(null);
                 e.Handled = true;
             }

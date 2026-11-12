@@ -1,8 +1,11 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.IO;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NEXUS3D.Domain.Mathematics;
+using NEXUS3D.Domain.Meshes;
 using NEXUS3D.Domain.Scene;
 using NEXUS3D.Domain.Skeletons;
 using NEXUS3D.Formats.BedrockGeometry.Conversion;
@@ -13,9 +16,12 @@ namespace NEXUS3D.App.ViewModels;
 
 /// <summary>
 /// Observable item representing an individual Bedrock cuboid in the hierarchy and inspector.
+/// Supports interactive editing of Origin, Size, Pivot, Rotation, Inflate, UV, Mirror, and bind-pose reset.
 /// </summary>
 public sealed partial class BedrockCubeItemViewModel : ObservableObject
 {
+    private bool _isUpdating;
+
     public Guid? NodeId { get; init; }
     public string CubeId { get; init; } = string.Empty;
     public required string Name { get; init; }
@@ -23,17 +29,88 @@ public sealed partial class BedrockCubeItemViewModel : ObservableObject
     public string BoneId { get; init; } = string.Empty;
     public string BoneName { get; init; } = string.Empty;
     public string? ParentBone { get; init; }
-    public required string Origin { get; init; }
-    public required string Size { get; init; }
-    public required string Pivot { get; init; }
-    public required string Rotation { get; init; }
-    public required string Uv { get; init; }
-    public bool Mirror { get; init; }
-    public float Inflate { get; init; }
-    public string Material { get; init; } = "default";
+
+    [ObservableProperty]
+    private string _origin = string.Empty;
+
+    [ObservableProperty]
+    private string _size = string.Empty;
+
+    [ObservableProperty]
+    private string _pivot = string.Empty;
+
+    [ObservableProperty]
+    private string _rotation = string.Empty;
+
+    [ObservableProperty]
+    private string _uv = string.Empty;
+
+    [ObservableProperty]
+    private bool _mirror;
+
+    [ObservableProperty]
+    private float _inflate;
+
+    [ObservableProperty]
+    private string _material = "default";
 
     [ObservableProperty]
     private bool _isSelected;
+
+    // Original bind-pose cube values for ResetTransform
+    public string OriginalOrigin { get; set; } = string.Empty;
+    public string OriginalSize { get; set; } = string.Empty;
+    public string OriginalPivot { get; set; } = string.Empty;
+    public string OriginalRotation { get; set; } = string.Empty;
+    public string OriginalUv { get; set; } = string.Empty;
+    public float OriginalInflate { get; set; }
+    public bool OriginalMirror { get; set; }
+
+    public BedrockCube? SourceCube { get; set; }
+    public BedrockBone? SourceBone { get; set; }
+    public BedrockGeometryDescription? SourceDescription { get; set; }
+    public Guid? MaterialId { get; set; }
+
+    internal BedrockWorkspaceViewModel? Workspace { get; set; }
+
+    partial void OnOriginChanged(string value) => OnPropertyEdited();
+    partial void OnSizeChanged(string value) => OnPropertyEdited();
+    partial void OnPivotChanged(string value) => OnPropertyEdited();
+    partial void OnRotationChanged(string value) => OnPropertyEdited();
+    partial void OnUvChanged(string value) => OnPropertyEdited();
+    partial void OnInflateChanged(float value) => OnPropertyEdited();
+    partial void OnMirrorChanged(bool value) => OnPropertyEdited();
+
+    private void OnPropertyEdited()
+    {
+        if (_isUpdating) return;
+        Workspace?.RecalculateCubeMesh(this);
+    }
+
+    /// <summary>
+    /// Restores original bind-pose cube values and triggers immediate mesh recalculation and Viewport refresh.
+    /// </summary>
+    [RelayCommand]
+    public void ResetTransform()
+    {
+        _isUpdating = true;
+        try
+        {
+            Origin = OriginalOrigin;
+            Size = OriginalSize;
+            Pivot = OriginalPivot;
+            Rotation = OriginalRotation;
+            Uv = OriginalUv;
+            Inflate = OriginalInflate;
+            Mirror = OriginalMirror;
+        }
+        finally
+        {
+            _isUpdating = false;
+        }
+
+        Workspace?.RecalculateCubeMesh(this);
+    }
 }
 
 /// <summary>
@@ -83,7 +160,8 @@ public sealed partial class BedrockGeometryNodeViewModel : ObservableObject
 }
 
 /// <summary>
-/// Specialized ViewModel managing Bedrock Geometry (.geo.json) Bone Hierarchy, Cube Inspection, and Kinematics.
+/// Specialized ViewModel managing Bedrock Geometry (.geo.json) Bone Hierarchy, Cube Inspection, Kinematics,
+/// Geometry Diagnostics, and Interactive Cube Property Editing.
 /// Builds an observable tree structure: Geometry -> Bone -> Cubes with bidirectional selection synchronization
 /// between the 3D Viewport and Object Inspector.
 /// </summary>
@@ -97,6 +175,55 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
 
     [ObservableProperty]
     private int _cubeCount;
+
+    // Full 14 Geometry Diagnostics
+    [ObservableProperty]
+    private int _totalGeometries;
+
+    [ObservableProperty]
+    private int _totalBones;
+
+    [ObservableProperty]
+    private int _totalCubes;
+
+    [ObservableProperty]
+    private int _validCubes;
+
+    [ObservableProperty]
+    private int _errorCubes;
+
+    [ObservableProperty]
+    private int _meshes;
+
+    [ObservableProperty]
+    private int _faces;
+
+    [ObservableProperty]
+    private int _vertices;
+
+    [ObservableProperty]
+    private int _triangles;
+
+    [ObservableProperty]
+    private int _cubesWithUv;
+
+    [ObservableProperty]
+    private int _cubesMissingUv;
+
+    [ObservableProperty]
+    private int _bonesWithParent;
+
+    [ObservableProperty]
+    private int _texturesFound;
+
+    [ObservableProperty]
+    private int _missingTextures;
+
+    [ObservableProperty]
+    private bool _hasMissingTextureWarning;
+
+    [ObservableProperty]
+    private string _missingTextureWarningMessage = "Missing Texture: Không tìm thấy ảnh Skin tương ứng với Geometry.";
 
     [ObservableProperty]
     private BedrockGeometryNodeViewModel? _selectedGeometry;
@@ -135,6 +262,16 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
     public event EventHandler<BedrockCubeItemViewModel?>? CubeSelectionChanged;
 
     /// <summary>
+    /// Event raised when a cube's mesh vertices are recalculated after editing or resetting properties.
+    /// </summary>
+    public event EventHandler<BedrockCubeItemViewModel?>? CubeMeshUpdated;
+
+    /// <summary>
+    /// Delegate to notify the 3D Viewport to refresh immediately when geometry or properties change.
+    /// </summary>
+    public Action? ViewportRefresher { get; set; }
+
+    /// <summary>
     /// Optional direct delegate to trigger node selection in the active 3D Viewport.
     /// </summary>
     public Action<string?>? ViewportNodeSelector { get; set; }
@@ -155,9 +292,14 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Loads and builds the observable Geometry -> Bone -> Cubes hierarchy from a Universal Scene Model (<see cref="Scene3D"/>).
+    /// Loads and builds the observable Geometry -> Bone -> Cubes hierarchy and Diagnostics from a Universal Scene Model (<see cref="Scene3D"/>).
     /// </summary>
-    public void LoadFromScene(Scene3D scene)
+    public void LoadFromScene(Scene3D scene) => LoadFromScene(scene, null);
+
+    /// <summary>
+    /// Loads and builds the observable Geometry -> Bone -> Cubes hierarchy and Diagnostics from a Universal Scene Model (<see cref="Scene3D"/>) and source file path.
+    /// </summary>
+    public void LoadFromScene(Scene3D scene, string? filePath)
     {
         ArgumentNullException.ThrowIfNull(scene);
         _currentScene = scene;
@@ -170,6 +312,10 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
 
         int totalBones = 0;
         int totalCubes = 0;
+        int validCubes = 0;
+        int errorCubes = 0;
+        int cubesWithUv = 0;
+        int bonesWithParent = 0;
 
         // Collect all SceneNodes by name for fast lookup
         var sceneNodesByName = new Dictionary<string, SceneNode>(StringComparer.Ordinal);
@@ -215,6 +361,11 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                 {
                     var bone = geo.Bones[bIdx];
                     totalBones++;
+                    if (!string.IsNullOrEmpty(bone.Parent))
+                    {
+                        bonesWithParent++;
+                    }
+
                     sceneNodesByName.TryGetValue(bone.Name, out var boneNode);
 
                     var boneVm = new BedrockBoneNodeViewModel
@@ -230,6 +381,20 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                     {
                         totalCubes++;
                         var cube = bone.Cubes[cIdx];
+                        if (cube.HasValidOrigin && cube.HasValidSize)
+                        {
+                            validCubes++;
+                        }
+                        else
+                        {
+                            errorCubes++;
+                        }
+
+                        if (cube.Uv is not null)
+                        {
+                            cubesWithUv++;
+                        }
+
                         string cubeName = $"{bone.Name}_cube_{cIdx}";
                         if (cube.ExtensionData.TryGet("name", out var extNameElem) &&
                             extNameElem.ValueKind == JsonValueKind.String &&
@@ -254,6 +419,11 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                             ? $"{cube.Uv.BoxUvOffset.X:F1}, {cube.Uv.BoxUvOffset.Y:F1}"
                             : (cube.Uv?.Mode == BedrockUvMode.PerFaceUv ? "PerFace" : "0, 0");
 
+                        string origStr = $"{cube.Origin.X:F1}, {cube.Origin.Y:F1}, {cube.Origin.Z:F1}";
+                        string sizeStr = $"{cube.Size.X:F1}, {cube.Size.Y:F1}, {cube.Size.Z:F1}";
+                        string pivStr = $"{cubePivot.X:F1}, {cubePivot.Y:F1}, {cubePivot.Z:F1}";
+                        string rotStr = $"{cubeRot.X:F1}°, {cubeRot.Y:F1}°, {cubeRot.Z:F1}°";
+
                         var cubeVm = new BedrockCubeItemViewModel
                         {
                             NodeId = cubeNode?.Id,
@@ -263,15 +433,29 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                             BoneId = boneNode?.Id.ToString() ?? string.Empty,
                             BoneName = bone.Name,
                             ParentBone = bone.Parent,
-                            Origin = $"{cube.Origin.X:F1}, {cube.Origin.Y:F1}, {cube.Origin.Z:F1}",
-                            Size = $"{cube.Size.X:F1}, {cube.Size.Y:F1}, {cube.Size.Z:F1}",
-                            Pivot = $"{cubePivot.X:F1}, {cubePivot.Y:F1}, {cubePivot.Z:F1}",
-                            Rotation = $"{cubeRot.X:F1}°, {cubeRot.Y:F1}°, {cubeRot.Z:F1}°",
+                            Origin = origStr,
+                            Size = sizeStr,
+                            Pivot = pivStr,
+                            Rotation = rotStr,
                             Uv = uv,
                             Mirror = mirror,
                             Inflate = (float)inflate,
                             Material = bone.Material ?? "default"
                         };
+
+                        cubeVm.OriginalOrigin = origStr;
+                        cubeVm.OriginalSize = sizeStr;
+                        cubeVm.OriginalPivot = pivStr;
+                        cubeVm.OriginalRotation = rotStr;
+                        cubeVm.OriginalUv = uv;
+                        cubeVm.OriginalInflate = (float)inflate;
+                        cubeVm.OriginalMirror = mirror;
+
+                        cubeVm.SourceCube = cube;
+                        cubeVm.SourceBone = bone;
+                        cubeVm.SourceDescription = geo.Description;
+                        cubeVm.MaterialId = cubeNode?.Object?.Meshes.FirstOrDefault()?.Faces.FirstOrDefault()?.MaterialId;
+                        cubeVm.Workspace = this;
 
                         boneVm.Cubes.Add(cubeVm);
                     }
@@ -314,6 +498,8 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                     foreach (var bone in skeleton.Bones)
                     {
                         totalBones++;
+                        if (bone.ParentBoneId.HasValue) bonesWithParent++;
+
                         sceneNodesByName.TryGetValue(bone.Name, out var boneNode);
 
                         var vm = new BedrockBoneNodeViewModel
@@ -331,6 +517,8 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                                 if (skeleton.Bones.Any(b => b.Name == childNode.Name)) continue;
 
                                 totalCubes++;
+                                validCubes++;
+                                cubesWithUv++;
                                 var props = childNode.Object?.Properties;
                                 string orig = GetPropString(props, "Origin", "bedrock.origin") ?? "0, 0, 0";
                                 string sz = GetPropString(props, "Size", "bedrock.size") ?? "1, 1, 1";
@@ -338,7 +526,7 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                                 string rot = GetPropString(props, "Rotation", "bedrock.rotation") ?? "0°, 0°, 0°";
                                 string uv = GetPropString(props, "UV", "bedrock.uv") ?? "0, 0";
 
-                                vm.Cubes.Add(new BedrockCubeItemViewModel
+                                var cubeVm = new BedrockCubeItemViewModel
                                 {
                                     NodeId = childNode.Id,
                                     CubeId = childNode.Id.ToString(),
@@ -355,7 +543,16 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                                     Mirror = false,
                                     Inflate = 0f,
                                     Material = "default"
-                                });
+                                };
+
+                                cubeVm.OriginalOrigin = orig;
+                                cubeVm.OriginalSize = sz;
+                                cubeVm.OriginalPivot = piv;
+                                cubeVm.OriginalRotation = rot;
+                                cubeVm.OriginalUv = uv;
+                                cubeVm.Workspace = this;
+
+                                vm.Cubes.Add(cubeVm);
                             }
                         }
 
@@ -364,8 +561,10 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                             foreach (var loc in bone.Locators)
                             {
                                 totalCubes++;
+                                validCubes++;
+                                cubesWithUv++;
                                 var rot = loc.RotationDegrees ?? Vector3D.Zero;
-                                vm.Cubes.Add(new BedrockCubeItemViewModel
+                                var cubeVm = new BedrockCubeItemViewModel
                                 {
                                     CubeId = Guid.NewGuid().ToString(),
                                     Name = loc.Name,
@@ -380,7 +579,16 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                                     Mirror = false,
                                     Inflate = 0f,
                                     Material = "default"
-                                });
+                                };
+
+                                cubeVm.OriginalOrigin = cubeVm.Origin;
+                                cubeVm.OriginalSize = cubeVm.Size;
+                                cubeVm.OriginalPivot = cubeVm.Pivot;
+                                cubeVm.OriginalRotation = cubeVm.Rotation;
+                                cubeVm.OriginalUv = cubeVm.Uv;
+                                cubeVm.Workspace = this;
+
+                                vm.Cubes.Add(cubeVm);
                             }
                         }
 
@@ -422,10 +630,12 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                         foreach (var m in obj.Meshes)
                         {
                             totalCubes++;
+                            validCubes++;
+                            cubesWithUv++;
                             var min = m.Bounds.Min;
                             var max = m.Bounds.Max;
                             var size = max - min;
-                            bVm.Cubes.Add(new BedrockCubeItemViewModel
+                            var cubeVm = new BedrockCubeItemViewModel
                             {
                                 NodeId = node.Id,
                                 CubeId = m.Id.ToString(),
@@ -441,7 +651,16 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                                 Mirror = false,
                                 Inflate = 0f,
                                 Material = "default"
-                            });
+                            };
+
+                            cubeVm.OriginalOrigin = cubeVm.Origin;
+                            cubeVm.OriginalSize = cubeVm.Size;
+                            cubeVm.OriginalPivot = cubeVm.Pivot;
+                            cubeVm.OriginalRotation = cubeVm.Rotation;
+                            cubeVm.OriginalUv = cubeVm.Uv;
+                            cubeVm.Workspace = this;
+
+                            bVm.Cubes.Add(cubeVm);
                         }
                     }
 
@@ -453,8 +672,8 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
             Geometries.Add(geoVm);
         }
 
-        BoneCount = totalBones;
-        CubeCount = totalCubes;
+        // Expose full Geometry Diagnostics
+        PopulateDiagnostics(scene, document, filePath, totalBones, totalCubes, validCubes, errorCubes, cubesWithUv, bonesWithParent);
 
         if (Geometries.Count > 0)
         {
@@ -465,6 +684,360 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
         {
             SelectBone(RootBones[0]);
         }
+    }
+
+    private void PopulateDiagnostics(
+        Scene3D scene,
+        BedrockGeometryDocument? document,
+        string? filePath,
+        int totalBones,
+        int totalCubes,
+        int validCubes,
+        int errorCubes,
+        int cubesWithUv,
+        int bonesWithParent)
+    {
+        TotalGeometries = 0;
+        TotalBones = 0;
+        TotalCubes = 0;
+        ValidCubes = 0;
+        ErrorCubes = 0;
+        Meshes = 0;
+        Faces = 0;
+        Vertices = 0;
+        Triangles = 0;
+        CubesWithUv = 0;
+        CubesMissingUv = 0;
+        BonesWithParent = 0;
+        TexturesFound = 0;
+        MissingTextures = 0;
+        HasMissingTextureWarning = false;
+        MissingTextureWarningMessage = "Missing Texture: Không tìm thấy ảnh Skin tương ứng với Geometry.";
+
+        bool hasDiagExt = scene.Metadata.Extensions.TryGetValue("bedrock:diagnostics", out var diagExt);
+        if (hasDiagExt && diagExt != null)
+        {
+            if (diagExt.Values.TryGetValue("totalGeometries", out var tg) && tg.ValueKind == JsonValueKind.Number) TotalGeometries = tg.GetInt32();
+            if (diagExt.Values.TryGetValue("totalBones", out var tb) && tb.ValueKind == JsonValueKind.Number) TotalBones = tb.GetInt32();
+            if (diagExt.Values.TryGetValue("totalCubes", out var tc) && tc.ValueKind == JsonValueKind.Number) TotalCubes = tc.GetInt32();
+            if (diagExt.Values.TryGetValue("validCubes", out var vc) && vc.ValueKind == JsonValueKind.Number) ValidCubes = vc.GetInt32();
+            if (diagExt.Values.TryGetValue("errorCubes", out var ec) && ec.ValueKind == JsonValueKind.Number) ErrorCubes = ec.GetInt32();
+            if (diagExt.Values.TryGetValue("meshes", out var m) && m.ValueKind == JsonValueKind.Number) Meshes = m.GetInt32();
+            if (diagExt.Values.TryGetValue("faces", out var f) && f.ValueKind == JsonValueKind.Number) Faces = f.GetInt32();
+            if (diagExt.Values.TryGetValue("vertices", out var v) && v.ValueKind == JsonValueKind.Number) Vertices = v.GetInt32();
+            if (diagExt.Values.TryGetValue("triangles", out var tr) && tr.ValueKind == JsonValueKind.Number) Triangles = tr.GetInt32();
+            if (diagExt.Values.TryGetValue("cubesWithUv", out var cuv) && cuv.ValueKind == JsonValueKind.Number) CubesWithUv = cuv.GetInt32();
+            if (diagExt.Values.TryGetValue("bonesWithParent", out var bwp) && bwp.ValueKind == JsonValueKind.Number) BonesWithParent = bwp.GetInt32();
+            if (diagExt.Values.TryGetValue("cubesMissingUv", out var cmuv) && cmuv.ValueKind == JsonValueKind.Number) CubesMissingUv = cmuv.GetInt32();
+            if (diagExt.Values.TryGetValue("texturesFound", out var tf) && tf.ValueKind == JsonValueKind.Number) TexturesFound = tf.GetInt32();
+            if (diagExt.Values.TryGetValue("missingTextures", out var mt) && mt.ValueKind == JsonValueKind.Number) MissingTextures = mt.GetInt32();
+            if (diagExt.Values.TryGetValue("hasMissingTextureWarning", out var hmtw) && (hmtw.ValueKind is JsonValueKind.True or JsonValueKind.False)) HasMissingTextureWarning = hmtw.GetBoolean();
+            if (diagExt.Values.TryGetValue("missingTextureWarningMessage", out var mtwm) && mtwm.ValueKind == JsonValueKind.String) MissingTextureWarningMessage = mtwm.GetString() ?? MissingTextureWarningMessage;
+        }
+
+        var sceneMeshes = scene.Graph.Traverse()
+            .Select(n => n.Object)
+            .Where(obj => obj is not null)
+            .SelectMany(obj => obj!.Meshes)
+            .ToList();
+
+        if (TotalGeometries == 0) TotalGeometries = document?.Geometries.Count ?? Math.Max(1, Geometries.Count);
+        if (TotalBones == 0) TotalBones = totalBones;
+        if (TotalCubes == 0) TotalCubes = totalCubes;
+        if (ValidCubes == 0 && TotalCubes > 0) ValidCubes = validCubes > 0 ? validCubes : TotalCubes - errorCubes;
+        if (ErrorCubes == 0 && TotalCubes > ValidCubes) ErrorCubes = TotalCubes - ValidCubes;
+        if (Meshes == 0) Meshes = sceneMeshes.Count > 0 ? sceneMeshes.Count : totalCubes;
+        if (Faces == 0) Faces = sceneMeshes.Sum(m => m.Faces.Count);
+        if (Vertices == 0) Vertices = sceneMeshes.Sum(m => m.Vertices.Count);
+        if (Triangles == 0) Triangles = sceneMeshes.Sum(m => m.Faces.Sum(fc => Math.Max(0, fc.VertexIndices.Count - 2)));
+        if (CubesWithUv == 0 && TotalCubes > 0) CubesWithUv = cubesWithUv > 0 ? cubesWithUv : TotalCubes;
+        if (CubesMissingUv == 0) CubesMissingUv = Math.Max(0, TotalCubes - CubesWithUv);
+        if (BonesWithParent == 0) BonesWithParent = bonesWithParent;
+
+        BoneCount = TotalBones;
+        CubeCount = TotalCubes;
+
+        // Texture discovery & validation
+        if (TexturesFound == 0 && MissingTextures == 0)
+        {
+            bool hasTexture = CheckHasSkinTexture(scene, filePath, document);
+            if (hasTexture)
+            {
+                TexturesFound = 1;
+                MissingTextures = 0;
+                HasMissingTextureWarning = false;
+            }
+            else
+            {
+                TexturesFound = 0;
+                MissingTextures = Math.Max(1, TotalGeometries);
+                HasMissingTextureWarning = true;
+                MissingTextureWarningMessage = "Missing Texture: Không tìm thấy ảnh Skin tương ứng với Geometry.";
+            }
+        }
+        else
+        {
+            HasMissingTextureWarning = MissingTextures > 0;
+        }
+    }
+
+    private static bool CheckHasSkinTexture(Scene3D scene, string? explicitFilePath, BedrockGeometryDocument? document)
+    {
+        // 1. Check if any material has assigned diffuse/albedo texture
+        foreach (var mat in scene.Materials.Materials)
+        {
+            if (mat.TextureSlots.TryGetValue("Albedo", out var slot) ||
+                mat.TextureSlots.TryGetValue("Diffuse", out slot) ||
+                mat.TextureSlots.TryGetValue("map_Kd", out slot))
+            {
+                if (!string.IsNullOrWhiteSpace(slot.Channel)) return true;
+            }
+
+            foreach (var key in new[] { "diffuseTexture", "obj.mtl.map_Kd", "voxel.textureReference" })
+            {
+                if (mat.CustomProperties.TryGetValue(key, out var prop) &&
+                    prop.ValueKind == JsonValueKind.String &&
+                    !string.IsNullOrWhiteSpace(prop.GetString()))
+                {
+                    return true;
+                }
+            }
+        }
+
+        // 2. Resolve directory to search on disk
+        string? baseDirectory = null;
+        if (!string.IsNullOrWhiteSpace(explicitFilePath))
+        {
+            try
+            {
+                baseDirectory = File.Exists(explicitFilePath)
+                    ? Path.GetDirectoryName(explicitFilePath)
+                    : (Directory.Exists(explicitFilePath) ? explicitFilePath : null);
+            }
+            catch { }
+        }
+
+        if (string.IsNullOrEmpty(baseDirectory))
+        {
+            var src = scene.Metadata.Source?.OriginalFileName;
+            if (!string.IsNullOrWhiteSpace(src))
+            {
+                try
+                {
+                    baseDirectory = File.Exists(src)
+                        ? Path.GetDirectoryName(src)
+                        : (Directory.Exists(src) ? src : null);
+                }
+                catch { }
+            }
+        }
+
+        if (!string.IsNullOrEmpty(baseDirectory) && Directory.Exists(baseDirectory))
+        {
+            var searchDirs = new List<string>
+            {
+                baseDirectory,
+                Path.Combine(baseDirectory, "textures", "entity"),
+                Path.Combine(baseDirectory, "textures"),
+                Path.Combine(baseDirectory, "textures", "models"),
+                Path.Combine(baseDirectory, "texture")
+            };
+
+            var parent = Directory.GetParent(baseDirectory)?.FullName;
+            if (!string.IsNullOrEmpty(parent) && Directory.Exists(parent))
+            {
+                searchDirs.Add(Path.Combine(parent, "textures", "entity"));
+                searchDirs.Add(Path.Combine(parent, "textures"));
+                searchDirs.Add(parent);
+            }
+
+            var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "skin", "steve", "alex", "default", "texture"
+            };
+
+            if (document != null)
+            {
+                foreach (var g in document.Geometries)
+                {
+                    string id = g.Description.Identifier;
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        candidates.Add(id);
+                        if (id.StartsWith("geometry.", StringComparison.OrdinalIgnoreCase))
+                        {
+                            candidates.Add(id[9..]);
+                        }
+                    }
+                }
+            }
+
+            foreach (var mat in scene.Materials.Materials)
+            {
+                string name = mat.Name;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    candidates.Add(name);
+                    if (name.StartsWith("geometry.", StringComparison.OrdinalIgnoreCase))
+                    {
+                        name = name[9..];
+                    }
+                    if (name.EndsWith("_material", StringComparison.OrdinalIgnoreCase))
+                    {
+                        name = name[..^9];
+                    }
+                    candidates.Add(name);
+                }
+            }
+
+            foreach (var dir in searchDirs)
+            {
+                if (!Directory.Exists(dir)) continue;
+
+                foreach (var cand in candidates)
+                {
+                    string p = Path.Combine(dir, $"{cand}.png");
+                    if (File.Exists(p)) return true;
+                }
+
+                try
+                {
+                    var pngs = Directory.GetFiles(dir, "*.png", SearchOption.TopDirectoryOnly);
+                    if (pngs.Length == 1) return true;
+                }
+                catch { }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Recalculates the underlying SceneNode's Mesh vertices using <see cref="BedrockCoordinateConverter"/>
+    /// and notifies Viewport to refresh immediately.
+    /// </summary>
+    public void RecalculateCubeMesh(BedrockCubeItemViewModel cubeVm)
+    {
+        ArgumentNullException.ThrowIfNull(cubeVm);
+        if (_currentScene is null || !cubeVm.NodeId.HasValue) return;
+
+        var cubeNode = _currentScene.Graph.FindNode(cubeVm.NodeId.Value);
+        if (cubeNode?.Object is null) return;
+
+        Vector3D origin = ParseVector3D(cubeVm.Origin, Vector3D.Zero);
+        Vector3D size = ParseVector3D(cubeVm.Size, Vector3D.One);
+        Vector3D pivot = ParseVector3D(cubeVm.Pivot, Vector3D.Zero);
+        Vector3D rot = ParseVector3D(cubeVm.Rotation, Vector3D.Zero);
+
+        BedrockCubeUv? uv = null;
+        if (!string.IsNullOrWhiteSpace(cubeVm.Uv))
+        {
+            if (cubeVm.Uv.Contains("PerFace", StringComparison.OrdinalIgnoreCase))
+            {
+                uv = cubeVm.SourceCube?.Uv ?? BedrockCubeUv.CreatePerFaceUv();
+            }
+            else
+            {
+                Vector2D uvOffset = ParseVector2D(cubeVm.Uv, Vector2D.Zero);
+                uv = BedrockCubeUv.CreateBoxUv(uvOffset.X, uvOffset.Y);
+            }
+        }
+
+        BedrockCube bedrockCube;
+        if (cubeVm.SourceCube is not null &&
+            string.Equals(cubeVm.Origin, cubeVm.OriginalOrigin, StringComparison.Ordinal) &&
+            string.Equals(cubeVm.Size, cubeVm.OriginalSize, StringComparison.Ordinal) &&
+            string.Equals(cubeVm.Pivot, cubeVm.OriginalPivot, StringComparison.Ordinal) &&
+            string.Equals(cubeVm.Rotation, cubeVm.OriginalRotation, StringComparison.Ordinal) &&
+            string.Equals(cubeVm.Uv, cubeVm.OriginalUv, StringComparison.Ordinal) &&
+            Math.Abs(cubeVm.Inflate - cubeVm.OriginalInflate) < 1e-6 &&
+            cubeVm.Mirror == cubeVm.OriginalMirror)
+        {
+            bedrockCube = cubeVm.SourceCube;
+        }
+        else
+        {
+            bedrockCube = new BedrockCube
+            {
+                Origin = origin,
+                Size = size,
+                Pivot = pivot,
+                Rotation = rot != Vector3D.Zero ? rot : null,
+                Inflate = cubeVm.Inflate,
+                Mirror = cubeVm.Mirror,
+                Uv = uv
+            };
+        }
+
+        BedrockBone owningBone = cubeVm.SourceBone ?? new BedrockBone
+        {
+            Name = cubeVm.BoneName,
+            Pivot = ParseVector3D(SelectedBone?.Pivot, Vector3D.Zero)
+        };
+
+        var desc = cubeVm.SourceDescription ?? new BedrockGeometryDescription
+        {
+            Identifier = cubeVm.GeometryId,
+            TextureWidth = 64,
+            TextureHeight = 64
+        };
+
+        Guid? matId = cubeVm.MaterialId;
+        if (!matId.HasValue && cubeNode.Object.Meshes.Count > 0 && cubeNode.Object.Meshes[0].Faces.Count > 0)
+        {
+            matId = cubeNode.Object.Meshes[0].Faces[0].MaterialId;
+        }
+
+        MeshData newMesh = BedrockCoordinateConverter.BuildCubeMesh(
+            bedrockCube,
+            owningBone,
+            desc,
+            cubeNode.Name,
+            matId);
+
+        if (cubeNode.Object.Meshes.Count > 0)
+        {
+            var existingMesh = cubeNode.Object.Meshes[0];
+            existingMesh.Vertices.Clear();
+            existingMesh.Vertices.AddRange(newMesh.Vertices);
+            existingMesh.Faces.Clear();
+            existingMesh.Faces.AddRange(newMesh.Faces);
+        }
+        else
+        {
+            cubeNode.Object.Meshes.Add(newMesh);
+        }
+
+        // Synchronize node object properties
+        cubeNode.Object.Properties["Origin"] = JsonSerializer.SerializeToElement(new[] { origin.X, origin.Y, origin.Z });
+        cubeNode.Object.Properties["Size"] = JsonSerializer.SerializeToElement(new[] { size.X, size.Y, size.Z });
+        cubeNode.Object.Properties["Pivot"] = JsonSerializer.SerializeToElement(new[] { pivot.X, pivot.Y, pivot.Z });
+        cubeNode.Object.Properties["Rotation"] = JsonSerializer.SerializeToElement(new[] { rot.X, rot.Y, rot.Z });
+        cubeNode.Object.Properties["UV"] = JsonSerializer.SerializeToElement(cubeVm.Uv);
+        cubeNode.Object.Properties["Inflate"] = JsonSerializer.SerializeToElement(cubeVm.Inflate);
+        cubeNode.Object.Properties["Mirror"] = JsonSerializer.SerializeToElement(cubeVm.Mirror);
+
+        cubeNode.Object.Properties["bedrock.origin"] = cubeNode.Object.Properties["Origin"];
+        cubeNode.Object.Properties["bedrock.size"] = cubeNode.Object.Properties["Size"];
+        cubeNode.Object.Properties["bedrock.pivot"] = cubeNode.Object.Properties["Pivot"];
+        cubeNode.Object.Properties["bedrock.rotation"] = cubeNode.Object.Properties["Rotation"];
+        cubeNode.Object.Properties["bedrock.uv"] = cubeNode.Object.Properties["UV"];
+        cubeNode.Object.Properties["bedrock.inflate"] = cubeNode.Object.Properties["Inflate"];
+        cubeNode.Object.Properties["bedrock.mirror"] = cubeNode.Object.Properties["Mirror"];
+
+        if (_inspector is not null)
+        {
+            _inspector.InspectUsmNode(cubeNode, _currentScene);
+        }
+
+        CubeMeshUpdated?.Invoke(this, cubeVm);
+        ViewportRefresher?.Invoke();
+    }
+
+    [RelayCommand]
+    public void ResetTransform()
+    {
+        SelectedCube?.ResetTransform();
     }
 
     [RelayCommand]
@@ -655,6 +1228,35 @@ public sealed partial class BedrockWorkspaceViewModel : ObservableObject
                 yield return cube;
             }
         }
+    }
+
+    public static Vector3D ParseVector3D(string? input, Vector3D fallback = default)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return fallback;
+        var cleaned = input.Replace("°", "").Replace("[", "").Replace("]", "");
+        var parts = cleaned.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 3 &&
+            double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double x) &&
+            double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double y) &&
+            double.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out double z))
+        {
+            return new Vector3D(x, y, z);
+        }
+        return fallback;
+    }
+
+    public static Vector2D ParseVector2D(string? input, Vector2D fallback = default)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return fallback;
+        var cleaned = input.Replace("[", "").Replace("]", "");
+        var parts = cleaned.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2 &&
+            double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double x) &&
+            double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double y))
+        {
+            return new Vector2D(x, y);
+        }
+        return fallback;
     }
 
     private static string? GetPropString(Dictionary<string, JsonElement>? props, string key1, string key2)

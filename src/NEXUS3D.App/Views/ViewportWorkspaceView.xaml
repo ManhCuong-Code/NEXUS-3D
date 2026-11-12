@@ -11,6 +11,9 @@
              mc:Ignorable="d" 
              d:DesignHeight="800" d:DesignWidth="1200"
              Focusable="True">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
     <Grid Background="#141419">
         <Grid.RowDefinitions>
             <!-- Row 0: Document Tabs Bar -->
@@ -442,10 +445,152 @@
 
                             <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#2A2A36" />
 
-                            <!-- Cuboid Inspector -->
+                             <!-- Cuboid Inspector & Diagnostics -->
                             <Border Grid.Row="3" Background="#14141A" Padding="12,10">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <StackPanel>
+                                        <!-- Dedicated GEOMETRY DIAGNOSTICS Panel -->
+                                        <Border Background="#181822" BorderBrush="#2A2A38" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+                                            <StackPanel>
+                                                <TextBlock Text="GEOMETRY DIAGNOSTICS" FontSize="11" FontWeight="Bold" Foreground="#00CEC9" Margin="0,0,0,8" />
+
+                                                <!-- Missing Texture Warning Banner -->
+                                                <Border Background="#3D1A1A" BorderBrush="#E17055" BorderThickness="1" CornerRadius="4" Padding="8,6" Margin="0,0,0,8"
+                                                        Visibility="{Binding BedrockWorkspace.HasMissingTextureWarning, Converter={StaticResource BoolToVis}}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="⚠️ " FontSize="11" VerticalAlignment="Center" />
+                                                        <TextBlock Text="{Binding BedrockWorkspace.MissingTextureWarningMessage}" FontSize="10" FontWeight="SemiBold" Foreground="#FAB1A0" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <!-- 1. Total Geometries -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Total Geometries" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#6C5CE7" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.TotalGeometries, StringFormat='{}{0:N0}'}" Foreground="#FFFFFF" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 2. Total Bones -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Total Bones" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#FF7675" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.TotalBones, StringFormat='{}{0:N0}'}" Foreground="#FFFFFF" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 3. Total Cubes -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Total Cubes" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#74B9FF" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.TotalCubes, StringFormat='{}{0:N0}'}" Foreground="#FFFFFF" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 4. Valid Cubes -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Valid Cubes" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#00B894" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.ValidCubes, StringFormat='{}{0:N0}'}" Foreground="#FFFFFF" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 5. Error Cubes -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Error Cubes" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#D63031" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.ErrorCubes, StringFormat='{}{0:N0}'}" Foreground="#FFFFFF" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 6. Meshes -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Meshes" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#00CEC9" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.Meshes, StringFormat='{}{0:N0}'}" Foreground="#141419" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 7. Faces -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Faces" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#A29BFE" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.Faces, StringFormat='{}{0:N0}'}" Foreground="#141419" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 8. Vertices -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Vertices" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#FDCB6E" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.Vertices, StringFormat='{}{0:N0}'}" Foreground="#141419" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 9. Triangles -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Triangles" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#E17055" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.Triangles, StringFormat='{}{0:N0}'}" Foreground="#FFFFFF" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 10. Cubes With UV -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Cubes With UV" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#55EFC4" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.CubesWithUv, StringFormat='{}{0:N0}'}" Foreground="#141419" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 11. Cubes Missing UV -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Cubes Missing UV" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#FAB1A0" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.CubesMissingUv, StringFormat='{}{0:N0}'}" Foreground="#141419" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 12. Bones With Parent -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Bones With Parent" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#81ECEC" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.BonesWithParent, StringFormat='{}{0:N0}'}" Foreground="#141419" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 13. Textures Found -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Textures Found" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#2ECC71" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.TexturesFound, StringFormat='{}{0:N0}'}" Foreground="#FFFFFF" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- 14. Missing Textures -->
+                                                <Grid Margin="0,2">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="Missing Textures" Foreground="#A0A0B0" FontSize="10" VerticalAlignment="Center" />
+                                                    <Border Grid.Column="1" Background="#E74C3C" CornerRadius="3" Padding="6,1" MinWidth="32" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding BedrockWorkspace.MissingTextures, StringFormat='{}{0:N0}'}" Foreground="#FFFFFF" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+
                                         <TextBlock Text="SELECTED BONE CUBOIDS" FontSize="11" FontWeight="Bold" Foreground="#00CEC9" Margin="0,0,0,6" />
                                         <ListBox ItemsSource="{Binding BedrockWorkspace.SelectedBone.Cubes}"
                                                  SelectedItem="{Binding BedrockWorkspace.SelectedCube}"
@@ -462,51 +607,94 @@
 
                                         <Separator Background="#2A2A38" Margin="0,8" />
 
-                                        <TextBlock Text="CUBE PROPERTIES" FontSize="10" FontWeight="Bold" Foreground="#FDCB6E" Margin="0,0,0,4" />
+                                        <!-- Cube Properties Inspector with Interactive Editing and Reset Transform -->
+                                        <DockPanel Margin="0,0,0,6">
+                                            <TextBlock Text="CUBE PROPERTIES" FontSize="10" FontWeight="Bold" Foreground="#FDCB6E" VerticalAlignment="Center" />
+                                            <Button Command="{Binding BedrockWorkspace.ResetTransformCommand}"
+                                                    Content="Reset Transform"
+                                                    Padding="6,2"
+                                                    HorizontalAlignment="Right"
+                                                    Background="#282838"
+                                                    Foreground="#FAB1A0"
+                                                    BorderBrush="#3A3A4C"
+                                                    BorderThickness="1"
+                                                    FontSize="9"
+                                                    FontWeight="SemiBold"
+                                                    Cursor="Hand"
+                                                    ToolTip="Restore original bind-pose cube values" />
+                                        </DockPanel>
+
                                         <Grid Margin="0,2">
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="Bone:" Foreground="#888898" FontSize="10" />
-                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.BoneName}" Foreground="#FF7675" FontSize="10" FontFamily="Consolas" />
+                                            <TextBlock Text="Bone:" Foreground="#888898" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.BoneName}" Foreground="#FF7675" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center" />
+                                        </Grid>
+
+                                        <!-- Origin Input -->
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Origin:" Foreground="#888898" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBox Grid.Column="1"
+                                                     Text="{Binding BedrockWorkspace.SelectedCube.Origin, UpdateSourceTrigger=LostFocus}"
+                                                     Background="#20202C" Foreground="#FFFFFF" BorderBrush="#3A3A4C" Padding="4,2" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+
+                                        <!-- Size Input -->
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Size:" Foreground="#888898" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBox Grid.Column="1"
+                                                     Text="{Binding BedrockWorkspace.SelectedCube.Size, UpdateSourceTrigger=LostFocus}"
+                                                     Background="#20202C" Foreground="#FFFFFF" BorderBrush="#3A3A4C" Padding="4,2" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+
+                                        <!-- Pivot Input -->
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Pivot:" Foreground="#888898" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBox Grid.Column="1"
+                                                     Text="{Binding BedrockWorkspace.SelectedCube.Pivot, UpdateSourceTrigger=LostFocus}"
+                                                     Background="#20202C" Foreground="#FFFFFF" BorderBrush="#3A3A4C" Padding="4,2" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+
+                                        <!-- Rotation Input -->
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Rotation:" Foreground="#888898" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBox Grid.Column="1"
+                                                     Text="{Binding BedrockWorkspace.SelectedCube.Rotation, UpdateSourceTrigger=LostFocus}"
+                                                     Background="#20202C" Foreground="#FFEAA7" BorderBrush="#3A3A4C" Padding="4,2" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+
+                                        <!-- UV Input -->
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="UV:" Foreground="#888898" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBox Grid.Column="1"
+                                                     Text="{Binding BedrockWorkspace.SelectedCube.Uv, UpdateSourceTrigger=LostFocus}"
+                                                     Background="#20202C" Foreground="#55EFC4" BorderBrush="#3A3A4C" Padding="4,2" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+
+                                        <!-- Inflate Input -->
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Inflate:" Foreground="#888898" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBox Grid.Column="1"
+                                                     Text="{Binding BedrockWorkspace.SelectedCube.Inflate, UpdateSourceTrigger=LostFocus}"
+                                                     Background="#20202C" Foreground="#A29BFE" BorderBrush="#3A3A4C" Padding="4,2" FontSize="10" FontFamily="Consolas" />
+                                        </Grid>
+
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Mirror:" Foreground="#888898" FontSize="10" VerticalAlignment="Center" />
+                                            <CheckBox Grid.Column="1"
+                                                      IsChecked="{Binding BedrockWorkspace.SelectedCube.Mirror}"
+                                                      Foreground="#FAB1A0" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center" />
                                         </Grid>
                                         <Grid Margin="0,2">
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="Origin:" Foreground="#888898" FontSize="10" />
-                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Origin}" Foreground="#FFFFFF" FontSize="10" FontFamily="Consolas" />
-                                        </Grid>
-                                        <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="Size:" Foreground="#888898" FontSize="10" />
-                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Size}" Foreground="#FFFFFF" FontSize="10" FontFamily="Consolas" />
-                                        </Grid>
-                                        <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="Pivot:" Foreground="#888898" FontSize="10" />
-                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Pivot}" Foreground="#FFFFFF" FontSize="10" FontFamily="Consolas" />
-                                        </Grid>
-                                        <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="Rotation:" Foreground="#888898" FontSize="10" />
-                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Rotation}" Foreground="#FFEAA7" FontSize="10" FontFamily="Consolas" />
-                                        </Grid>
-                                        <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="UV:" Foreground="#888898" FontSize="10" />
-                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Uv}" Foreground="#55EFC4" FontSize="10" FontFamily="Consolas" />
-                                        </Grid>
-                                        <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="Inflate:" Foreground="#888898" FontSize="10" />
-                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Inflate}" Foreground="#A29BFE" FontSize="10" FontFamily="Consolas" />
-                                        </Grid>
-                                        <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="Mirror:" Foreground="#888898" FontSize="10" />
-                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Mirror}" Foreground="#FAB1A0" FontSize="10" FontFamily="Consolas" />
-                                        </Grid>
-                                        <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="65" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="Material:" Foreground="#888898" FontSize="10" />
-                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Material}" Foreground="#DFE6E9" FontSize="10" FontFamily="Consolas" />
+                                            <TextBlock Text="Material:" Foreground="#888898" FontSize="10" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BedrockWorkspace.SelectedCube.Material}" Foreground="#DFE6E9" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center" />
                                         </Grid>
                                     </StackPanel>
                                 </ScrollViewer>
