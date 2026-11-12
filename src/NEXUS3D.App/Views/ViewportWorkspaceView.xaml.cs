@@ -1,5 +1,6 @@
 using System.Windows.Controls;
 using System.Windows.Input;
+using NEXUS3D.App.Controls;
 using NEXUS3D.App.ViewModels;
 using NEXUS3D.Editor.Abstractions;
 using NEXUS3D.Rendering.Contracts;
@@ -12,7 +13,16 @@ public partial class ViewportWorkspaceView : UserControl
     {
         InitializeComponent();
         Viewport3D.NodeSelected += OnViewportNodeSelected;
+        Viewport3D.BlockPicked += OnViewportBlockPicked;
         KeyDown += OnWorkspaceKeyDown;
+    }
+
+    private void OnViewportBlockPicked(object? sender, BlockPickEventArgs? e)
+    {
+        if (DataContext is ViewportViewModel vm && e is not null)
+        {
+            vm.BlockWorkspace.SelectVoxel(new NEXUS3D.Domain.Voxels.VoxelPosition(e.X, e.Y, e.Z), e.BlockId, e.BlockState);
+        }
     }
 
     private void OnViewportNodeSelected(object? sender, string? nodeId)
@@ -84,8 +94,8 @@ public partial class ViewportWorkspaceView : UserControl
                 e.Handled = true;
                 break;
             case Key.F:
-                Viewport3D.FocusScene();
-                vm.FocusModel();
+                Viewport3D.FocusSelected();
+                vm.FocusSelected();
                 e.Handled = true;
                 break;
             case Key.Home:
@@ -95,6 +105,7 @@ public partial class ViewportWorkspaceView : UserControl
                 break;
             case Key.D0:
             case Key.NumPad0:
+                Viewport3D.ResetCamera();
                 vm.Camera.ResetCameraCommand.Execute(null);
                 e.Handled = true;
                 break;

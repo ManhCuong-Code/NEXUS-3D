@@ -185,42 +185,77 @@
                             <StackPanel Grid.Row="0" Margin="10,8">
                                 <DockPanel Margin="0,0,0,4">
                                     <TextBlock Text="BLOCK PALETTE &amp; EXPLORER" FontSize="11" FontWeight="Bold" Foreground="#55EFC4" />
-                                    <TextBlock Text="{Binding BlockWorkspace.UniqueBlockTypes, StringFormat='{}{0} types'}" FontSize="10" Foreground="#888898" HorizontalAlignment="Right" />
+                                    <TextBlock Text="{Binding BlockWorkspace.TotalBlocks, StringFormat='{}{0:N0} blocks'}" FontSize="10" Foreground="#888898" HorizontalAlignment="Right" />
                                 </DockPanel>
                                 <TextBox Text="{Binding BlockWorkspace.SearchFilter, UpdateSourceTrigger=PropertyChanged}"
-                                         Background="#20202C" Foreground="#FFFFFF" BorderBrush="#3A3A4C" Padding="6,4" FontSize="11" />
+                                         Background="#20202C" Foreground="#FFFFFF" BorderBrush="#3A3A4C" Padding="6,4" FontSize="11" Margin="0,0,0,4" />
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="Type:" FontSize="10" Foreground="#888898" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                    <ComboBox ItemsSource="{Binding BlockWorkspace.AvailableGroupTypes}"
+                                              SelectedItem="{Binding BlockWorkspace.SelectedGroupType}"
+                                              Background="#20202C" Foreground="#FFFFFF" FontSize="10" Width="90" Height="22" VerticalAlignment="Center" />
+                                    <CheckBox Content="Group" IsChecked="{Binding BlockWorkspace.GroupByType}"
+                                              Foreground="#A0A0B0" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                </DockPanel>
                             </StackPanel>
 
-                            <!-- Palette Items List with Counts and Color Swatches -->
-                            <ListBox Grid.Row="1"
-                                     ItemsSource="{Binding BlockWorkspace.FilteredPaletteItems}"
-                                     SelectedItem="{Binding BlockWorkspace.SelectedPaletteItem}"
-                                     Background="Transparent" BorderThickness="0" Margin="6,0">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <DockPanel Margin="0,2">
-                                            <!-- Color Swatch -->
-                                            <Border Width="16" Height="16" Background="{Binding ColorHex}" CornerRadius="2" Margin="0,0,8,0" VerticalAlignment="Center" BorderBrush="#55FFFFFF" BorderThickness="0.5" />
-                                            <!-- Block Count Badge -->
-                                            <Border DockPanel.Dock="Right" Background="#282838" CornerRadius="3" Padding="5,1" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Count, StringFormat='{}{0:N0}'}" FontSize="10" Foreground="#55EFC4" />
-                                            </Border>
-                                            <!-- Visibility Toggle -->
-                                            <ToggleButton DockPanel.Dock="Right"
-                                                          IsChecked="{Binding IsVisible}"
-                                                          Content="👁"
-                                                          Padding="4,0"
-                                                          Margin="0,0,4,0"
-                                                          Background="Transparent"
-                                                          Foreground="#A0A0B0"
-                                                          BorderThickness="0"
-                                                          Cursor="Hand" />
-                                            <!-- Block Name -->
-                                            <TextBlock Text="{Binding DisplayName}" FontSize="11" Foreground="#F0F0F0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                        </DockPanel>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
+                            <!-- Explorer Tabs: Palette Summary vs Individual Blocks -->
+                            <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0" Margin="4,0">
+                                <TabItem Header="Palette" Background="#20202C" Foreground="#E0E0E0" FontSize="10">
+                                    <ListBox ItemsSource="{Binding BlockWorkspace.FilteredPaletteItems}"
+                                             SelectedItem="{Binding BlockWorkspace.SelectedPaletteItem}"
+                                             Background="Transparent" BorderThickness="0" Margin="2,4">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <DockPanel Margin="0,2">
+                                                    <!-- Color Swatch -->
+                                                    <Border Width="16" Height="16" Background="{Binding ColorHex}" CornerRadius="2" Margin="0,0,8,0" VerticalAlignment="Center" BorderBrush="#55FFFFFF" BorderThickness="0.5" />
+                                                    <!-- Block Count Badge -->
+                                                    <Border DockPanel.Dock="Right" Background="#282838" CornerRadius="3" Padding="5,1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Count, StringFormat='{}{0:N0}'}" FontSize="10" Foreground="#55EFC4" />
+                                                    </Border>
+                                                    <!-- Visibility Toggle -->
+                                                    <ToggleButton DockPanel.Dock="Right"
+                                                                  IsChecked="{Binding IsVisible}"
+                                                                  Content="👁"
+                                                                  Padding="4,0"
+                                                                  Margin="0,0,4,0"
+                                                                  Background="Transparent"
+                                                                  Foreground="#A0A0B0"
+                                                                  BorderThickness="0"
+                                                                  Cursor="Hand" />
+                                                    <!-- Block Name -->
+                                                    <TextBlock Text="{Binding DisplayName}" FontSize="11" Foreground="#F0F0F0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </TabItem>
+
+                                <TabItem Header="Blocks" Background="#20202C" Foreground="#E0E0E0" FontSize="10">
+                                    <ListBox ItemsSource="{Binding BlockWorkspace.FilteredIndividualBlocks}"
+                                             SelectedItem="{Binding BlockWorkspace.SelectedIndividualBlock}"
+                                             VirtualizingStackPanel.IsVirtualizing="True"
+                                             VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                             ScrollViewer.CanContentScroll="True"
+                                             Background="Transparent" BorderThickness="0" Margin="2,4">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <DockPanel Margin="0,2">
+                                                    <!-- Color Swatch -->
+                                                    <Border Width="14" Height="14" Background="{Binding ColorHex}" CornerRadius="2" Margin="0,0,6,0" VerticalAlignment="Center" BorderBrush="#55FFFFFF" BorderThickness="0.5" />
+                                                    <!-- Coordinates Badge -->
+                                                    <Border DockPanel.Dock="Right" Background="#282838" CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding CoordinatesDisplay}" FontSize="9" Foreground="#55EFC4" />
+                                                    </Border>
+                                                    <!-- Block Name -->
+                                                    <TextBlock Text="{Binding DisplayName}" FontSize="10" Foreground="#F0F0F0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </TabItem>
+                            </TabControl>
 
                             <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch" Background="#2A2A36" />
 
@@ -228,19 +263,46 @@
                             <Border Grid.Row="3" Background="#14141A" Padding="12,10">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <StackPanel>
-                                        <TextBlock Text="BLOCK DETAILS &amp; CHUNKS" FontSize="11" FontWeight="Bold" Foreground="#00CEC9" Margin="0,0,0,6" />
+                                        <TextBlock Text="BLOCK DETAILS &amp; INSPECTOR" FontSize="11" FontWeight="Bold" Foreground="#00CEC9" Margin="0,0,0,6" />
+
                                         <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                            <TextBlock Text="Block State:" Foreground="#888898" FontSize="10" />
-                                            <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.SelectedBlockState}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="10" TextTrimming="CharacterEllipsis" />
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="75" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Coordinates:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.SelectedBlockPosition}" Foreground="#55EFC4" FontWeight="SemiBold" FontSize="10" />
                                         </Grid>
+
                                         <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="75" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Block ID:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.SelectedBlockId}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="10" TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="75" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Block State:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.SelectedBlockState}" Foreground="#A29BFE" FontWeight="SemiBold" FontSize="10" TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="75" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Material:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.SelectedBlockMaterial}" Foreground="#E0E0E0" FontSize="10" TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="75" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Palette Index:" Foreground="#888898" FontSize="10" />
+                                            <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.SelectedBlockPaletteIndex}" Foreground="#FDCB6E" FontWeight="SemiBold" FontSize="10" />
+                                        </Grid>
+
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="75" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                             <TextBlock Text="Type:" Foreground="#888898" FontSize="10" />
                                             <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.SelectedBlockTransparency}" Foreground="#FDCB6E" FontWeight="SemiBold" FontSize="10" />
                                         </Grid>
+
                                         <Grid Margin="0,2">
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="75" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                             <TextBlock Text="Total:" Foreground="#888898" FontSize="10" />
                                             <TextBlock Grid.Column="1" Text="{Binding BlockWorkspace.TotalBlocks, StringFormat='{}{0:N0} blocks'}" Foreground="#55EFC4" FontSize="10" />
                                         </Grid>
@@ -254,6 +316,7 @@
                                         </UniformGrid>
 
                                         <CheckBox Content="Show Chunk Boundaries (16×16)" IsChecked="{Binding BlockWorkspace.ShowChunkBoundaries}" Foreground="#E0E0E0" FontSize="10" Margin="0,6,0,0" />
+                                        <CheckBox Content="Show Coordinates Overlay" IsChecked="{Binding BlockWorkspace.ShowCoordinates}" Foreground="#E0E0E0" FontSize="10" Margin="0,4,0,0" />
                                     </StackPanel>
                                 </ScrollViewer>
                             </Border>
@@ -560,7 +623,9 @@
                                             TransformSpace="{Binding ActiveSpace}"
                                             SelectedNodeId="{Binding SelectedNodeId}"
                                             HighlightedBlockId="{Binding HighlightedBlockId}"
+                                            HighlightedBlockCoord="{Binding HighlightedBlockCoord}"
                                             TransformService="{Binding TransformService}"
+                                            SelectionService="{Binding SelectionService}"
                                             UndoRedoService="{Binding UndoRedoService}"
                                             PivotService="{Binding PivotService}" />
 
@@ -602,7 +667,7 @@
                         <StackPanel Orientation="Horizontal">
                             <!-- Presets -->
                             <Button Content="Reset (0)" Command="{Binding Camera.ResetCameraCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Reset Camera View (0)" />
-                            <Button Content="⌖ Focus (F)" Command="{Binding FocusModelCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#74B9FF" BorderThickness="0" ToolTip="Frame &amp; Focus Model (F)" />
+                            <Button Content="⌖ Focus (F)" Command="{Binding FocusSelectedCommand}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#74B9FF" BorderThickness="0" ToolTip="Frame &amp; Focus Selected (F)" />
                             <Button Content="Front (1)" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Front}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Front View (1)" />
                             <Button Content="Right (3)" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Right}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Right View (3)" />
                             <Button Content="Top (7)" Command="{Binding Camera.SetPresetCommand}" CommandParameter="{x:Static contracts:CameraPresetView.Top}" Margin="2,0" Padding="6,3" Background="#282834" Foreground="#FFFFFF" BorderThickness="0" ToolTip="Top View (7)" />

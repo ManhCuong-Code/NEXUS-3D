@@ -116,9 +116,17 @@ public sealed class SceneToBedrockGeometryConverter : ISceneToBedrockGeometryCon
             SkeletonData skeleton = scene.Skeletons[gIdx];
 
             var usmBoneByName = new Dictionary<string, BoneData>(StringComparer.Ordinal);
+            var boneNames = new HashSet<string>(StringComparer.Ordinal);
             foreach (BoneData b in skeleton.Bones)
             {
                 usmBoneByName.TryAdd(b.Name, b);
+                boneNames.Add(b.Name);
+            }
+
+            var sceneNodeByName = new Dictionary<string, SceneNode>(StringComparer.Ordinal);
+            foreach (var node in scene.Graph.Traverse())
+            {
+                sceneNodeByName.TryAdd(node.Name, node);
             }
 
             foreach (BedrockBone bedrockBone in geo.Bones)
@@ -155,6 +163,12 @@ public sealed class SceneToBedrockGeometryConverter : ISceneToBedrockGeometryCon
                             IsObjectForm = usmLoc.RotationDegrees.HasValue || usmLoc.IgnoreInheritedScale.HasValue
                         };
                     }
+                }
+
+                // Synchronize child cube nodes under bone node
+                if (sceneNodeByName.TryGetValue(bedrockBone.Name, out SceneNode? boneNode))
+                {
+                    SynchronizeBoneCubes(boneNode, bedrockBone, boneNames);
                 }
             }
         }
@@ -197,6 +211,13 @@ public sealed class SceneToBedrockGeometryConverter : ISceneToBedrockGeometryCon
         {
             SkeletonData skel = scene.Skeletons[0];
             var boneById = skel.Bones.ToDictionary(b => b.Id);
+            var boneNames = skel.Bones.Select(b => b.Name).ToHashSet(StringComparer.Ordinal);
+            var sceneNodeByName = new Dictionary<string, SceneNode>(StringComparer.Ordinal);
+            foreach (var node in scene.Graph.Traverse())
+            {
+                sceneNodeByName.TryAdd(node.Name, node);
+            }
+
             foreach (BoneData usmBone in skel.Bones)
             {
                 string? parentName = usmBone.ParentBoneId.HasValue && boneById.TryGetValue(usmBone.ParentBoneId.Value, out BoneData? parent)
@@ -224,6 +245,45 @@ public sealed class SceneToBedrockGeometryConverter : ISceneToBedrockGeometryCon
                         IgnoreInheritedScale = loc.IgnoreInheritedScale,
                         IsObjectForm = loc.RotationDegrees.HasValue || loc.IgnoreInheritedScale.HasValue
                     };
+                }
+
+                if (sceneNodeByName.TryGetValue(usmBone.Name, out SceneNode? boneNode))
+                {
+                    // Child cube nodes under bone node
+                    var cubeNodes = boneNode.Children
+                        .Where(child => IsCubeNode(child, boneNames))
+                        .ToList();
+
+                    if (cubeNodes.Count > 0)
+                    {
+                        foreach (var cubeNode in cubeNodes)
+                        {
+                            var extracted = ExtractCubeFromNode(cubeNode, bedrockBone);
+                            if (extracted is not null)
+                            {
+                                bedrockBone.Cubes.Add(extracted);
+                            }
+                        }
+                    }
+                    else if (boneNode.Object is { Meshes.Count: > 0 } obj)
+                    {
+                        // Fallback: Direct meshes on bone node (skip converted polymeshes)
+                        foreach (var mesh in obj.Meshes)
+                        {
+                            if (mesh.Name.EndsWith("_polymesh", StringComparison.OrdinalIgnoreCase)) continue;
+
+                            var bounds = mesh.CalculateBounds();
+                            if (bounds.IsValid)
+                            {
+                                bedrockBone.Cubes.Add(new BedrockCube
+                                {
+                                    Origin = BedrockCoordinateConverter.UsmPositionToBedrock(bounds.Min),
+                                    Size = bounds.Size,
+                                    Uv = BedrockCubeUv.CreateBoxUv(0, 0)
+                                });
+                            }
+                        }
+                    }
                 }
 
                 geo.Bones.Add(bedrockBone);
@@ -294,5 +354,350 @@ public sealed class SceneToBedrockGeometryConverter : ISceneToBedrockGeometryCon
             .ToArray();
         string cleaned = new string(chars).Trim('_');
         return string.IsNullOrWhiteSpace(cleaned) ? "model" : cleaned;
+    }
+
+    private static bool IsCubeNode(SceneNode node, IReadOnlySet<string>? boneNames = null)
+    {
+        if (boneNames is not null && boneNames.Contains(node.Name)) return false;
+        if (node.Object is null) return false;
+        var p = node.Object.Properties;
+        return p.ContainsKey("CubeId") ||
+               p.ContainsKey("bedrock.cubeId") ||
+               p.ContainsKey("bedrock.cubeIndex") ||
+               p.ContainsKey("Origin") ||
+               p.ContainsKey("bedrock.origin") ||
+               node.Name.Contains("_cube_") ||
+               node.Object.Meshes.Count > 0;
+    }
+
+    private static void SynchronizeBoneCubes(
+        SceneNode boneNode,
+        BedrockBone bedrockBone,
+        IReadOnlySet<string> boneNames)
+    {
+        var cubeNodes = boneNode.Children
+            .Where(child => IsCubeNode(child, boneNames))
+            .ToList();
+
+        if (bedrockBone.Cubes.Count == 0)
+        {
+            foreach (var cubeNode in cubeNodes)
+            {
+                var cube = ExtractCubeFromNode(cubeNode, bedrockBone);
+                if (cube is not null)
+                {
+                    bedrockBone.Cubes.Add(cube);
+                }
+            }
+            return;
+        }
+
+        var matchedCubeIndices = new HashSet<int>();
+        for (int i = 0; i < cubeNodes.Count; i++)
+        {
+            var cubeNode = cubeNodes[i];
+            int targetIdx = -1;
+            if (cubeNode.Object is not null &&
+                TryGetInt(cubeNode.Object.Properties, "bedrock.cubeIndex", out int cIdx) &&
+                cIdx >= 0 && cIdx < bedrockBone.Cubes.Count)
+            {
+                targetIdx = cIdx;
+            }
+            else if (i < bedrockBone.Cubes.Count && !matchedCubeIndices.Contains(i))
+            {
+                targetIdx = i;
+            }
+
+            if (targetIdx >= 0 && targetIdx < bedrockBone.Cubes.Count)
+            {
+                matchedCubeIndices.Add(targetIdx);
+                var existingCube = bedrockBone.Cubes[targetIdx];
+                ApplyNodeEditsToCube(cubeNode, existingCube);
+            }
+            else
+            {
+                var newCube = ExtractCubeFromNode(cubeNode, bedrockBone);
+                if (newCube is not null)
+                {
+                    bedrockBone.Cubes.Add(newCube);
+                }
+            }
+        }
+    }
+
+    private static void ApplyNodeEditsToCube(SceneNode cubeNode, BedrockCube existingCube)
+    {
+        if (cubeNode.Object is { Properties.Count: > 0 } obj)
+        {
+            if (TryGetVector3D(obj.Properties, "Origin", out var o) ||
+                TryGetVector3D(obj.Properties, "bedrock.origin", out o))
+            {
+                existingCube.Origin = o;
+            }
+
+            if (TryGetVector3D(obj.Properties, "Size", out var s) ||
+                TryGetVector3D(obj.Properties, "bedrock.size", out s))
+            {
+                existingCube.Size = s;
+            }
+
+            if (TryGetVector3D(obj.Properties, "Pivot", out var p) ||
+                TryGetVector3D(obj.Properties, "bedrock.pivot", out p))
+            {
+                existingCube.Pivot = p;
+            }
+
+            if (TryGetVector3D(obj.Properties, "Rotation", out var r) ||
+                TryGetVector3D(obj.Properties, "bedrock.rotation", out r))
+            {
+                existingCube.Rotation = r;
+            }
+
+            if (TryGetDouble(obj.Properties, "Inflate", out double inf) ||
+                TryGetDouble(obj.Properties, "bedrock.inflate", out inf))
+            {
+                existingCube.Inflate = inf;
+            }
+
+            if (TryGetBool(obj.Properties, "Mirror", out bool mir) ||
+                TryGetBool(obj.Properties, "bedrock.mirror", out mir))
+            {
+                existingCube.Mirror = mir;
+            }
+        }
+
+        if (cubeNode.LocalTransform.Position != Vector3D.Zero)
+        {
+            var delta = BedrockCoordinateConverter.UsmPositionToBedrock(cubeNode.LocalTransform.Position);
+            existingCube.Origin += delta;
+        }
+
+        if (cubeNode.LocalTransform.Rotation != QuaternionD.Identity)
+        {
+            var euler = QuaternionToEulerDegrees(cubeNode.LocalTransform.Rotation);
+            existingCube.Rotation = BedrockCoordinateConverter.UsmEulerToBedrockRotation(euler);
+        }
+    }
+
+    private static BedrockCube? ExtractCubeFromNode(SceneNode cubeNode, BedrockBone owningBone)
+    {
+        var obj = cubeNode.Object;
+        Vector3D origin = Vector3D.Zero;
+        Vector3D size = new(1, 1, 1);
+        Vector3D? pivot = null;
+        Vector3D? rotation = null;
+        double? inflate = null;
+        bool? mirror = null;
+        BedrockCubeUv? uv = null;
+
+        bool foundProperties = false;
+        if (obj is not null && obj.Properties.Count > 0)
+        {
+            if (TryGetVector3D(obj.Properties, "Origin", out var o) ||
+                TryGetVector3D(obj.Properties, "bedrock.origin", out o) ||
+                TryGetVector3D(obj.Properties, "bedrock.rawOrigin", out o))
+            {
+                origin = o;
+                foundProperties = true;
+            }
+
+            if (TryGetVector3D(obj.Properties, "Size", out var s) ||
+                TryGetVector3D(obj.Properties, "bedrock.size", out s) ||
+                TryGetVector3D(obj.Properties, "bedrock.rawSize", out s))
+            {
+                size = s;
+                foundProperties = true;
+            }
+
+            if (TryGetVector3D(obj.Properties, "Pivot", out var p) ||
+                TryGetVector3D(obj.Properties, "bedrock.pivot", out p) ||
+                TryGetVector3D(obj.Properties, "bedrock.rawPivot", out p))
+            {
+                pivot = p;
+            }
+
+            if (TryGetVector3D(obj.Properties, "Rotation", out var r) ||
+                TryGetVector3D(obj.Properties, "bedrock.rotation", out r) ||
+                TryGetVector3D(obj.Properties, "bedrock.rawRotation", out r))
+            {
+                rotation = r;
+            }
+
+            if (TryGetDouble(obj.Properties, "Inflate", out double inf) ||
+                TryGetDouble(obj.Properties, "bedrock.inflate", out inf))
+            {
+                inflate = inf;
+            }
+
+            if (TryGetBool(obj.Properties, "Mirror", out bool mir) ||
+                TryGetBool(obj.Properties, "bedrock.mirror", out mir))
+            {
+                mirror = mir;
+            }
+
+            if (TryGetBoxUv(obj.Properties, out var boxUv))
+            {
+                uv = boxUv;
+            }
+        }
+
+        if (!foundProperties && obj is { Meshes.Count: > 0 })
+        {
+            var firstMesh = obj.Meshes[0];
+            var bounds = firstMesh.CalculateBounds();
+            if (bounds.IsValid)
+            {
+                origin = BedrockCoordinateConverter.UsmPositionToBedrock(bounds.Min);
+                size = bounds.Size;
+                uv = BedrockCubeUv.CreateBoxUv(0, 0);
+                foundProperties = true;
+            }
+        }
+
+        if (!foundProperties)
+        {
+            return null;
+        }
+
+        if (cubeNode.LocalTransform.Position != Vector3D.Zero)
+        {
+            var delta = BedrockCoordinateConverter.UsmPositionToBedrock(cubeNode.LocalTransform.Position);
+            origin += delta;
+        }
+
+        uv ??= BedrockCubeUv.CreateBoxUv(0, 0);
+
+        return new BedrockCube
+        {
+            Origin = origin,
+            Size = size,
+            Pivot = pivot,
+            Rotation = rotation,
+            Inflate = inflate,
+            Mirror = mirror,
+            Uv = uv
+        };
+    }
+
+    private static bool TryGetInt(Dictionary<string, JsonElement> props, string key, out int value)
+    {
+        value = 0;
+        if (props.TryGetValue(key, out var elem))
+        {
+            if (elem.ValueKind == JsonValueKind.Number && elem.TryGetInt32(out value)) return true;
+            if (elem.ValueKind == JsonValueKind.String && int.TryParse(elem.GetString(), out value)) return true;
+        }
+        return false;
+    }
+
+    private static bool TryGetDouble(Dictionary<string, JsonElement> props, string key, out double value)
+    {
+        value = 0;
+        if (props.TryGetValue(key, out var elem))
+        {
+            if (elem.ValueKind == JsonValueKind.Number && elem.TryGetDouble(out value)) return true;
+            if (elem.ValueKind == JsonValueKind.String && double.TryParse(elem.GetString(), out value)) return true;
+        }
+        return false;
+    }
+
+    private static bool TryGetBool(Dictionary<string, JsonElement> props, string key, out bool value)
+    {
+        value = false;
+        if (props.TryGetValue(key, out var elem))
+        {
+            if (elem.ValueKind is JsonValueKind.True or JsonValueKind.False) { value = elem.GetBoolean(); return true; }
+            if (elem.ValueKind == JsonValueKind.String && bool.TryParse(elem.GetString(), out value)) return true;
+        }
+        return false;
+    }
+
+    private static bool TryGetVector3D(Dictionary<string, JsonElement> props, string key, out Vector3D vec)
+    {
+        vec = Vector3D.Zero;
+        if (!props.TryGetValue(key, out var elem)) return false;
+
+        if (elem.ValueKind == JsonValueKind.Array && elem.GetArrayLength() >= 3)
+        {
+            double x = elem[0].GetDouble();
+            double y = elem[1].GetDouble();
+            double z = elem[2].GetDouble();
+            vec = new Vector3D(x, y, z);
+            return true;
+        }
+
+        if (elem.ValueKind == JsonValueKind.String)
+        {
+            var parts = elem.GetString()?.Split(',', StringSplitOptions.TrimEntries);
+            if (parts is { Length: >= 3 } &&
+                double.TryParse(parts[0], out double x) &&
+                double.TryParse(parts[1], out double y) &&
+                double.TryParse(parts[2], out double z))
+            {
+                vec = new Vector3D(x, y, z);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryGetBoxUv(Dictionary<string, JsonElement> props, out BedrockCubeUv? uv)
+    {
+        uv = null;
+        if (props.TryGetValue("bedrock.boxUvOffset", out var elem) &&
+            elem.ValueKind == JsonValueKind.Array &&
+            elem.GetArrayLength() >= 2)
+        {
+            double u = elem[0].GetDouble();
+            double v = elem[1].GetDouble();
+            uv = BedrockCubeUv.CreateBoxUv(u, v);
+            return true;
+        }
+
+        if (props.TryGetValue("UV", out var uvElem) || props.TryGetValue("bedrock.uv", out uvElem))
+        {
+            if (uvElem.ValueKind == JsonValueKind.String)
+            {
+                string text = uvElem.GetString() ?? "";
+                if (text.StartsWith("PerFace", StringComparison.OrdinalIgnoreCase))
+                {
+                    uv = new BedrockCubeUv { Mode = BedrockUvMode.PerFaceUv };
+                    return true;
+                }
+
+                var parts = text.Trim('[', ']').Split(',', StringSplitOptions.TrimEntries);
+                if (parts.Length >= 2 && double.TryParse(parts[0], out double u) && double.TryParse(parts[1], out double v))
+                {
+                    uv = BedrockCubeUv.CreateBoxUv(u, v);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static Vector3D QuaternionToEulerDegrees(QuaternionD q)
+    {
+        double sinr_cosp = 2 * (q.W * q.X + q.Y * q.Z);
+        double cosr_cosp = 1 - 2 * (q.X * q.X + q.Y * q.Y);
+        double roll = Math.Atan2(sinr_cosp, cosr_cosp);
+
+        double sinp = 2 * (q.W * q.Y - q.Z * q.X);
+        double pitch;
+        if (Math.Abs(sinp) >= 1)
+            pitch = Math.CopySign(Math.PI / 2, sinp);
+        else
+            pitch = Math.Asin(sinp);
+
+        double siny_cosp = 2 * (q.W * q.Z + q.X * q.Y);
+        double cosy_cosp = 1 - 2 * (q.Y * q.Y + q.Z * q.Z);
+        double yaw = Math.Atan2(siny_cosp, cosy_cosp);
+
+        return new Vector3D(
+            MathUtilities.RadiansToDegrees(roll),
+            MathUtilities.RadiansToDegrees(pitch),
+            MathUtilities.RadiansToDegrees(yaw));
     }
 }

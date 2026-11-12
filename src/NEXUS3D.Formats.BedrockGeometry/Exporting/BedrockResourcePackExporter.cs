@@ -262,3 +262,4 @@ public sealed class BedrockResourcePackExporter : IBedrockResourcePackExporter
         }
     }
 }
+

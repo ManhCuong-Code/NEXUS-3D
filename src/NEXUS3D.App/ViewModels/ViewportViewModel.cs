@@ -10,6 +10,7 @@ using NEXUS3D.Conversion.Abstractions.Interfaces;
 using NEXUS3D.Domain.Enums;
 using NEXUS3D.Domain.Mathematics;
 using NEXUS3D.Domain.Scene;
+using NEXUS3D.Domain.Voxels;
 using NEXUS3D.Editor.Abstractions;
 using NEXUS3D.Formats.Abstractions;
 using NEXUS3D.Rendering.Contracts;
@@ -78,6 +79,9 @@ public sealed partial class ViewportViewModel : BaseViewModel
     [ObservableProperty]
     private string? _highlightedBlockId;
 
+    [ObservableProperty]
+    private VoxelPosition? _highlightedBlockCoord;
+
     public ITransformService TransformService => _transformService;
     public ISelectionService SelectionService => _selectionService;
     public IUndoRedoService UndoRedoService => _undoRedoService;
@@ -135,6 +139,7 @@ public sealed partial class ViewportViewModel : BaseViewModel
         _selectionService.SelectionChanged += OnSelectionServiceChanged;
         _workspaceSession.SceneChanged += OnWorkspaceSessionSceneChanged;
         BlockWorkspace.BlockHighlightRequested += (s, blockId) => HighlightedBlockId = blockId;
+        BlockWorkspace.BlockCoordinateSelected += (s, coord) => HighlightedBlockCoord = coord;
     }
 
     partial void OnActiveTabChanged(WorkspaceDocumentTab? oldValue, WorkspaceDocumentTab? newValue)
@@ -517,6 +522,57 @@ public sealed partial class ViewportViewModel : BaseViewModel
         {
             Inspector.InspectUsmNode(Inspector.ActiveNode, RawUsmScene);
         }
+    }
+
+    [RelayCommand]
+    public void FocusSelected()
+    {
+        // 1. If an individual block is selected
+        if (HighlightedBlockCoord.HasValue)
+        {
+            var p = HighlightedBlockCoord.Value;
+            var center = new System.Numerics.Vector3(p.X + 0.5f, p.Y + 0.5f, p.Z + 0.5f);
+            Camera.Focus(center, 1.5f);
+            return;
+        }
+
+        // 2. If a SceneNode / Bedrock cube is selected
+        if (!string.IsNullOrEmpty(SelectedNodeId))
+        {
+            if (Guid.TryParse(SelectedNodeId, out var guid) && RawUsmScene is not null)
+            {
+                var node = RawUsmScene.Graph.FindNode(guid);
+                if (node is not null)
+                {
+                    var world = node.GetWorldMatrix();
+                    var center = new System.Numerics.Vector3((float)world.Translation.X, (float)world.Translation.Y, (float)world.Translation.Z);
+                    float radius = 1.5f;
+                    if (node.Object?.Meshes.Count > 0)
+                    {
+                        var b = node.Object.Meshes[0].Bounds;
+                        radius = Math.Max(0.5f, (float)(b.Max - b.Min).Length() * 0.5f);
+                    }
+                    Camera.Focus(center, radius);
+                    return;
+                }
+            }
+
+            if (Scene is not null)
+            {
+                var rNode = FindNodeRecursive(Scene.RootNodes, SelectedNodeId);
+                if (rNode is not null)
+                {
+                    var center = (rNode.BoundsMin + rNode.BoundsMax) * 0.5f;
+                    var size = rNode.BoundsMax - rNode.BoundsMin;
+                    float radius = Math.Max(0.5f, Math.Max(size.X, Math.Max(size.Y, size.Z)) * 0.8f);
+                    Camera.Focus(center, radius);
+                    return;
+                }
+            }
+        }
+
+        // 3. Fallback: focus whole model
+        FocusModel();
     }
 
     [RelayCommand]

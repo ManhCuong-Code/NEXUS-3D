@@ -62,6 +62,11 @@ public sealed class BedrockCubeUv
         BoxUvOffset = new Vector2D(u, v)
     };
 
+    public static BedrockCubeUv CreatePerFaceUv() => new()
+    {
+        Mode = BedrockUvMode.PerFaceUv
+    };
+
     public BedrockCubeUv DeepClone()
     {
         var clone = new BedrockCubeUv

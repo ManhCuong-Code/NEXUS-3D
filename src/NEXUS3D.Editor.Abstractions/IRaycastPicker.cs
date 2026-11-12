@@ -1,5 +1,6 @@
 using NEXUS3D.Domain.Mathematics;
 using NEXUS3D.Domain.Scene;
+using NEXUS3D.Domain.Voxels;
 
 namespace NEXUS3D.Editor.Abstractions;
 
@@ -12,7 +13,10 @@ public sealed record RaycastHitResult(
     double Distance,
     Vector3D HitPoint,
     Vector3D Normal,
-    int TriangleIndex);
+    int TriangleIndex,
+    VoxelPosition? VoxelCoord = null,
+    string? BlockIdentifier = null,
+    string? BlockStateString = null);
 
 /// <summary>
 /// Raycasting service for picking objects and triangles in the 3D scene.

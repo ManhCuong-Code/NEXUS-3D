@@ -9,6 +9,7 @@
     <Grid Background="#1E1E24">
         <!-- Main Helix 3D Viewport -->
         <helix:HelixViewport3D x:Name="HelixViewport"
+                               CameraRotationMode="Trackball"
                                ShowCoordinateSystem="True"
                                CoordinateSystemLabelX="X"
                                CoordinateSystemLabelY="Y"

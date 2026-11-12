@@ -19,13 +19,18 @@ public sealed class HelixSceneRenderer : IDisposable
 {
     private readonly ConcurrentDictionary<string, ImageBrush> _textureBrushCache = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, Model3DGroup> NodeVisualGroups { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<GeometryModel3D, RenderNode> ModelToNodeMap { get; } = new();
     private bool _isDisposed;
 
     public void ClearCache()
     {
         _textureBrushCache.Clear();
         NodeVisualGroups.Clear();
+        ModelToNodeMap.Clear();
     }
+
+    public bool ContainsModel(GeometryModel3D model) => ModelToNodeMap.ContainsKey(model);
+    public RenderNode? GetNodeForModel(GeometryModel3D model) => ModelToNodeMap.GetValueOrDefault(model);
 
     public void Dispose()
     {
@@ -39,6 +44,7 @@ public sealed class HelixSceneRenderer : IDisposable
     public ModelVisual3D BuildSceneVisual(RenderScene scene, RenderSettings settings, out LinesVisual3D linesVisual, out BoundingBoxWireFrameVisual3D boundsVisual)
     {
         NodeVisualGroups.Clear();
+        ModelToNodeMap.Clear();
         var rootModelGroup = new Model3DGroup();
         var rootVisual = new ModelVisual3D { Content = rootModelGroup };
 
@@ -128,6 +134,7 @@ public sealed class HelixSceneRenderer : IDisposable
                 BackMaterial = settings.Shading is ShadingMode.Wireframe ? null : mat
             };
 
+            ModelToNodeMap[model] = node;
             nodeGroup.Children.Add(model);
 
             // Wireframe lines
@@ -160,6 +167,7 @@ public sealed class HelixSceneRenderer : IDisposable
                     BackMaterial = mat
                 };
 
+                ModelToNodeMap[model] = node;
                 nodeGroup.Children.Add(model);
 
                 if (settings.Shading is ShadingMode.Wireframe or ShadingMode.SolidWireframe || settings.ShowWireframe)

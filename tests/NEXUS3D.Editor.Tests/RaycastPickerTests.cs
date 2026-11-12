@@ -84,5 +84,59 @@ public sealed class RaycastPickerTests
         Assert.NotNull(hit);
         Assert.Equal(node.Id, hit.NodeId);
         Assert.True(hit.Distance > 0);
+        Assert.Equal(new VoxelPosition(0, 0, 0), hit.VoxelCoord);
+    }
+
+    [Fact]
+    public void Pick_VoxelGrid_ReturnsPreciseCoordinatesAndBlockState()
+    {
+        var picker = new RaycastPicker();
+        var scene = new Scene3D { Name = "PreciseVoxelScene" };
+
+        var grid = new VoxelGrid("SchematicGrid");
+        var stairsProps = new Dictionary<string, string> { ["facing"] = "north", ["half"] = "bottom" };
+        var stairsState = new BlockState("minecraft", "oak_stairs", stairsProps);
+
+        grid.SetVoxel(new Voxel(new VoxelPosition(0, 0, 0), 0, new BlockState("minecraft", "stone")));
+        grid.SetVoxel(new Voxel(new VoxelPosition(0, 1, 0), 1, stairsState));
+        grid.SetVoxel(new Voxel(new VoxelPosition(0, 2, 0), 2, new BlockState("minecraft", "diamond_block")));
+
+        var node = new SceneNode("VoxelNode", new SceneObject("VoxelObj") { VoxelGrids = { grid } });
+        scene.Graph.AddNode(scene.Graph.Root, node);
+
+        // Ray pointing at block (0, 1, 0) from Z=5 along -Z
+        var ray = new Ray3D(new Vector3D(0.5, 1.5, 5), new Vector3D(0, 0, -1));
+        var hit = picker.Pick(scene, ray);
+
+        Assert.NotNull(hit);
+        Assert.Equal(node.Id, hit.NodeId);
+        Assert.Equal(new VoxelPosition(0, 1, 0), hit.VoxelCoord);
+        Assert.Equal("minecraft:oak_stairs", hit.BlockIdentifier);
+        Assert.Equal("minecraft:oak_stairs[facing=north,half=bottom]", hit.BlockStateString);
+        Assert.Equal(new Vector3D(0, 0, 1), hit.Normal);
+        Assert.True(Math.Abs(hit.Distance - 4.0) < 1e-4);
+        Assert.Equal(new Vector3D(0.5, 1.5, 1.0), hit.HitPoint);
+    }
+
+    [Fact]
+    public void Pick_VoxelGrid_SkipsAirBlocksAndHitsSolidBehind()
+    {
+        var picker = new RaycastPicker();
+        var scene = new Scene3D { Name = "AirSkipScene" };
+
+        var grid = new VoxelGrid("AirGrid");
+        grid.SetVoxel(new Voxel(new VoxelPosition(0, 0, 5), 0, new BlockState("minecraft", "air")));
+        grid.SetVoxel(new Voxel(new VoxelPosition(0, 0, 0), 1, new BlockState("minecraft", "gold_block")));
+
+        var node = new SceneNode("VoxelNode", new SceneObject("VoxelObj") { VoxelGrids = { grid } });
+        scene.Graph.AddNode(scene.Graph.Root, node);
+
+        // Ray passing through (0, 0, 5) towards (0, 0, 0)
+        var ray = new Ray3D(new Vector3D(0.5, 0.5, 10), new Vector3D(0, 0, -1));
+        var hit = picker.Pick(scene, ray);
+
+        Assert.NotNull(hit);
+        Assert.Equal(new VoxelPosition(0, 0, 0), hit.VoxelCoord);
+        Assert.Equal("minecraft:gold_block", hit.BlockIdentifier);
     }
 }

@@ -249,3 +249,4 @@ public static class BedrockTextureAtlasGenerator
         return p;
     }
 }
+

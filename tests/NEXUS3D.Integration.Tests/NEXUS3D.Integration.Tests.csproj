@@ -22,6 +22,9 @@
     <ProjectReference Include="..\..\src\NEXUS3D.Application\NEXUS3D.Application.csproj" />
     <ProjectReference Include="..\..\src\NEXUS3D.Domain\NEXUS3D.Domain.csproj" />
     <ProjectReference Include="..\..\src\NEXUS3D.Formats.Abstractions\NEXUS3D.Formats.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\NEXUS3D.Formats.BedrockGeometry\NEXUS3D.Formats.BedrockGeometry.csproj" />
+    <ProjectReference Include="..\..\src\NEXUS3D.Editor.Abstractions\NEXUS3D.Editor.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\NEXUS3D.Editor.Engine\NEXUS3D.Editor.Engine.csproj" />
     <ProjectReference Include="..\..\src\NEXUS3D.Shared\NEXUS3D.Shared.csproj" />
   </ItemGroup>
 

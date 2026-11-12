@@ -145,21 +145,259 @@ public sealed class RaycastPicker : IRaycastPicker
             var aabb = grid.GetWorldBounds();
             if (!aabb.IsValid) continue;
 
-            if (localRay.Intersects(aabb, out double localDist))
+            if (IntersectBox(localRay, aabb, out double tNear, out double tFar) && tFar >= 0.0)
             {
-                var localHitPoint = localRay.GetPoint(localDist);
-                var worldHitPoint = worldMatrix.TransformPoint(localHitPoint);
-                double worldDist = (worldHitPoint - worldRay.Origin).Length();
-
-                hits.Add(new RaycastHitResult(
-                    node.Id,
-                    null,
-                    worldDist,
-                    worldHitPoint,
-                    new Vector3D(0, 1, 0),
-                    0));
+                var hit = PickVoxelInGrid(node, grid, worldMatrix, worldRay, localRay, tNear, tFar);
+                if (hit is not null)
+                {
+                    hits.Add(hit);
+                }
             }
         }
+    }
+
+    private static RaycastHitResult? PickVoxelInGrid(
+        SceneNode node,
+        VoxelGrid grid,
+        Matrix4x4D worldMatrix,
+        Ray3D worldRay,
+        Ray3D localRay,
+        double tNear,
+        double tFar)
+    {
+        double vx = grid.VoxelSize.X <= 0 ? 1.0 : grid.VoxelSize.X;
+        double vy = grid.VoxelSize.Y <= 0 ? 1.0 : grid.VoxelSize.Y;
+        double vz = grid.VoxelSize.Z <= 0 ? 1.0 : grid.VoxelSize.Z;
+
+        double tStart = Math.Max(0.0, tNear);
+        double tEnter = tStart > 0.0 ? tStart + 1e-6 : 0.0;
+        var startPt = localRay.GetPoint(tEnter);
+
+        int curX = (int)Math.Floor(startPt.X / vx) - grid.Origin.X;
+        int curY = (int)Math.Floor(startPt.Y / vy) - grid.Origin.Y;
+        int curZ = (int)Math.Floor(startPt.Z / vz) - grid.Origin.Z;
+
+        if (tStart > 0.0)
+        {
+            curX = Math.Clamp(curX, grid.Bounds.Min.X, grid.Bounds.Max.X);
+            curY = Math.Clamp(curY, grid.Bounds.Min.Y, grid.Bounds.Max.Y);
+            curZ = Math.Clamp(curZ, grid.Bounds.Min.Z, grid.Bounds.Max.Z);
+        }
+
+        double dirX = localRay.Direction.X;
+        double dirY = localRay.Direction.Y;
+        double dirZ = localRay.Direction.Z;
+
+        int stepX = dirX > 1e-12 ? 1 : (dirX < -1e-12 ? -1 : 0);
+        int stepY = dirY > 1e-12 ? 1 : (dirY < -1e-12 ? -1 : 0);
+        int stepZ = dirZ > 1e-12 ? 1 : (dirZ < -1e-12 ? -1 : 0);
+
+        double tDeltaX = stepX != 0 ? Math.Abs(vx / dirX) : double.PositiveInfinity;
+        double tDeltaY = stepY != 0 ? Math.Abs(vy / dirY) : double.PositiveInfinity;
+        double tDeltaZ = stepZ != 0 ? Math.Abs(vz / dirZ) : double.PositiveInfinity;
+
+        double tMaxX = stepX > 0 ? (((grid.Origin.X + curX + 1) * vx) - localRay.Origin.X) / dirX
+                     : stepX < 0 ? (((grid.Origin.X + curX) * vx) - localRay.Origin.X) / dirX
+                     : double.PositiveInfinity;
+
+        double tMaxY = stepY > 0 ? (((grid.Origin.Y + curY + 1) * vy) - localRay.Origin.Y) / dirY
+                     : stepY < 0 ? (((grid.Origin.Y + curY) * vy) - localRay.Origin.Y) / dirY
+                     : double.PositiveInfinity;
+
+        double tMaxZ = stepZ > 0 ? (((grid.Origin.Z + curZ + 1) * vz) - localRay.Origin.Z) / dirZ
+                     : stepZ < 0 ? (((grid.Origin.Z + curZ) * vz) - localRay.Origin.Z) / dirZ
+                     : double.PositiveInfinity;
+
+        int maxSteps = (int)(Math.Max(1, grid.Bounds.Width) + Math.Max(1, grid.Bounds.Height) + Math.Max(1, grid.Bounds.Depth)) * 3 + 100;
+
+        for (int step = 0; step < maxSteps; step++)
+        {
+            if (curX < grid.Bounds.Min.X || curX > grid.Bounds.Max.X ||
+                curY < grid.Bounds.Min.Y || curY > grid.Bounds.Max.Y ||
+                curZ < grid.Bounds.Min.Z || curZ > grid.Bounds.Max.Z)
+            {
+                break;
+            }
+
+            var pos = new VoxelPosition(curX, curY, curZ);
+            if (grid.TryGetVoxel(pos, out var voxel) && voxel is not null && !voxel.IsAir)
+            {
+                double bMinX = (grid.Origin.X + pos.X) * vx;
+                double bMinY = (grid.Origin.Y + pos.Y) * vy;
+                double bMinZ = (grid.Origin.Z + pos.Z) * vz;
+                var box = new BoundingBox(new Vector3D(bMinX, bMinY, bMinZ), new Vector3D(bMinX + vx, bMinY + vy, bMinZ + vz));
+
+                if (localRay.Intersects(box, out double localDist))
+                {
+                    var localHitPoint = localRay.GetPoint(localDist);
+                    var localNormal = CalculateBoxNormal(box, localHitPoint);
+                    var worldHitPoint = worldMatrix.TransformPoint(localHitPoint);
+                    var worldNormal = worldMatrix.TransformNormal(localNormal).Normalize();
+                    double worldDist = (worldHitPoint - worldRay.Origin).Length();
+
+                    string blockId = voxel.State?.GetFullIdentifier() ??
+                        (grid.Palette.TryGet(voxel.PaletteIndex, out var pEntry) ? pEntry?.State.GetFullIdentifier() : null) ??
+                        "minecraft:stone";
+
+                    string blockState = voxel.State?.GetCanonicalStateKey() ??
+                        (grid.Palette.TryGet(voxel.PaletteIndex, out var pEntry2) ? pEntry2?.State.GetCanonicalStateKey() : null) ??
+                        blockId;
+
+                    return new RaycastHitResult(
+                        node.Id,
+                        null,
+                        worldDist,
+                        worldHitPoint,
+                        worldNormal,
+                        0,
+                        pos,
+                        blockId,
+                        blockState);
+                }
+            }
+
+            if (tMaxX < tMaxY)
+            {
+                if (tMaxX < tMaxZ)
+                {
+                    curX += stepX;
+                    tMaxX += tDeltaX;
+                }
+                else
+                {
+                    curZ += stepZ;
+                    tMaxZ += tDeltaZ;
+                }
+            }
+            else
+            {
+                if (tMaxY < tMaxZ)
+                {
+                    curY += stepY;
+                    tMaxY += tDeltaY;
+                }
+                else
+                {
+                    curZ += stepZ;
+                    tMaxZ += tDeltaZ;
+                }
+            }
+        }
+
+        // Fallback: Precise voxel bounding box check across all occupied voxels
+        Voxel? closestVoxel = null;
+        double closestLocalDist = double.MaxValue;
+        BoundingBox closestBox = default;
+
+        foreach (var voxel in grid.Voxels)
+        {
+            if (voxel.IsAir) continue;
+
+            double bMinX = (grid.Origin.X + voxel.Position.X) * vx;
+            double bMinY = (grid.Origin.Y + voxel.Position.Y) * vy;
+            double bMinZ = (grid.Origin.Z + voxel.Position.Z) * vz;
+            var box = new BoundingBox(new Vector3D(bMinX, bMinY, bMinZ), new Vector3D(bMinX + vx, bMinY + vy, bMinZ + vz));
+
+            if (localRay.Intersects(box, out double localDist) && localDist < closestLocalDist)
+            {
+                closestLocalDist = localDist;
+                closestVoxel = voxel;
+                closestBox = box;
+            }
+        }
+
+        if (closestVoxel is not null)
+        {
+            var localHitPoint = localRay.GetPoint(closestLocalDist);
+            var localNormal = CalculateBoxNormal(closestBox, localHitPoint);
+            var worldHitPoint = worldMatrix.TransformPoint(localHitPoint);
+            var worldNormal = worldMatrix.TransformNormal(localNormal).Normalize();
+            double worldDist = (worldHitPoint - worldRay.Origin).Length();
+
+            string blockId = closestVoxel.State?.GetFullIdentifier() ??
+                (grid.Palette.TryGet(closestVoxel.PaletteIndex, out var pEntry) ? pEntry?.State.GetFullIdentifier() : null) ??
+                "minecraft:stone";
+
+            string blockState = closestVoxel.State?.GetCanonicalStateKey() ??
+                (grid.Palette.TryGet(closestVoxel.PaletteIndex, out var pEntry2) ? pEntry2?.State.GetCanonicalStateKey() : null) ??
+                blockId;
+
+            return new RaycastHitResult(
+                node.Id,
+                null,
+                worldDist,
+                worldHitPoint,
+                worldNormal,
+                0,
+                closestVoxel.Position,
+                blockId,
+                blockState);
+        }
+
+        return null;
+    }
+
+    private static Vector3D CalculateBoxNormal(BoundingBox box, Vector3D hitPoint)
+    {
+        double dMinX = Math.Abs(hitPoint.X - box.Min.X);
+        double dMaxX = Math.Abs(hitPoint.X - box.Max.X);
+        double dMinY = Math.Abs(hitPoint.Y - box.Min.Y);
+        double dMaxY = Math.Abs(hitPoint.Y - box.Max.Y);
+        double dMinZ = Math.Abs(hitPoint.Z - box.Min.Z);
+        double dMaxZ = Math.Abs(hitPoint.Z - box.Max.Z);
+
+        double minDist = dMinX;
+        Vector3D normal = new(-1, 0, 0);
+
+        if (dMaxX < minDist) { minDist = dMaxX; normal = new(1, 0, 0); }
+        if (dMinY < minDist) { minDist = dMinY; normal = new(0, -1, 0); }
+        if (dMaxY < minDist) { minDist = dMaxY; normal = new(0, 1, 0); }
+        if (dMinZ < minDist) { minDist = dMinZ; normal = new(0, 0, -1); }
+        if (dMaxZ < minDist) { normal = new(0, 0, 1); }
+
+        return normal;
+    }
+
+    private static bool IntersectBox(Ray3D ray, BoundingBox box, out double tNear, out double tFar)
+    {
+        tNear = 0.0;
+        tFar = double.MaxValue;
+
+        if (!box.IsValid)
+        {
+            return false;
+        }
+
+        if (!IntersectSlab(ray.Origin.X, ray.Direction.X, box.Min.X, box.Max.X, ref tNear, ref tFar) ||
+            !IntersectSlab(ray.Origin.Y, ray.Direction.Y, box.Min.Y, box.Max.Y, ref tNear, ref tFar) ||
+            !IntersectSlab(ray.Origin.Z, ray.Direction.Z, box.Min.Z, box.Max.Z, ref tNear, ref tFar))
+        {
+            return false;
+        }
+
+        return tFar >= Math.Max(0.0, tNear);
+    }
+
+    private static bool IntersectSlab(double origin, double dir, double min, double max, ref double tMin, ref double tMax)
+    {
+        if (Math.Abs(dir) <= MathUtilities.Epsilon)
+        {
+            return origin >= min && origin <= max;
+        }
+
+        double invDir = 1.0 / dir;
+        double t1 = (min - origin) * invDir;
+        double t2 = (max - origin) * invDir;
+
+        if (t1 > t2)
+        {
+            (t1, t2) = (t2, t1);
+        }
+
+        tMin = Math.Max(tMin, t1);
+        tMax = Math.Min(tMax, t2);
+
+        return tMin <= tMax;
     }
 
     /// <summary>

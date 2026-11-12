@@ -159,6 +159,12 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
                 boneSceneObj.Properties["bedrock.rawPivot"] = JsonSerializer.SerializeToElement(new[] { bone.Pivot.X, bone.Pivot.Y, bone.Pivot.Z });
                 boneSceneObj.Properties["bedrock.rawRotation"] = JsonSerializer.SerializeToElement(new[] { bone.Rotation.X, bone.Rotation.Y, bone.Rotation.Z });
 
+                var boneNode = new SceneNode(boneName, boneSceneObj)
+                {
+                    LocalTransform = new Transform3D(usmPivot, usmRotQuat, Vector3D.One),
+                    IsVisible = bone.NeverRender != true
+                };
+
                 if (options.GenerateCubeMeshes)
                 {
                     for (int cIdx = 0; cIdx < bone.Cubes.Count; cIdx++)
@@ -188,14 +194,84 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
                             ? GetOrCreateMaterial(scene, materialByName, bone.Material!)
                             : defaultGeoMaterial;
 
+                        string cubeName = $"{boneName}_cube_{cIdx}";
+                        if (cube.ExtensionData.TryGet("name", out var extNameElem) &&
+                            extNameElem.ValueKind == JsonValueKind.String &&
+                            !string.IsNullOrWhiteSpace(extNameElem.GetString()))
+                        {
+                            cubeName = extNameElem.GetString()!;
+                        }
+
                         MeshData cubeMesh = BedrockCoordinateConverter.BuildCubeMesh(
                             cube,
                             bone,
                             geo.Description,
-                            $"{boneName}_cube_{cIdx}",
+                            cubeName,
                             cubeMat.Id);
 
-                        boneSceneObj.Meshes.Add(cubeMesh);
+                        var cubeSceneObj = new SceneObject(cubeName)
+                        {
+                            SkeletonId = skeleton.Id
+                        };
+                        cubeSceneObj.Meshes.Add(cubeMesh);
+
+                        Guid cubeId = cubeSceneObj.Id;
+                        Vector3D cubePivot = cube.Pivot ?? bone.Pivot;
+                        Vector3D cubeRotation = cube.Rotation ?? Vector3D.Zero;
+                        double cubeInflate = cube.Inflate ?? bone.Inflate ?? 0.0;
+                        bool cubeMirror = cube.Mirror ?? bone.Mirror ?? false;
+                        string uvDescription = cube.Uv?.Mode == BedrockUvMode.PerFaceUv
+                            ? "PerFace"
+                            : (cube.Uv?.Mode == BedrockUvMode.BoxUv ? $"[{cube.Uv.BoxUvOffset.X:F1}, {cube.Uv.BoxUvOffset.Y:F1}]" : "None");
+
+                        // Full cube metadata properties
+                        cubeSceneObj.Properties["CubeId"] = JsonSerializer.SerializeToElement(cubeId.ToString());
+                        cubeSceneObj.Properties["Name"] = JsonSerializer.SerializeToElement(cubeName);
+                        cubeSceneObj.Properties["GeometryId"] = JsonSerializer.SerializeToElement(geoId);
+                        cubeSceneObj.Properties["BoneId"] = JsonSerializer.SerializeToElement(usmBone.Id.ToString());
+                        cubeSceneObj.Properties["BoneName"] = JsonSerializer.SerializeToElement(boneName);
+                        cubeSceneObj.Properties["ParentBone"] = JsonSerializer.SerializeToElement(bone.Parent ?? string.Empty);
+                        cubeSceneObj.Properties["Origin"] = JsonSerializer.SerializeToElement(new[] { cube.Origin.X, cube.Origin.Y, cube.Origin.Z });
+                        cubeSceneObj.Properties["Size"] = JsonSerializer.SerializeToElement(new[] { cube.Size.X, cube.Size.Y, cube.Size.Z });
+                        cubeSceneObj.Properties["Pivot"] = JsonSerializer.SerializeToElement(new[] { cubePivot.X, cubePivot.Y, cubePivot.Z });
+                        cubeSceneObj.Properties["Rotation"] = JsonSerializer.SerializeToElement(new[] { cubeRotation.X, cubeRotation.Y, cubeRotation.Z });
+                        cubeSceneObj.Properties["UV"] = JsonSerializer.SerializeToElement(uvDescription);
+                        cubeSceneObj.Properties["Inflate"] = JsonSerializer.SerializeToElement(cubeInflate);
+                        cubeSceneObj.Properties["Mirror"] = JsonSerializer.SerializeToElement(cubeMirror);
+                        cubeSceneObj.Properties["Material"] = JsonSerializer.SerializeToElement(cubeMat.Name);
+
+                        cubeSceneObj.Properties["bedrock.cubeId"] = JsonSerializer.SerializeToElement(cubeId.ToString());
+                        cubeSceneObj.Properties["bedrock.cubeIndex"] = JsonSerializer.SerializeToElement(cIdx);
+                        cubeSceneObj.Properties["bedrock.name"] = JsonSerializer.SerializeToElement(cubeName);
+                        cubeSceneObj.Properties["bedrock.geometryId"] = JsonSerializer.SerializeToElement(geoId);
+                        cubeSceneObj.Properties["bedrock.boneId"] = JsonSerializer.SerializeToElement(usmBone.Id.ToString());
+                        cubeSceneObj.Properties["bedrock.boneName"] = JsonSerializer.SerializeToElement(boneName);
+                        cubeSceneObj.Properties["bedrock.parentBone"] = JsonSerializer.SerializeToElement(bone.Parent ?? string.Empty);
+                        cubeSceneObj.Properties["bedrock.origin"] = JsonSerializer.SerializeToElement(new[] { cube.Origin.X, cube.Origin.Y, cube.Origin.Z });
+                        cubeSceneObj.Properties["bedrock.rawOrigin"] = JsonSerializer.SerializeToElement(new[] { cube.Origin.X, cube.Origin.Y, cube.Origin.Z });
+                        cubeSceneObj.Properties["bedrock.size"] = JsonSerializer.SerializeToElement(new[] { cube.Size.X, cube.Size.Y, cube.Size.Z });
+                        cubeSceneObj.Properties["bedrock.rawSize"] = JsonSerializer.SerializeToElement(new[] { cube.Size.X, cube.Size.Y, cube.Size.Z });
+                        cubeSceneObj.Properties["bedrock.pivot"] = JsonSerializer.SerializeToElement(new[] { cubePivot.X, cubePivot.Y, cubePivot.Z });
+                        cubeSceneObj.Properties["bedrock.rawPivot"] = JsonSerializer.SerializeToElement(new[] { cubePivot.X, cubePivot.Y, cubePivot.Z });
+                        cubeSceneObj.Properties["bedrock.rotation"] = JsonSerializer.SerializeToElement(new[] { cubeRotation.X, cubeRotation.Y, cubeRotation.Z });
+                        cubeSceneObj.Properties["bedrock.rawRotation"] = JsonSerializer.SerializeToElement(new[] { cubeRotation.X, cubeRotation.Y, cubeRotation.Z });
+                        cubeSceneObj.Properties["bedrock.uv"] = JsonSerializer.SerializeToElement(uvDescription);
+                        cubeSceneObj.Properties["bedrock.uvMode"] = JsonSerializer.SerializeToElement(cube.Uv?.Mode.ToString() ?? "None");
+                        if (cube.Uv?.Mode == BedrockUvMode.BoxUv)
+                        {
+                            cubeSceneObj.Properties["bedrock.boxUvOffset"] = JsonSerializer.SerializeToElement(new[] { cube.Uv.BoxUvOffset.X, cube.Uv.BoxUvOffset.Y });
+                        }
+                        cubeSceneObj.Properties["bedrock.inflate"] = JsonSerializer.SerializeToElement(cubeInflate);
+                        cubeSceneObj.Properties["bedrock.mirror"] = JsonSerializer.SerializeToElement(cubeMirror);
+                        cubeSceneObj.Properties["bedrock.material"] = JsonSerializer.SerializeToElement(cubeMat.Name);
+
+                        var cubeNode = new SceneNode(cubeName, cubeSceneObj)
+                        {
+                            LocalTransform = Transform3D.Identity(),
+                            IsVisible = bone.NeverRender != true
+                        };
+
+                        boneNode.AddChild(cubeNode);
                         generatedMeshes++;
                     }
 
@@ -216,12 +292,6 @@ public sealed class BedrockGeometryToSceneConverter : IBedrockGeometryToSceneCon
                     totalCubes += bone.Cubes.Count;
                     if (bone.PolyMesh is not null) totalPolyMeshes++;
                 }
-
-                var boneNode = new SceneNode(boneName, boneSceneObj)
-                {
-                    LocalTransform = new Transform3D(usmPivot, usmRotQuat, Vector3D.One),
-                    IsVisible = bone.NeverRender != true
-                };
 
                 skeleton.Bones.Add(usmBone);
                 boneDataByName.TryAdd(boneName, usmBone);

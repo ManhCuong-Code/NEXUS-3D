@@ -176,7 +176,35 @@ public static class BedrockCoordinateConverter
             mesh.Faces.Add(new Face([baseVertIdx, baseVertIdx + 1, baseVertIdx + 2, baseVertIdx + 3], materialId));
         }
 
+        if (materialId.HasValue && mesh.Faces.Count > 0)
+        {
+            mesh.Submeshes.Add(new MeshSubmesh("cube", 0, mesh.Faces.Count, materialId.Value));
+        }
+
         return mesh;
+    }
+
+    /// <summary>
+    /// Computes USM space bounding box for a <see cref="BedrockCube"/>.
+    /// </summary>
+    public static BoundingBox BedrockCubeToUsmBounds(BedrockCube cube, double inflate = 0.0)
+    {
+        ArgumentNullException.ThrowIfNull(cube);
+        Vector3D min = new(
+            cube.Origin.X - inflate,
+            cube.Origin.Y - inflate,
+            cube.Origin.Z - inflate);
+        Vector3D max = new(
+            cube.Origin.X + cube.Size.X + inflate,
+            cube.Origin.Y + cube.Size.Y + inflate,
+            cube.Origin.Z + cube.Size.Z + inflate);
+
+        Vector3D usmMin = BedrockPositionToUsm(min);
+        Vector3D usmMax = BedrockPositionToUsm(max);
+
+        return new BoundingBox(
+            new Vector3D(Math.Min(usmMin.X, usmMax.X), Math.Min(usmMin.Y, usmMax.Y), Math.Min(usmMin.Z, usmMax.Z)),
+            new Vector3D(Math.Max(usmMin.X, usmMax.X), Math.Max(usmMin.Y, usmMax.Y), Math.Max(usmMin.Z, usmMax.Z)));
     }
 
     private static Vector2D[] ComputeFaceNormalizedUvs(
